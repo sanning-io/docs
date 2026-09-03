@@ -5,7 +5,7 @@
 - The public documentation for Sanning (sanning.io), built on [Mintlify](https://mintlify.com). Repo: `sanning-io/docs`. Pushes to `main` deploy.
 - Pages are MDX files with YAML frontmatter. Configuration lives in `docs.json`.
 - Work on a branch and open a PR; never commit to `main`. Preview locally with `mint dev`; run `mint validate` and `mint broken-links` before opening the PR.
-- For Mintlify product knowledge (components, configuration, writing standards), install the Mintlify skill: `npx skills add https://mintlify.com/docs`. The Mintlify MCP server is `https://mcp.mintlify.com`; the Mintlify docs MCP server is `https://www.mintlify.com/docs/mcp`.
+- Mintlify's own skill (components, configuration, writing standards) is installed in this repo under `.claude/skills/`; refresh it with `npx skills update`. `.mcp.json` connects Mintlify's documentation search (read-only). The admin MCP server, `https://mcp.mintlify.com`, reaches the dashboard and stays a per-founder, user-level connection — never committed here.
 
 ## Brand
 
@@ -34,4 +34,4 @@ The brand is defined once, in [`sanning-io/sanning-design-system`](https://githu
 ## Content boundaries
 
 - Claims about versions, packages, and shipped behaviour are verified against the `sanning-io` org repos on GitHub and against npm / PyPI, never against a local working tree.
-- Product and strategy truth lives in [`sanning-io/knowledge-base`](https://github.com/sanning-io/knowledge-base); these docs describe what ships, not what is planned.
+- These docs describe what ships, not what is planned.
