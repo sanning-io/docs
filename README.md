@@ -1,55 +1,24 @@
-# Mintlify Starter Kit
+# Sanning docs
 
-Use the starter kit to get your docs deployed and ready to customize.
+The public documentation for [Sanning](https://sanning.io), served at docs.sanning.io and built on [Mintlify](https://mintlify.com). Pushes to `main` deploy.
 
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
+## Working on it
 
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
+Pages are MDX files with YAML frontmatter. Navigation, colours, logo, and fonts are set in `docs.json`.
 
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
-
-## AI-assisted writing
-
-Set up your AI coding tool to work with Mintlify:
-
-```bash
-npx skills add https://mintlify.com/docs
+```sh
+npm i -g mint        # once
+mint dev             # preview at http://localhost:3000
+mint validate        # strict build check
+mint broken-links    # link check
 ```
 
-This command installs Mintlify's documentation skill for your configured AI tools like Claude Code, Cursor, Windsurf, and others. The skill includes component reference, writing standards, and workflow guidance.
+Work on a branch and open a pull request. Never commit to `main`.
 
-See the [AI tools guides](/ai-tools) for tool-specific setup.
+## Brand
 
-## Development
+The brand is defined once, in [`sanning-design-system`](https://github.com/sanning-io/sanning-design-system). This site carries it through Mintlify's own configuration: colours from the semantic tokens, the Geist font, the lowercase wordmark, and the favicon. `logo/`, `favicon.svg`, and `fonts/` are copied verbatim from that repo's `assets/`. The design-system commit they came from is recorded in [`AGENTS.md`](AGENTS.md), which also holds the voice and terminology rules for anyone writing here.
 
-Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview your documentation changes locally. To install, use the following command:
+## Agents
 
-```
-npm i -g mint
-```
-
-Run the following command at the root of your documentation, where your `docs.json` is located:
-
-```
-mint dev
-```
-
-View your local preview at `http://localhost:3000`.
-
-## Publishing changes
-
-Install our GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from your repo to your deployment. Changes are deployed to production automatically after pushing to the default branch.
-
-## Need help?
-
-### Troubleshooting
-
-- If your dev environment isn't running: Run `mint update` to ensure you have the most recent version of the CLI.
-- If a page loads as a 404: Make sure you are running in a folder with a valid `docs.json`.
-
-### Resources
-- [Mintlify documentation](https://mintlify.com/docs)
+Read [`AGENTS.md`](AGENTS.md) first. For Mintlify's component and configuration reference, install their skill: `npx skills add https://mintlify.com/docs`.
