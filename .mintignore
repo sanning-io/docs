@@ -6,5 +6,6 @@
 drafts/
 *.draft.mdx
 
-# Agent instructions are not a docs page (Mintlify serves every .md; only README/LICENSE/CHANGELOG/CONTRIBUTING are auto-ignored)
+# Agent instructions are not docs pages (Mintlify serves every .md; only README/LICENSE/CHANGELOG/CONTRIBUTING are auto-ignored)
 AGENTS.md
+CLAUDE.md
