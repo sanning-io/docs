@@ -23,7 +23,10 @@
     "format": "woff2",
     "weight": 400
   },
-  "favicon": "/favicon.svg",
+  "favicon": {
+    "light": "/favicon.svg",
+    "dark": "/favicon-midnight.svg"
+  },
   "logo": {
     "light": "/logo/sanning-lowercase-ink.svg",
     "dark": "/logo/sanning-lowercase-paper.svg"
