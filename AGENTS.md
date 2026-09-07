@@ -11,8 +11,8 @@
 
 The brand is defined once, in [`sanning-io/sanning-design-system`](https://github.com/sanning-io/sanning-design-system). Its [`AGENTS.md`](https://github.com/sanning-io/sanning-design-system/blob/main/AGENTS.md) is the contract; never re-derive brand values from memory.
 
-- `docs.json` carries the brand through Mintlify's own configuration only: colours from the semantic tokens (`link` for `colors.primary` and `colors.light`, `primary` for `colors.dark`, `background` for the page background), the Geist font, the lowercase wordmark, and the favicon. No custom CSS or JS on top of the framework.
-- `logo/`, `favicon.svg`, and `fonts/` are copied verbatim from the design system's `assets/`. **Copied from design-system commit `82e7e45`.** When tokens or assets change upstream, re-copy them here in the same PR that bumps this line.
+- `docs.json` carries the brand through Mintlify's own configuration only: colours from the semantic tokens (`link` for `colors.primary` and `colors.light`, `primary` for `colors.dark`, `background` for the page background), the Geist font, the lowercase wordmark, and the favicon (paper in light mode, midnight in dark). No custom CSS or JS on top of the framework.
+- `logo/`, `favicon.svg`, `favicon-midnight.svg`, and `fonts/` are copied verbatim from the design system's `assets/`. **Copied from design-system commit `b90ace3`.** When tokens or assets change upstream, re-copy them here in the same PR that bumps this line.
 - Voice follows the design system's [`brand/voice.md`](https://github.com/sanning-io/sanning-design-system/blob/main/brand/voice.md): short true sentences, sentence case everywhere, buttons say exactly what happens. Never claim "safe", "compliant", "approved", "certified", or "audit-proof" — Sanning records integrity, authenticity, and provenance; the conclusion belongs to the customer's auditors. No hype words, no blockchain vocabulary ("anchored", "permanent", "independent" — never "on-chain", "web3", "trustless").
 - Technical values (code, hashes, timestamps, IDs) are always real-looking, never placeholders like `abc123`.
 
