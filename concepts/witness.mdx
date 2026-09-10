@@ -49,16 +49,31 @@ bundle: no stamped records for agent claims-triage in 2026-09-01 → 2026-09-30
 That means **not yet**. It does not mean the records are missing. Wait for the interval to
 close and run it again.
 
-The interval is **five minutes** on Sanning's production plane. On top of it
-there is a one minute lag before an interval is sealed, a sweep of up to thirty
-seconds, and the time for the publish to settle.
+### How long you wait, and what sets it
 
-So plan for **five to ten minutes** between anchoring a record and being able to
-hand it over.
+Three things add up, and only the first depends on when you anchored:
+
+| | |
+|---|---|
+| Wait for your record's interval to close | Between nothing and one full interval |
+| A short lag before that interval is sealed | So a record written near the boundary is not left out |
+| The sweep that notices it | Seconds |
+
+**Read the interval off the stamp rather than off this page.** Every stamp
+carries `interval_start` and `interval_end`, so the width that applied to your
+records is inside the artifact you were handed. It is measured in minutes, and
+Sanning tunes it: a shorter interval hands evidence over sooner and costs more
+to witness, and this page would go stale the day it changed.
+
+A useful planning rule while you build: **anchoring and handing over are
+minutes apart, not seconds**, and a `bundle` run immediately after a run races
+your own newest records.
 
 The interval is also the time resolution of what you can prove. A stamp says
 these records existed by the time this interval closed, not the second each one
-was anchored.
+was anchored. **Ordering is not affected by any of this**: each record commits
+to the one before it, so a deletion leaves a hole and a reorder breaks the
+chain, whatever the interval width.
 
 ## What is published, and what is not
 
