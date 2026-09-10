@@ -86,7 +86,19 @@ That turns a claim you read into one you checked. See
 
 ## Python
 
-`sanning-proof` on PyPI is the same kernel and ships no command line. Use it as a library:
+`sanning-proof` on PyPI is the same kernel and ships **the same command**, so a
+Python shop needs no Node to check a pack:
+
+```bash
+pip install sanning-proof
+sanning-proof verify bundle.json --logs logs/
+```
+
+The verbs, the flags and the exit codes match `npx @sanning/proof` exactly.
+Both kernels are graded against one corpus, and a disagreement between them on
+the same input is release-blocking.
+
+Use it as a library instead when you are checking a pack inside your own code:
 
 ```python
 import json, pathlib

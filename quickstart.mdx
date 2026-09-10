@@ -190,11 +190,25 @@ on the page. The page runs the open kernel in their browser.
 
 At a command line:
 
-```bash
+<CodeGroup>
+
+```bash Python
+unzip pack.zip -d pack
+cd pack
+pip install sanning-proof
+sanning-proof verify bundle.json --logs logs/
+```
+
+```bash Node
 unzip pack.zip -d pack
 cd pack
 npx @sanning/proof verify bundle.json --logs logs/
 ```
+
+</CodeGroup>
+
+Same verbs, same flags, same exit codes. Your auditor picks whichever runtime
+they already have, and needs neither an account nor a network.
 
 A verified pack exits 0. A pack with one changed byte exits non-zero and names the record
 that failed.

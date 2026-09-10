@@ -57,9 +57,13 @@ These resolve on their own. Retry rather than debugging.
 
     Point it at your store root, the directory holding `content/` and `records/`.
   </Accordion>
-  <Accordion title="--logs s3:// locations are not read by this verb">
-    The pack command reads a local store root. If your store is an object bucket,
-    synchronise it locally first and point `--logs` at the copy.
+  <Accordion title="reading an s3:// log store needs SANNING_S3_ENDPOINT, ...">
+    `--logs` accepts an `s3://` URL, and reading one needs `SANNING_S3_ENDPOINT`,
+    `SANNING_S3_ACCESS_KEY_ID` and `SANNING_S3_SECRET_ACCESS_KEY` in the environment.
+    The message names the ones that are missing.
+
+    There is no flag for them: a credential in argv lands in shell history. See
+    [Retain what you anchored](/guides/log-store).
   </Accordion>
   <Accordion title="bundle: missing required flag(s): --from, --to">
     The pack covers a period and you must name it. `--agent`, `--from`, `--to` and `--out`
