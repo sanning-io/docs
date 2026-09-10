@@ -151,6 +151,29 @@ records exist, they are signed, and they are retained. Read the second line
 before treating the first as a failure. Both languages print that pair, and
 the command exits `1`.
 
+The partial case exits `1` too, and for a different reason:
+
+```
+bundle: 2 record(s) in 2026-06-01 → 2026-06-30 are anchored and retained but
+not yet stamped, so no inclusion proof exists for them. A pack built now would
+omit them and would not say so, under-reporting the period it claims to cover.
+```
+
+A pack carries no record of what it left out, so a recipient cannot tell a
+short pack from a complete one. The verb refuses rather than hand you an
+artifact that looks complete and is not. Waiting for the interval to seal is
+usually the whole fix.
+
+To hand over the stamped records anyway, pass `--allow-unstamped`. The summary
+then tells you the pack is short, and passing that on is your job, because the
+artifact does not carry it:
+
+```
+  not included 2 record(s) anchored in this window are not yet stamped, and
+  --allow-unstamped was passed. This pack is SHORT for the period it names,
+  and nothing inside it says so: tell the recipient
+```
+
 ## Store the bytes in a bucket you own
 
 For production, put the store behind object storage you control. The seam is
