@@ -1,0 +1,170 @@
+---
+title: "Record a file a tool produces"
+description: "Name, size and hash for every file, and the check an auditor runs"
+---
+
+This page records the files your agent's tools write, so that months later
+someone can hold a file and establish it is the one the agent produced.
+
+Anchoring the tool call proves the agent asked for a file. It does not prove
+which file came back, and that is the question an auditor asks second.
+
+It needs no setup. Attach the LangChain handler as
+[Trace a LangChain agent](/guides/langchain) describes, and file records
+follow.
+
+## What a file record holds
+
+One record per file, of type `langchain.artifact`, linked to the tool step
+that produced it. Its promoted metadata is the part a reader can use without
+opening the body:
+
+```json
+"artifact": {
+  "name": "claims-week-37.csv",
+  "byte_length": 29,
+  "sha256": "7e8f4f7c798129ab899b39a7af5e5262b2cc7037f3a966b94a893cf2790ebe4a",
+  "path": "out/claims-week-37.csv"
+}
+```
+
+`path` and `content_type` join `name`, `byte_length` and `sha256` when the
+tool supplied them.
+
+**The file's bytes are never stored.** Not in the log store, not in your
+bucket, not anywhere. The record names the file and commits its hash, and you
+keep the file where you keep your work.
+
+## Return the file from your tool
+
+A tool that saves a file returns where it saved it. That return value is the
+whole integration.
+
+<CodeGroup>
+
+```ts TypeScript
+import { tool } from "@langchain/core/tools";
+import { z } from "zod";
+
+const exportReport = tool(
+  // saveCsv is your own function. It returns the path it wrote.
+  async ({ label }) => String(await saveCsv(label)),
+  {
+    name: "export_report",
+    description: "Write the decision report and return where it was saved.",
+    schema: z.object({ label: z.string() }),
+  },
+);
+```
+
+```python Python
+from langchain_core.tools import tool
+
+
+@tool
+def export_report(label: str) -> str:
+    """Write the decision report and return where it was saved."""
+    # save_csv is your own function. It returns the path it wrote.
+    return str(save_csv(label))
+```
+
+</CodeGroup>
+
+A run that calls that tool anchors the tool start, the tool end, and one
+record per file, and the file records sit inside the tool's own run.
+
+## Check a file against its record
+
+Whoever holds the file runs one command and compares the result to
+`metadata.artifact.sha256` in the record. No Sanning code takes part in that
+step:
+
+```bash
+sha256sum claims-week-37.csv
+```
+
+Replace `claims-week-37.csv` with the file you are checking. On macOS the
+command is `shasum -a 256`.
+
+A match establishes that this file is the one the record commits to. What that
+means for a review is the reader's conclusion, not ours.
+
+## Shapes the SDK recognises
+
+Three shapes in a tool's return value are recognised:
+
+1. **LangChain's own artifact field** on a tool message, the first-class
+   channel and what an agent framework hits.
+2. **Raw bytes** returned from the tool.
+3. **A path**, as the whole return value, which is what a tool that saves a
+   file returns.
+
+An object that names a file, such as `{ "name": ..., "path": ... }`, counts as
+a declaration however it arrived.
+
+A file is recorded only when the tool result says it came back. Never scraped
+out of prose, never discovered by watching a folder, never taken from a
+configured list. A bare string is treated as a path only when a file exists
+there, so an ordinary tool returning ordinary text records nothing and says
+nothing.
+
+## The read root
+
+Reading is scoped to one folder, and the folder limits reading rather than
+storing anything. It defaults to the process's working directory, because a
+tool result is text a model influenced, and following a path out of one is an
+untrusted read.
+
+<CodeGroup>
+
+```ts TypeScript
+envelopeAnchorCallbacks(anchorer, {
+  artifacts: {
+    root: "/srv/agent/workspace", // narrow it, widen it, or null to read no paths
+    maxBytes: 50 * 1024 * 1024, // above this a file is recorded unreadable
+  },
+});
+```
+
+```python Python
+AnchorCallbackHandler(anchorer, artifacts={
+    "root": "/srv/agent/workspace",  # narrow it, widen it, or None for no paths
+    "max_bytes": 50 * 1024 * 1024,   # above this a file is recorded unreadable
+})
+```
+
+</CodeGroup>
+
+Containment is checked after the path resolves, so `..` and a symlink out of
+the root both fail closed. A file above `max_bytes` is recorded as unreadable
+rather than truncated.
+
+## A file the SDK cannot read
+
+A file the tool declared and the SDK could not hash becomes its own record,
+`langchain.artifact_unreadable`, carrying the reason. Silence is how three
+files went unrecorded on a run that reported success.
+
+```json
+"payload": {
+  "name": "other.csv",
+  "reason": "outside_root",
+  "message": "resolves outside the permitted root",
+  "path": "/srv/other/other.csv"
+}
+```
+
+The reasons are `not_found`, `outside_root`, `not_a_regular_file`,
+`too_large`, `read_failed` and `path_reading_disabled`. A trail that says "I
+could not hash this" is evidence. A trail that says nothing is not.
+
+## What to read next
+
+<CardGroup cols={2}>
+  <Card title="Trace a LangChain agent" icon="link" href="/guides/langchain">
+    The handler that produces these records, and the run tree around them.
+  </Card>
+  <Card title="Keep what you anchored" icon="database" href="/guides/log-store">
+    Where the record bytes live, and why a pack cannot be built without them.
+  </Card>
+</CardGroup>

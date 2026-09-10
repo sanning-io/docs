@@ -1,0 +1,118 @@
+---
+title: "Dev and production"
+description: "What the environment argument decides, and what production commits you to"
+---
+
+Every record carries an environment, and the value is sealed inside the signed
+bytes. That is what makes the two modes safe to run side by side: a dev record
+can never be presented as production evidence, because the word `dev` is
+inside what the signature covers.
+
+This page is the move from one to the other.
+
+## The two environments
+
+`dev` and `production` are the only accepted values. Anything else is refused
+before an envelope is built.
+
+- **`dev`** is for building the integration. Records are permanently marked
+  `dev`, and no counterparty can be handed them as production evidence.
+- **`production`** writes to a permanent public record. A record cannot be
+  withdrawn once it is written.
+
+## Set it explicitly
+
+The two SDKs differ on the default, and the difference is worth knowing before
+you copy a snippet between them.
+
+- **TypeScript defaults to `dev`.** An anchorer built with no signer and no
+  subject also generates an identity for you and says so, loudly, on the way
+  past.
+- **Python has no default.** `environment` is a required argument, so a Python
+  service cannot inherit the wrong one by omission.
+
+Write the value in both languages rather than relying on either behaviour.
+
+<CodeGroup>
+
+```ts TypeScript
+const anchorer = createEnvelopeAnchorer({
+  environment: "production",
+  signer: LocalEd25519Signer.fromSeedHex(seedHex),
+  subject: { type: "producer", producer_id: "claims-triage" },
+  controlPlane: { apiKey },
+  logStore: new FsLogStore("./logstore"),
+});
+```
+
+```python Python
+anchorer = Anchorer(
+    environment="production",
+    signing_key=SigningKey(seed),
+    subject={"type": "producer", "producer_id": "claims-triage"},
+    api_key=api_key,
+    log_store=FsLogStore("./logstore"),
+)
+```
+
+</CodeGroup>
+
+<Warning>
+  `production` writes to a permanent public record. Records cannot be
+  withdrawn, and a locator you pass is published verbatim along with them.
+  Make the switch a deliberate edit rather than a value read from an
+  environment variable you have not looked at.
+</Warning>
+
+## What production means
+
+Three things change, and each one is a refusal rather than a warning you might
+miss:
+
+- **Production refuses an auto-generated identity.** Building an anchorer for
+  production without an explicit signer and subject raises
+  `ProductionConfigError` at construction, so a dev-mode identity cannot reach
+  it by accident.
+- **The environment is inside the signature.** Nothing downstream can relabel
+  a dev record as a production one. The value travels with the evidence.
+- **Retention stops being optional in practice.** Anchoring in production with
+  no log store warns that the bytes this commitment names are not being
+  retained, and the anchor front can refuse the envelope.
+
+## Move an agent to production
+
+1. Create the production key in the console, with all three scopes.
+   [API keys and scopes](/guides/keys-and-scopes) covers what each one
+   permits.
+2. Generate a signing seed for this agent and put it in your secret store.
+   Load the same seed on every boot.
+3. Configure a log store that outlives the process, in object storage you
+   control. [Keep what you anchored](/guides/log-store) has the shape.
+4. Change `environment` to `production`, and deploy.
+5. Build a pack for a short window and verify it yourself before anyone asks.
+   The [Quickstart](/quickstart) ends with the two commands an auditor runs.
+
+Give the dev version of an agent its own `producer_id`, such as
+`claims-triage-dev`. Two reasons: an identity is its signing key, so a second
+key under one name is read as a rotation, and a pack carries one environment.
+
+## A pack carries one environment
+
+The `bundle` command refuses to assemble a window that mixes dev and
+production evidence for one agent. Mixing them in one deliverable would hand
+the reader the job of noticing, and that is the reader whose whole task is
+deciding what the evidence supports.
+
+Separate agent names keep the two apart without anyone having to think about
+it.
+
+## What to read next
+
+<CardGroup cols={2}>
+  <Card title="Keep what you anchored" icon="database" href="/guides/log-store">
+    The store production expects, and the bucket it belongs in.
+  </Card>
+  <Card title="API keys and scopes" icon="key" href="/guides/keys-and-scopes">
+    The key production needs, and the scope people forget.
+  </Card>
+</CardGroup>

@@ -1,0 +1,170 @@
+---
+title: "API keys and scopes"
+description: "The three scopes an agent needs, and why enrolment is not a step you write"
+---
+
+One API key belongs to your organisation and covers your whole fleet. It
+authorises the call. It never decides identity: that comes from each agent's
+own signing key, which Sanning never receives.
+
+This page is about the key. Grant it all three scopes when you create it, for
+the reason in the next section.
+
+## Create a key
+
+Sign up at
+[console.sanning.io/signup](https://console.sanning.io/signup) with an email,
+a password and an organisation name. No card.
+
+In the console, open **Developer tools** and create a key. Store it as
+`SANNING_API_KEY` in whatever your service already uses for secrets. The key
+is a credential for your organisation, not the key that signs your evidence.
+
+## The scopes a key needs
+
+Three scopes cover the lifecycle, and each fails at a different moment:
+
+- **`producer:enroll`** lets the SDK enrol an agent's signing key. It runs
+  before the first anchor, so a key without this scope anchors nothing at all.
+- **`anchor:write`** lets the agent anchor.
+- **`anchor:read`** lets you read your own records back, which is how a
+  hand-over pack is built. A key without it anchors correctly for as long as
+  you like and then fails on the day someone asks for the evidence.
+
+The console pre-checks the first two. **Add `anchor:read` yourself**, at the
+moment you create the key, rather than on the afternoon a compliance request
+arrives.
+
+## What a missing scope looks like
+
+Both failures are explicit, and neither is reported as an absence of evidence:
+
+- **No `producer:enroll`.** The first `anchor` call raises
+  `EnrolmentFailedError`, carrying the control plane's own code and HTTP 403.
+  Nothing is anchored.
+- **No `anchor:read`.** The `bundle` command exits `2` and reports it as a
+  scope to widen. Your records are intact and anchored; the key cannot read
+  them back.
+
+That second distinction is deliberate. "This key cannot read" and "this agent
+has no evidence" lead a compliance reader to opposite conclusions, so the
+command never states the first as the second.
+
+## Enrolment happens on the first anchor
+
+You write no registration step. On the first `anchor` call the SDK proves
+possession of the signing key to the control plane, and the agent appears on
+the console's fleet attributed to that key. One organisation key covers every
+agent: no per-agent credential, no enrolment script.
+
+Enrolment is the plane's door policy, and it is not the trust path. Every
+signed record verifies offline against the open kernel whether or not the
+roster knows the key.
+
+Two properties are load-bearing:
+
+- **The challenge is checked before it is signed.** Enrolment is the one
+  moment your identity key signs bytes the server chose, and that key also
+  seals your evidence. The SDK refuses anything that is not a nonce rather
+  than trusting Sanning not to send an envelope pre-image. Sanning is never in
+  the trust path, including here.
+- **Re-enrolling the same key is a no-op.** That is what makes it safe to run
+  on every boot.
+
+## One signing key per agent
+
+An agent's identity is its key, so a different key under a name your
+organisation has already enrolled is a rotation, and a rotation must be
+authorised by the key being retired rather than by the API key. Generating a
+key at process start therefore works on the first boot and fails on the second
+with `RotationUnauthorizedError`.
+
+Load the same 32-byte seed on every boot. When you do mean to rotate, pass the
+retiring key so it can counter-sign the challenge:
+
+<CodeGroup>
+
+```ts TypeScript
+const anchorer = createEnvelopeAnchorer({
+  environment: "dev",
+  signer: LocalEd25519Signer.fromSeedHex(newSeedHex),
+  subject: { type: "producer", producer_id: "claims-triage" },
+  controlPlane: {
+    apiKey: process.env.SANNING_API_KEY,
+    previousSigner: LocalEd25519Signer.fromSeedHex(retiringSeedHex),
+  },
+});
+```
+
+```python Python
+anchorer = Anchorer(
+    environment="dev",
+    signing_key=SigningKey(new_seed),
+    subject={"type": "producer", "producer_id": "claims-triage"},
+    api_key=os.environ["SANNING_API_KEY"],
+    previous_signing_key=SigningKey(retiring_seed),
+)
+```
+
+</CodeGroup>
+
+A rotation is never inferred from a refusal. That is what stops a leaked
+organisation key taking over an identity that is already producing evidence.
+If the retiring key is genuinely lost, rotate from the console instead.
+
+## Enrol at deploy time instead
+
+Where you would rather enrol out of band, turn the automatic call off and
+drive it yourself. A fleet that cold-starts together shares one rate limit,
+because enrolment is limited per API key, so this is the answer to
+`EnrolmentThrottledError` as well.
+
+<CodeGroup>
+
+```ts TypeScript
+import { ensureRegistered } from "@sanning/anchor";
+
+await ensureRegistered({
+  baseUrl,
+  apiKey: process.env.SANNING_API_KEY,
+  producerId: "claims-triage",
+  signer,
+});
+```
+
+```python Python
+from sanning_anchor import ensure_registered
+
+ensure_registered(
+    api_key=os.environ["SANNING_API_KEY"],
+    producer_id="claims-triage",
+    signing_key=signing_key,
+)
+```
+
+</CodeGroup>
+
+Then build the anchorer with `controlPlane.autoRegister: false` in TypeScript,
+or `auto_register=False` in Python.
+
+## Two names travel, and they are not the same name
+
+`subject.producer_id` is sealed inside every signed record. It is history, it
+never changes, and it cannot contain spaces. A display name lives on the
+console roster, accepts any text, and a rename shows up straight away.
+
+They default to agreeing. Pass `displayName` on the control plane config in
+TypeScript, or `display_name` on the anchorer in Python, when you want a
+human-readable label. Renaming an agent then never reaches back and rewrites
+what a past record was signed saying.
+
+## What to read next
+
+<CardGroup cols={2}>
+  <Card title="Anchor from your agent" icon="anchor" href="/guides/anchor">
+    Where the key and the signing seed are used.
+  </Card>
+  <Card title="Keep what you anchored" icon="database" href="/guides/log-store">
+    The store the pack reads, and the scope that reads the index.
+  </Card>
+</CardGroup>
