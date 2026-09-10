@@ -21,6 +21,16 @@ These resolve on their own. Retry rather than debugging.
     Wait for the interval to close and run the command again. See
     [The witness](/concepts/witness).
   </Accordion>
+  <Accordion title="N record(s) in ... are anchored and retained but not yet stamped">
+    Some records in the period are stamped and some are not, so a pack built now would
+    leave the unstamped ones out. Nothing inside a pack records what it omitted, so the
+    recipient could not tell it was short for the period it names. The verb refuses
+    instead.
+
+    Wait for the interval covering them to seal and run the command again. To hand over
+    the stamped records anyway, pass `--allow-unstamped`, and say in the cover note how
+    many were left out. See [The witness](/concepts/witness).
+  </Accordion>
   <Accordion title="the envelope route returned no envelope">
     A record anchored seconds ago is not readable through the read routes yet. Placement
     settles after the write returns.
