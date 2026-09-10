@@ -36,6 +36,15 @@ root. It says nothing about events the producer chose not to include. "Every ste
 here" is not a claim this artifact can make. If completeness matters to you, ask the
 producer what the pack covers and check that claim separately.
 
+Three different things get called completeness, and only the first two are proved
+here:
+
+| Claim | Proved by |
+|---|---|
+| Nothing was removed from the middle of a run you were shown | The event chain: a deleted record leaves a hole and a dangling pointer |
+| Nothing was dropped from what the stamp covered | The inclusion proofs against the stamp's own leaf count |
+| You were shown every run there was | **Nothing.** No artifact can make this claim |
+
 **It is not proof the chain was consulted.** A `verified` verdict is offline and
 internally consistent, and it *names* a witness. Confirming that the witness actually
 holds those bytes is a separate, online act. Run the kernel with a gateway to do it, or
