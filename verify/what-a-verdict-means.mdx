@@ -42,8 +42,23 @@ here:
 | Claim | Proved by |
 |---|---|
 | Nothing was removed from the middle of a run you were shown | The event chain: a deleted record leaves a hole and a dangling pointer |
-| Nothing was dropped from what the stamp covered | The inclusion proofs against the stamp's own leaf count |
+| Nothing was dropped from what the stamp covered | The inclusion proofs, against the producer's own leaf count inside the stamp |
 | You were shown every run there was | **Nothing.** No artifact can make this claim |
+
+<Warning>
+  **Two different leaf counts sit in a pack, and the obvious one is the wrong one for
+  this.** `inclusion.leaf_count`, and the stamp's top-level `leaf_count`, count the whole
+  organisation's tree for that interval, so they include every other agent's records.
+  Reading a pack as short because it shows fewer events than that number is a false
+  alarm in any organisation running more than one agent.
+
+  The number that describes one producer's slice is `subtrees[ref].leaf_count` inside
+  `stamp_bytes`, which is exact for that agent in that interval. Its `ref` is blinded
+  with a secret only the producing organisation holds, so **the producer can check their
+  own slice and a third party cannot map a subtree to an agent** unless the producer
+  discloses the ref. That blinding is deliberate: it is what keeps one customer's agent
+  roster out of another reader's hands.
+</Warning>
 
 **It is not proof the chain was consulted.** A `verified` verdict is offline and
 internally consistent, and it *names* a witness. Confirming that the witness actually
