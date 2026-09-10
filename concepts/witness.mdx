@@ -8,6 +8,10 @@ can confirm the records existed at a time without asking you or us.
 
 It publishes **one commitment per interval**, not one per event.
 
+The public record is **Arweave**. A stamp is an Arweave transaction, and your
+pack carries its transaction id, so your counterparty can fetch it from any
+Arweave gateway without asking Sanning.
+
 ## How it works
 
 Every record anchored inside an interval becomes a leaf in a Merkle tree. When the
@@ -45,8 +49,16 @@ bundle: no stamped records for agent claims-triage in 2026-09-01 → 2026-09-30
 That means **not yet**. It does not mean the records are missing. Wait for the interval to
 close and run it again.
 
-The wait is the interval, plus a short lag before sealing, plus the time for the publish to
-settle. Plan for minutes.
+The interval is **five minutes** on Sanning's production plane. On top of it
+there is a one minute lag before an interval is sealed, a sweep of up to thirty
+seconds, and the time for the publish to settle.
+
+So plan for **five to ten minutes** between anchoring a record and being able to
+hand it over.
+
+The interval is also the time resolution of what you can prove. A stamp says
+these records existed by the time this interval closed, not the second each one
+was anchored.
 
 ## What is published, and what is not
 

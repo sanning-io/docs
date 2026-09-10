@@ -33,6 +33,7 @@ long after you would have stopped looking:
 | Missing | Fails at |
 |---|---|
 | `producer:enroll` | the first anchor, because the key cannot enrol |
+| `anchor:write` | the first anchor, because the key cannot write |
 | `anchor:read` | the hand-over, because building a pack reads your records back |
 
 Store the key as `SANNING_API_KEY`. It authenticates your organisation. It is not the key
@@ -52,7 +53,7 @@ the content you anchor. Both stay on your machine.
 ```python
 import os
 from nacl.signing import SigningKey
-from sanning_anchor import Anchorer
+from sanning_anchor import Anchorer, FsLogStore
 
 # Persist this seed. A fresh key every run makes a new producer every run.
 seed = bytes.fromhex(os.environ["SANNING_SIGNING_SEED"])
@@ -62,6 +63,10 @@ anchorer = Anchorer(
     subject={"type": "producer", "producer_id": "claims-triage"},
     signing_key=SigningKey(seed),
     environment="production",
+    # Your store, on your disk. The SDK writes here before it anchors, and a
+    # store failure means no anchor. You need this directory later to hand
+    # anything over, so configure it now rather than discovering it at step 7.
+    log_store=FsLogStore("./logstore"),
 )
 
 result = anchorer.anchor(
@@ -75,7 +80,9 @@ Replace the following:
 
 - `claims-triage` with a name for this agent. Keep it stable: it is how the agent appears
   on your fleet.
-- `SANNING_SIGNING_SEED` with 64 hex characters you generate once and keep.
+- `SANNING_SIGNING_SEED` with 64 hex characters. Generate them once with
+  `openssl rand -hex 32` and keep them in your secret store. A fresh seed on
+  the next boot reads as an unauthorised identity rotation and fails.
 
 `content` is hashed locally. The hash is anchored; the bytes are not sent.
 

@@ -1,39 +1,52 @@
 ---
 title: "Wire formats"
-description: "Where the normative specifications live"
+description: "Where the normative specifications are, and how to read them"
 ---
 
-The formats are specified in [`sanning-io/proof`](https://github.com/sanning-io/proof),
-alongside the kernels that read them and the conformance corpus that grades both. Those
-documents are normative. This page tells you which one answers which question.
+The formats are specified in a set of documents that ship **inside the
+`sanning-proof` package**, beside the kernel that implements them. Those
+documents are normative. This page tells you which one answers which question,
+and how to open them.
 
-Anything on this site that describes a format is a plain reading of one of them. Where the
-two differ, the specification is right.
+## Get them
+
+```bash
+pip download --no-deps --no-binary :all: sanning-proof
+tar xzf sanning_proof-*.tar.gz
+ls sanning_proof-*/specs/
+```
+
+## Which one answers what
 
 | Specification | Answers |
 |---|---|
-| [`envelope-spec.md`](https://github.com/sanning-io/proof/blob/main/specs/envelope-spec.md) | What a signed envelope contains, how it is canonicalized, and how readers handle fields they do not know |
-| [`evidence-bundle.md`](https://github.com/sanning-io/proof/blob/main/specs/evidence-bundle.md) | What a hand-over bundle contains, and what a verifier may conclude from it |
-| [`log-store.md`](https://github.com/sanning-io/proof/blob/main/specs/log-store.md) | How your log store is laid out, so any reader resolves it with no Sanning code |
-| [`governance.md`](https://github.com/sanning-io/proof/blob/main/specs/governance.md) | How a format changes, and what a change may not break |
+| `envelope-spec.md` | What a signed envelope contains, how it is canonicalized, and how readers handle fields they do not know |
+| `evidence-bundle.md` | What a hand-over bundle contains, and what a verifier may conclude from it |
+| `log-store.md` | How a log store is laid out, so any reader resolves it with no Sanning code |
+| `architecture.md` | How the pieces fit, and which of them sits in the trust path |
+| `governance.md` | How a format changes, and what a change may not break |
 
 ## The parts worth reading first
 
-**`evidence-bundle.md` §5.3.4** draws the boundaries on what a verdict claims. If you are
-deciding how much weight to put on a `verified` result, read that section rather than this
-site's summary of it.
+**`evidence-bundle.md` §5.3.4** draws the boundaries on what a verdict claims.
+If you are deciding how much weight to put on a `verified` result, read that
+section rather than this site's summary of it.
 
-**`envelope-spec.md` §2** requires readers to ignore fields they do not recognise. That
-rule is what keeps every proof ever issued verifiable as the format grows, and it has a
-sharp edge worth knowing: a field bolted onto a body type a reader does not dispatch on is
-silently ignored rather than rejected.
+**`envelope-spec.md` §2** requires readers to ignore fields they do not
+recognise. That rule is what keeps every proof ever issued verifiable as the
+format grows, and it has a sharp edge: a field bolted onto a body type a reader
+does not dispatch on is silently ignored rather than rejected.
 
-**`log-store.md` §4** explains why the store and the hand-over pack are laid out
-differently on purpose, and why unifying them would break either an auditor's ability to
-find a file or a traversal defence.
+**`log-store.md` §4** explains why a store and a hand-over pack are laid out
+differently on purpose, and why unifying them would break either an auditor's
+ability to find a file or a traversal defence.
 
-## Conformance
+## The kernel ships with them
 
-Both kernels are graded against one corpus, and neither passes by agreeing with the other.
-A disagreement between the TypeScript and Python kernels on the same input is treated as
-release-blocking rather than as a curiosity.
+The same tarball carries the kernel's own source under the MIT licence, so the
+specification and the implementation that claims to satisfy it arrive together
+and can be read against each other. `@sanning/proof` on npm ships its
+TypeScript source the same way.
+
+Both kernels are graded against one corpus, and neither passes by agreeing with
+the other. A disagreement on the same input is treated as release-blocking.
