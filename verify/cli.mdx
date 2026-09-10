@@ -78,11 +78,24 @@ The verdict above is offline. It names a witness without contacting it. To check
 witness holds those bytes, pass a gateway:
 
 ```bash
-npx @sanning/proof verify bundle.json --logs logs/ https://arweave.net
+npx @sanning/proof verify bundle.json --logs logs/ https://turbo-gateway.com
 ```
 
 That turns a claim you read into one you checked. See
 [What a verdict means](/verify/what-a-verdict-means) for why the two are different.
+
+Any Arweave gateway works, and passing more than one is a comma-separated list.
+Nothing binds you to the one we name: that independence is the point, and
+checking through a gateway you chose is a stronger result than checking through
+ours.
+
+<Note>
+  **A stamp reaches the chain before an index can serve it.** It is submitted,
+  then bundled, then indexed, so a gateway can answer `404` for a few minutes
+  on a stamp that exists. That is exit code `3`, gateway-unavailable, and it is
+  a statement about reachability rather than about your evidence. The offline
+  check does not wait on any of it. Retry the online one.
+</Note>
 
 ## Python
 
