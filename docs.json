@@ -59,6 +59,7 @@
           "guides/langchain",
           "guides/file-records",
           "guides/log-store",
+          "guides/bucket",
           "guides/keys-and-scopes",
           "guides/environments"
         ]

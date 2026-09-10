@@ -1,0 +1,195 @@
+---
+title: "Set up the bucket"
+description: "What the SDK creates by default, and the three credentials that touch it"
+---
+
+Your log store holds the bytes your evidence commits to. Sanning never reads
+it, so its settings are yours to get right, and the SDK is built to tell you
+when they are not.
+
+This page covers the bucket. For what the store *contains* and how a reader
+resolves it, see [Retain what you anchored](/guides/log-store).
+
+## What the SDK does on first use
+
+Before it writes a byte, the store checks the bucket once. There are two
+acceptable outcomes and a third the check exists to prevent.
+
+<CodeGroup>
+
+```ts TypeScript
+import { S3ObjectStore } from "@sanning/anchor-s3";
+
+const objects = new S3ObjectStore({
+  bucket: "evidence-claims",
+  storeProtection: "refuse",   // default "warn"
+  createBucket: true,          // default true
+  objectLock: { mode: "GOVERNANCE", days: 365 },
+});
+```
+
+```python Python
+from sanning_anchor.s3 import S3ObjectStore
+
+objects = S3ObjectStore(
+    bucket="evidence-claims",
+    store_protection="refuse",   # default "warn"
+    create_bucket=True,          # default True
+    object_lock_mode="GOVERNANCE",
+    object_lock_days=365,
+)
+```
+
+</CodeGroup>
+
+| What it finds | What it does |
+|---|---|
+| No bucket | Creates it with Object Lock enabled, versioning on, and a default retention rule. Nothing is printed: the happy path is not an incident |
+| A bucket with no Object Lock | Names the property in a warning, and under `refuse` stops the write. **It is not repaired**, because S3 enables Object Lock only at bucket creation |
+| A backend without Object Lock | Degrades with the reason named, never silently. Under `refuse` it creates nothing |
+| It could not look | Reports `unknown`, and `refuse` treats that as a refusal |
+
+**`unknown` is not `off`.** A credential missing `s3:GetObjectLockConfiguration`,
+or a 403 on `HeadBucket`, means the SDK cannot see the protection rather than
+that there is none. A guard that stands down where it cannot look guards
+nothing.
+
+**Object Lock enabled is not the same as protected.** With no default retention
+rule, objects in a lock-enabled bucket carry no retention and delete like any
+other, so that state is reported as unprotected, because it is. Setting
+`days: 0` is a legitimate choice for a customer applying per-object retention
+themselves, and the readiness check says what it sees.
+
+<Note>
+  `warn` is the default and it is not a silent third outcome: the write goes
+  ahead and is announced with the property named. `refuse` is the posture for a
+  customer who would rather hold no evidence than hold evidence they cannot
+  defend.
+</Note>
+
+## The three credentials
+
+Three roles, three policies. Replace `BUCKET` throughout.
+
+### Provisioner, one time, not the agent
+
+Creates the bucket with its protection. A human or a CI job runs this once and
+the agent never holds it. `s3:CreateBucket` is the permission that makes an
+unprotected-bucket mistake permanent, so it does not belong in a long-lived
+agent credential.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Action": [
+      "s3:CreateBucket",
+      "s3:PutBucketVersioning",
+      "s3:PutObjectLockConfiguration",
+      "s3:GetBucketVersioning",
+      "s3:GetObjectLockConfiguration",
+      "s3:ListBucket"
+    ],
+    "Resource": "arn:aws:s3:::BUCKET"
+  }]
+}
+```
+
+Set `createBucket: false` when a platform team or Terraform provisions the
+bucket instead. **The protection check still runs**: turning off creation does
+not turn off the reporting.
+
+### Writer, the agent
+
+Adds objects. It cannot read them back, cannot list them, cannot delete
+anything, and cannot create or reconfigure a bucket.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "s3:PutObject",
+      "Resource": "arn:aws:s3:::BUCKET/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetBucketVersioning",
+        "s3:GetObjectLockConfiguration"
+      ],
+      "Resource": "arn:aws:s3:::BUCKET"
+    }
+  ]
+}
+```
+
+<Warning>
+  **The second statement is wider than "adds objects and nothing else", on
+  purpose.** A credential that literally adds objects and nothing else cannot
+  run the readiness check at all: `HeadBucket` needs `s3:ListBucket`, and the
+  two protection reads need their own actions. Under it the SDK reports
+  `unknown` on every run, which is honest and useless, and under `refuse` it
+  would never write.
+
+  The three added actions are **bucket-configuration reads**. They disclose no
+  object, no key and no byte; they answer only whether this bucket is versioned
+  and locked. Granting them is what makes the guarantee checkable by the party
+  who depends on it.
+
+  To hold the literal minimum instead, set `createBucket: false` and
+  `storeProtection: "warn"`, verify the bucket once with the provisioner
+  credential, and accept that the SDK will say it cannot see the protection.
+  That is the true statement, and the reason `unknown` is a state at all.
+</Warning>
+
+### Reader, the pack-runner
+
+Reads objects and nothing else. No write, no delete, no configuration. This is
+the credential that syncs the bucket down before you build a pack.
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::BUCKET/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::BUCKET"
+    }
+  ]
+}
+```
+
+**Note what no credential has: `s3:DeleteObject`.** Nothing in this system
+deletes evidence, so nothing that touches the bucket is granted the ability to.
+Object Lock is the backstop for a credential that gets one anyway.
+
+## Backends
+
+| Backend | Object Lock | Notes |
+|---|---|---|
+| AWS S3 | Yes | The reference behaviour |
+| MinIO | Yes | Needs erasure-coded mode |
+| Cloudflare R2 | Partial | Verify before relying on it |
+| Backblaze B2 | Yes | S3-compatible endpoint |
+| Railway Buckets | Unconfirmed | The SDK reports what it finds |
+
+Do not take this table as settled for your deployment. **The SDK detects and
+reports, which is the only claim that survives a backend changing under you.**
+Verify against a real bucket before you rely on it.
+
+## Check without gating
+
+`checkProtection()` in TypeScript, `check_protection()` in Python, returns
+the verdict and writes nothing. It names no bucket
+and no key, so it is safe to surface somewhere that must stay content-blind:
+a health endpoint, a readiness probe, a dashboard tile.

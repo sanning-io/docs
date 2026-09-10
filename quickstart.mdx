@@ -45,6 +45,13 @@ that signs your evidence.
 pip install sanning-anchor
 ```
 
+Tracing a LangChain agent? Install the extra instead, and follow the LangChain
+branch at the next step:
+
+```bash
+pip install "sanning-anchor[langchain]"
+```
+
 ## Anchor a step
 
 Your agent holds an Ed25519 signing key. Sanning never receives it, and never receives
@@ -93,6 +100,34 @@ agent appears on your fleet without a separate registration step.
   `environment="production"` writes to a permanent public record. Records cannot be
   withdrawn.
 </Warning>
+
+## Or trace a LangChain agent
+
+The same `anchorer`, with no `anchor()` calls of your own. One callback handler
+anchors every chain, model, tool and retriever step, plus every file a tool
+produces.
+
+```python
+from sanning_anchor import AnchorCallbackHandler
+
+with AnchorCallbackHandler(anchorer, raise_on_gap=True) as handler:
+    agent.invoke(inputs, config={"callbacks": [handler]})
+```
+
+Everything after this point is identical: the same log store, the same wait for
+the witness, the same pack.
+
+Two things decide whether this is correct, so they sit here rather than in a
+guide:
+
+- **Use the `with` block.** Leaving it out anchors what it can and walks past
+  what it cannot, and you find out when an auditor asks. `raise_on_gap=True`
+  stops the agent on a hole in the trail instead.
+- **The whole step is committed**, prompts, outputs, tool input and output. It
+  is hashed locally and stays with you.
+
+For the event vocabulary, the promoted fields and worked examples, see
+[Trace a LangChain agent](/guides/langchain).
 
 ## Wait for the witness
 
