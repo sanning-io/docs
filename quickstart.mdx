@@ -1,47 +1,168 @@
 ---
 title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+description: "Anchor a step, hand over a pack, and verify it without Sanning"
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
-
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
+This takes you from no account to an evidence pack a third party can check offline.
+Budget about ten minutes.
 
 ## Prerequisites
 
 Before you begin, you must have:
 
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
+- Python 3.10 or later. A TypeScript path exists and uses the same commands.
+- A terminal.
 
-## Get started
+## Create an account
 
-<Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
+Go to [console.sanning.io/signup](https://console.sanning.io/signup) and register with
+your email, a password, and an organisation name. The Developer tier costs nothing and
+takes no card.
 
-    ```bash
-    npm install your-package
-    ```
-  </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
+## Create an API key
 
-    ```bash
-    your-cli init
-    ```
-  </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
+In the console, open **Developer tools** and create a key with three scopes:
 
-    ```bash
-    your-cli start
-    ```
-  </Step>
-</Steps>
+- `producer:enroll`, so your agent can register its signing key on the first anchor.
+- `anchor:write`, so it can anchor.
+- `anchor:read`, so you can build a pack later.
 
-<Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
+Grant all three now. Each missing one fails at a different moment, and the later ones fail
+long after you would have stopped looking:
 
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
-</Tip>
+| Missing | Fails at |
+|---|---|
+| `producer:enroll` | the first anchor, because the key cannot enrol |
+| `anchor:read` | the hand-over, because building a pack reads your records back |
+
+Store the key as `SANNING_API_KEY`. It authenticates your organisation. It is not the key
+that signs your evidence.
+
+## Install the SDK
+
+```bash
+pip install sanning-anchor
+```
+
+## Anchor a step
+
+Your agent holds an Ed25519 signing key. Sanning never receives it, and never receives
+the content you anchor. Both stay on your machine.
+
+```python
+import os
+from nacl.signing import SigningKey
+from sanning_anchor import Anchorer
+
+# Persist this seed. A fresh key every run makes a new producer every run.
+seed = bytes.fromhex(os.environ["SANNING_SIGNING_SEED"])
+
+anchorer = Anchorer(
+    api_key=os.environ["SANNING_API_KEY"],
+    subject={"type": "producer", "producer_id": "claims-triage"},
+    signing_key=SigningKey(seed),
+    environment="production",
+)
+
+result = anchorer.anchor(
+    content=b"the decision your agent just made",
+    event_type="agent.decision",
+)
+print(result.event_id)
+```
+
+Replace the following:
+
+- `claims-triage` with a name for this agent. Keep it stable: it is how the agent appears
+  on your fleet.
+- `SANNING_SIGNING_SEED` with 64 hex characters you generate once and keep.
+
+`content` is hashed locally. The hash is anchored; the bytes are not sent.
+
+The SDK enrols your signing key with your organisation before the first anchor, so the
+agent appears on your fleet without a separate registration step.
+
+<Warning>
+  `environment="production"` writes to a permanent public record. Records cannot be
+  withdrawn.
+</Warning>
+
+## Wait for the witness
+
+Sanning commits your records to a public record on an interval, not one transaction per
+event. That is what keeps it inexpensive: cost tracks intervals, not volume.
+
+So a pack does not exist the moment you anchor. Until the interval containing your
+records is sealed and reaches the chain, the pack command tells you so:
+
+```
+bundle: no stamped records for agent claims-triage in 2026-09-01 → 2026-09-30
+```
+
+That message means not yet, rather than you have no evidence. Wait a few minutes and run
+it again.
+
+## Hand over a pack
+
+A pack is one zip: `bundle.json`, plus a `logs/` folder holding the bytes you chose to
+disclose.
+
+```bash
+sanning-anchor bundle \
+  --agent claims-triage \
+  --from 2026-09-01 \
+  --to 2026-09-30 \
+  --logs ./logstore \
+  --out pack.zip
+```
+
+Replace the following:
+
+- The dates with the period you want to hand over. A date-only bound names a whole day,
+  so pass a full timestamp such as `2026-09-01T09:00:00Z` to select a narrower window.
+- `./logstore` with the root of your log store, the directory holding `content/` and
+  `records/`.
+
+`--logs` is required in practice. The command reads your record objects to work out which
+events belong to this producer, because a minimum-disclosure envelope does not carry that
+name. Without the store it cannot tell your events from anyone else's.
+
+The command reads your records back from the index, fetches each inclusion proof and the
+stamp that witnessed it, pulls the disclosed bytes from your own store, and verifies the
+result before writing anything. If the pack does not verify, nothing is written.
+
+The TypeScript SDK takes the same flags and produces the same `bundle.json`:
+
+```bash
+npx @sanning/anchor bundle --agent claims-triage --from 2026-09-01 --to 2026-09-30 \
+  --logs ./logstore --out pack.zip
+```
+
+## Verify it without Sanning
+
+Give `pack.zip` to whoever asked. They have two ways to check it, and neither needs an
+account.
+
+In a browser, they open [verify.sanning.io](https://verify.sanning.io) and drop the file
+on the page. The page runs the open kernel in their browser.
+
+At a command line:
+
+```bash
+unzip pack.zip -d pack
+cd pack
+npx @sanning/proof verify bundle.json --logs logs/
+```
+
+A verified pack exits 0. A pack with one changed byte exits non-zero and names the record
+that failed.
+
+## What you proved
+
+Your counterparty checked your agent's evidence using an open-source kernel, against a
+public record, with no call to Sanning. That is the property the whole design exists to
+produce.
+
+<Card title="What Sanning receives" icon="shield" href="/">
+  The boundary between what leaves your machine and what does not.
+</Card>

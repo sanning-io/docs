@@ -1,0 +1,195 @@
+---
+title: "Trace a LangChain agent"
+description: "One callback handler anchors every step of a run, in either language"
+---
+
+This page anchors a whole agent run instead of a call per step. You add one
+callback handler, and every chain, model, tool and retriever step becomes its
+own signed record, along with every file a tool produces.
+
+The handler needs an anchorer, which
+[Anchor from your agent](/guides/anchor) builds and explains.
+
+## Install the adapter
+
+<CodeGroup>
+
+```bash TypeScript
+npm install @sanning/anchor-langchain @sanning/anchor @langchain/core
+```
+
+```bash Python
+pip install "sanning-anchor[langchain]"
+```
+
+</CodeGroup>
+
+In TypeScript the adapter is its own package and takes `@langchain/core` as a
+peer dependency. In Python the handler ships inside `sanning-anchor` and the
+extra pulls in LangChain.
+
+## Attach the handler to a run
+
+Pass the handler the way you pass any other LangChain callback. `agent` here
+is whatever you already invoke.
+
+<CodeGroup>
+
+```ts TypeScript
+import {
+  createEnvelopeAnchorer,
+  FsLogStore,
+  LocalEd25519Signer,
+} from "@sanning/anchor";
+import { envelopeAnchorCallbacks } from "@sanning/anchor-langchain";
+
+const anchorer = createEnvelopeAnchorer({
+  environment: "dev",
+  signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED),
+  subject: { type: "producer", producer_id: "claims-triage" },
+  controlPlane: { apiKey: process.env.SANNING_API_KEY },
+  logStore: new FsLogStore("./logstore"),
+});
+
+const evidence = envelopeAnchorCallbacks(anchorer);
+
+await agent.invoke({ input: question }, { callbacks: [evidence] });
+
+// Settles every step, and hands back the ones that never landed.
+const { steps, gaps } = await evidence.close();
+await anchorer.close();
+```
+
+```python Python
+import os
+
+from nacl.signing import SigningKey
+from sanning_anchor import Anchorer, AnchorCallbackHandler, FsLogStore
+
+anchorer = Anchorer(
+    environment="dev",
+    signing_key=SigningKey(bytes.fromhex(os.environ["SANNING_SIGNING_SEED"])),
+    subject={"type": "producer", "producer_id": "claims-triage"},
+    api_key=os.environ["SANNING_API_KEY"],
+    log_store=FsLogStore("./logstore"),
+)
+
+# Leaving the block settles every step and asserts the trail is complete.
+with AnchorCallbackHandler(anchorer) as handler:
+    agent.invoke(inputs, config={"callbacks": [handler]})
+
+for outcome in handler.results:
+    print(outcome.event_type, outcome.event_id, outcome.status)
+
+anchorer.close()
+```
+
+</CodeGroup>
+
+<Note>
+  In TypeScript the entry point is `envelopeAnchorCallbacks`.
+  `anchorCallbacks`, which autocomplete also offers, is an earlier handler on a
+  different path and records no files.
+</Note>
+
+## What a step commits
+
+Every callback commits the whole step: inputs, outputs, the serialised model,
+tags, metadata, run name and tool call id. Nothing is curated, and nothing is
+edited before it is hashed.
+
+Only the hash reaches Sanning. Prompts, outputs and tool input and output are
+hashed in your process, and the bytes go to the log store you configured or
+stay in `recordBytes` for you to drain.
+
+The event vocabulary is exported as `EVENT_TYPES` in both languages:
+
+- Chain steps: `langchain.chain_start`, `langchain.chain_end`,
+  `langchain.chain_error`.
+- Model calls: `langchain.chat_model_start`, `langchain.llm_start`,
+  `langchain.llm_end`, `langchain.llm_error`.
+- Tool calls: `langchain.tool_start`, `langchain.tool_end`,
+  `langchain.tool_error`.
+- Retrieval: `langchain.retriever_start`, `langchain.retriever_end`.
+- The agent's own decisions: `langchain.agent_action`,
+  `langchain.agent_finish`.
+- Files: `langchain.artifact`, `langchain.artifact_unreadable`.
+
+Each record also carries a closed list of promoted fields in named metadata,
+so a reader can select one run, or one model, without opening the body:
+`run.run_id`, `run.parent_run_id`, `run.root_run_id`, `run.seq`,
+`run.prev_event_id`, `run.tool_call_id`, `model.id`, `model.id_returned`,
+`model.provider`, and the OpenTelemetry `trace_id` and `span_id` when a real
+span exists. A field that is unknown is absent rather than empty.
+
+## The run tree makes a missing step visible
+
+LangChain gives every step a `runId` and a `parentRunId`. The handler commits
+that linkage, plus its own per-run ordinal and a pointer at the previous
+event, inside each record's signed bytes:
+
+```json
+"run": {
+  "run_id": "01a08b4c-4479-715c-a63b-097b54be05ba",
+  "parent_run_id": "01a08b4c-4475-750b-8a4f-2fd5e7775c4e",
+  "root_run_id": "01a08b4c-4475-750b-8a4f-2fd5e7775c4e",
+  "seq": 3,
+  "prev_event_id": "1e70345c-879f-4c30-bf9a-c3e4797c3ff1"
+}
+```
+
+Delete an event and the next one's pointer dangles. Reorder them and `seq`
+disagrees. Edit one and its hash breaks. The result is tamper-evident and
+reconstructable offline, from the records alone, with no call to Sanning.
+
+Chaining is on by default, and the default is the point: an unchained set
+cannot tell "nothing else happened" from "something was removed".
+
+## Close the handler and read the gaps
+
+A step that cannot be anchored still burns its slot in the chain, so the
+survivors cannot close ranks over it. An auditor sees the hole.
+
+<CodeGroup>
+
+```ts TypeScript
+const { steps, gaps } = await evidence.close();
+evidence.isComplete; // false if anything was dropped
+```
+
+```python Python
+handler.gaps          # the outcomes that are not in the anchored trail
+handler.is_complete   # False if anything was dropped
+```
+
+</CodeGroup>
+
+The two languages differ in one default, and it is deliberate. TypeScript's
+`close()` returns the gaps; pass `{ raiseOnGaps: true }` to make an incomplete
+trail an error. Python's `with` block asserts completeness on a clean exit and
+raises `IncompleteTrailError`, and a block that is already unwinding gets its
+gaps logged so the agent's own exception survives.
+
+A gap is reported as undelivered, never as a bad record. A timeout says
+nothing about whether the control plane accepted the envelope, so retain each
+gap's record bytes: after a failure they are the only copy.
+
+Provenance never takes the agent down. A payload that cannot be serialised is
+reported through a warning and skipped, and the run continues.
+
+## Files a tool produces
+
+A tool that writes a file gets its own record, with no setup and no resolver
+to write. Anchoring the tool call proves the agent asked for a file; it does
+not prove which file came back, and the file record is what answers that.
+
+## What to read next
+
+<CardGroup cols={2}>
+  <Card title="Record a file a tool produces" icon="file" href="/guides/file-records">
+    Name, size and hash, and the check an auditor runs against them.
+  </Card>
+  <Card title="Keep what you anchored" icon="database" href="/guides/log-store">
+    The store the hand-over pack reads, and what breaks without it.
+  </Card>
+</CardGroup>

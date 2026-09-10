@@ -1,0 +1,218 @@
+---
+title: "Anchor from your agent"
+description: "Commit a step your agent takes, in TypeScript or Python"
+---
+
+This page puts one anchor call inside an agent you already have. What comes
+back is a signed commitment to that step, which a third party can check later
+without Sanning and without you.
+
+You need an API key from the console. Create it with all three scopes, as
+[API keys and scopes](/guides/keys-and-scopes) describes: a key that anchors
+but cannot read its own records back works for months and then fails on the
+day someone asks for the evidence.
+
+## Install the SDK
+
+<CodeGroup>
+
+```bash TypeScript
+npm install @sanning/anchor
+```
+
+```bash Python
+pip install sanning-anchor
+```
+
+</CodeGroup>
+
+Both SDKs write the same bytes and take the same arguments under each
+language's naming. Pick one per service. A fleet that runs both still hands
+over one pack.
+
+## Anchor one event
+
+Build the anchorer once, when your service starts, and call `anchor` at the
+point where the agent does something you want on the record.
+
+<CodeGroup>
+
+```ts TypeScript
+import {
+  createEnvelopeAnchorer,
+  FsLogStore,
+  LocalEd25519Signer,
+} from "@sanning/anchor";
+
+// Read the environment once and fail fast. `process.env.X` is
+// `string | undefined`, so an assertion here would assert exactly what
+// this check exists to disprove.
+const apiKey = process.env.SANNING_API_KEY;
+const seedHex = process.env.SANNING_SIGNING_SEED;
+if (!apiKey || !seedHex) {
+  throw new Error("set SANNING_API_KEY and SANNING_SIGNING_SEED");
+}
+
+const anchorer = createEnvelopeAnchorer({
+  environment: "dev",
+  // Your agent's identity. The seed stays on your machine.
+  signer: LocalEd25519Signer.fromSeedHex(seedHex),
+  subject: { type: "producer", producer_id: "claims-triage" },
+  controlPlane: { apiKey },
+  // Keeps the bytes the commitment is over. See the log store guide.
+  logStore: new FsLogStore("./logstore"),
+});
+
+const decision = { claim: "CLM-4417", outcome: "refer", confidence: 0.62 };
+
+const result = await anchorer.anchor({
+  type: "claims.decision",
+  // Hashed in this process. These bytes are never sent to Sanning.
+  data: JSON.stringify(decision),
+  metadata: { queue: "queue-3" },
+});
+
+console.log(result.eventId);
+
+// Settles every event. Throws if anything was signed and never delivered.
+await anchorer.close();
+```
+
+```python Python
+import json
+import os
+
+from nacl.signing import SigningKey
+from sanning_anchor import Anchorer, FsLogStore
+
+anchorer = Anchorer(
+    environment="dev",
+    # Your agent's identity. The seed stays on your machine.
+    signing_key=SigningKey(bytes.fromhex(os.environ["SANNING_SIGNING_SEED"])),
+    subject={"type": "producer", "producer_id": "claims-triage"},
+    api_key=os.environ["SANNING_API_KEY"],
+    # Keeps the bytes the commitment is over. See the log store guide.
+    log_store=FsLogStore("./logstore"),
+)
+
+decision = {"claim": "CLM-4417", "outcome": "refer", "confidence": 0.62}
+
+result = anchorer.anchor(
+    event_type="claims.decision",
+    # Hashed in this process. These bytes are never sent to Sanning.
+    content=json.dumps(decision).encode(),
+    metadata={"queue": "queue-3"},
+)
+
+print(result.event_id)
+
+# Settles every event. Raises if anything was signed and never delivered.
+anchorer.close()
+```
+
+</CodeGroup>
+
+Replace the following:
+
+- `SANNING_SIGNING_SEED` with 64 lowercase hex characters that your service
+  keeps across restarts.
+- `SANNING_API_KEY` with the key from the console.
+- `claims-triage` with the name you want this evidence attributed to.
+
+Both samples use `environment: "dev"`. Production writes to a permanent public
+record, so it is a deliberate edit rather than a default you inherit:
+[Dev and production](/guides/environments) covers the move.
+
+## Enrolment is automatic
+
+Neither SDK needs a registration step, and its absence is not an omission. On
+the first `anchor` call, the SDK proves possession of your signing key to the
+control plane, and the agent appears on the console's fleet under its own key.
+One organisation key covers the whole fleet.
+
+Do not write an enrolment call. If you would rather enrol at deploy time,
+[API keys and scopes](/guides/keys-and-scopes) shows how to turn the automatic
+call off and drive it yourself.
+
+## What leaves your process
+
+The content you pass to `anchor` is hashed where you pass it. Only the hash
+travels, inside a signed envelope of a few hundred bytes. Sanning is
+content-blind by construction rather than by policy: it never receives the
+bytes, so it cannot disclose them. The full boundary is on the
+[Introduction](/).
+
+Two consequences reach your code:
+
+- **`recordBytes` in TypeScript, `record_bytes` in Python, are yours to
+  keep.** They are what `payload_hash` commits to, and Sanning never holds
+  them. Configuring a log store, as both samples do, discharges that for you.
+- **A locator binds as your own assertion.** Anything you pass as `ref` or
+  `payloadRef` is signed verbatim and published permanently. Keep a bucket
+  path, a tenant id and a person's name out of both.
+
+## The signing seed is the agent's identity
+
+An agent is its key, not its name. Generate a 32-byte seed once, keep it in
+the secret store you already run, and load the same seed on every boot:
+
+```bash
+openssl rand -hex 32
+```
+
+A fresh key each run is read as a rotation of an identity that is already
+producing evidence, so it works on the first boot and fails on the second with
+`RotationUnauthorizedError`.
+
+<Warning>
+  The two languages disagree on hex case. TypeScript's `fromSeedHex` accepts
+  64 lowercase hex characters and throws `Ed25519 seed must be 64 lowercase
+  hex chars` on anything else. Python's `bytes.fromhex` accepts uppercase.
+  The same seed, stored uppercase, works in Python and fails in TypeScript.
+  Write seeds in lowercase and both languages read them.
+</Warning>
+
+## Event types carry a namespace
+
+`claims.decision` has two segments, and that is a requirement rather than a
+convention. Single-segment names are reserved by the event profile, so an
+event type of `decision` is refused before anything is signed. TypeScript
+throws and Python raises `InvalidRecordError`, both at the call rather than on
+the wire.
+
+Name the first segment after your system and the second after what happened.
+
+## Close the anchorer before the process exits
+
+`close` settles every event and reports the ones that were signed and never
+delivered. It throws or raises when any remain, because a timeout says nothing
+about whether the control plane accepted the envelope.
+
+<CodeGroup>
+
+```ts TypeScript
+anchorer.gaps; // each carries the recordBytes for one event
+await anchorer.close(); // throws IncompleteTrailError if any remain
+```
+
+```python Python
+anchorer.gaps          # each carries the record_bytes for one event
+anchorer.close()       # raises IncompleteTrailError if any remain
+```
+
+</CodeGroup>
+
+Retain the `recordBytes` on every gap before anything else. After a failed
+delivery they are the only copy of something the control plane may already
+hold.
+
+## What to read next
+
+<CardGroup cols={2}>
+  <Card title="Keep what you anchored" icon="database" href="/guides/log-store">
+    The store the hand-over pack reads, and what breaks without it.
+  </Card>
+  <Card title="Trace a LangChain agent" icon="link" href="/guides/langchain">
+    One handler, every step of a run, instead of a call per step.
+  </Card>
+</CardGroup>

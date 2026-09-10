@@ -1,0 +1,105 @@
+---
+title: "Errors"
+description: "What each message means and what to do about it"
+---
+
+Sanning's errors fall into three groups, and telling them apart saves the most time.
+
+- **Not yet.** The plane is settling. Wait and retry.
+- **Wrong shape.** Your call or your key is wrong. Change something and retry.
+- **Refused.** Sanning is declining on purpose. Read the reason.
+
+## Not yet
+
+These resolve on their own. Retry rather than debugging.
+
+<AccordionGroup>
+  <Accordion title="no stamped records for agent claims-triage in ...">
+    The interval containing your records has not been sealed and published yet. It means
+    *not yet*, never *you have no evidence*.
+
+    Wait for the interval to close and run the command again. See
+    [The witness](/concepts/witness).
+  </Accordion>
+  <Accordion title="the envelope route returned no envelope">
+    A record anchored seconds ago is not readable through the read routes yet. Placement
+    settles after the write returns.
+
+    Wait and retry. Building a pack immediately after a run races your own newest record.
+  </Accordion>
+</AccordionGroup>
+
+## Wrong shape
+
+<AccordionGroup>
+  <Accordion title="SCOPE_NOT_ALLOWED, required: anchor:read">
+    Your key can anchor and cannot read. Building a pack reads your own records back, so it
+    needs `anchor:read` as well as `anchor:write`.
+
+    A key with only `anchor:write` anchors correctly for weeks and then fails the first
+    time you try to hand anything over. Mint a key with both. See
+    [Keys and scopes](/guides/keys-and-scopes).
+  </Accordion>
+  <Accordion title="--logs was not given, so this verb cannot read your log store">
+    `--logs` is required in practice. The command reads your record objects to work out
+    which events belong to this producer, because a minimum-disclosure envelope does not
+    carry that name.
+
+    Point it at your store root, the directory holding `content/` and `records/`.
+  </Accordion>
+  <Accordion title="--logs s3:// locations are not read by this verb">
+    The pack command reads a local store root. If your store is an object bucket,
+    synchronise it locally first and point `--logs` at the copy.
+  </Accordion>
+  <Accordion title="bundle: missing required flag(s): --from, --to">
+    The pack covers a period and you must name it. `--agent`, `--from`, `--to` and `--out`
+    are all required.
+
+    A date-only bound names a whole day. Pass a full timestamp such as
+    `2026-09-01T09:00:00Z` for a narrower window.
+  </Accordion>
+  <Accordion title="N record(s) in ... have no record object in your log store">
+    The window you asked for includes records whose bytes are not in the store you pointed
+    at. Usually the window is wider than you meant.
+
+    The command refuses rather than quietly dropping them, because a pack that silently
+    omits records an auditor asked for is worse than no pack.
+  </Accordion>
+  <Accordion title="pack.zip is not valid JSON: Unexpected token 'P'">
+    You handed the kernel a zip. `PK` is the archive's own signature.
+
+    Extract it and point at `bundle.json` inside. See
+    [Verify at the command line](/verify/cli).
+  </Accordion>
+</AccordionGroup>
+
+## Refused
+
+<AccordionGroup>
+  <Accordion title="the signing key is not enrolled in this organisation">
+    The plane accepts records only from keys the organisation knows, so that every record
+    has an identity behind it.
+
+    Both SDKs enrol automatically before the first anchor. If you see this, the key
+    reaching the plane is not the one that enrolled, or the credential lacks
+    `producer:enroll`.
+  </Accordion>
+  <Accordion title="PRODUCER_LABEL_REVOKED">
+    That producer name was revoked. Revoking is deliberate and a revoked name cannot be
+    re-enrolled by anyone, including whoever holds the old key.
+
+    Recovering means re-keying the producer through the console, which keeps the lineage.
+  </Accordion>
+  <Accordion title="a store failure means no anchor">
+    The SDK writes your bytes to your log store before anchoring, and a store failure
+    stops the anchor. There is no best-effort mode on this path.
+
+    Anchoring a commitment to bytes you cannot produce is the one state that cannot be
+    repaired afterwards. See [Keep your log store](/guides/log-store).
+  </Accordion>
+</AccordionGroup>
+
+## Verdicts are not errors
+
+`partial` and `undetermined` are answers, not failures. A check that could not run is
+reported as not run. See [What a verdict means](/verify/what-a-verdict-means).

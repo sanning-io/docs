@@ -1,0 +1,95 @@
+---
+title: "Command line"
+description: "The two commands, their flags, and their exit codes"
+---
+
+Two commands, owned by two packages, and the split matters.
+
+| Command | Package | Who runs it |
+|---|---|---|
+| `bundle` | `@sanning/anchor`, `sanning-anchor` | You, to hand evidence over |
+| `verify` | `@sanning/proof` | Whoever you hand it to |
+
+**An auditor never needs the write SDK.** Verification lives in its own package with no
+account, no key and no network.
+
+## bundle
+
+Assemble the hand-over pack for one producer over one period.
+
+<CodeGroup>
+```bash TypeScript
+npx @sanning/anchor bundle \
+  --agent claims-triage \
+  --from 2026-09-01 \
+  --to 2026-09-30 \
+  --logs ./logstore \
+  --out pack.zip
+```
+
+```bash Python
+sanning-anchor bundle \
+  --agent claims-triage \
+  --from 2026-09-01 \
+  --to 2026-09-30 \
+  --logs ./logstore \
+  --out pack.zip
+```
+</CodeGroup>
+
+Same flags, same exit codes, same output in both languages. One shared fixture grades
+them, and neither passes by agreeing with the other.
+
+| Flag | Required | Meaning |
+|---|---|---|
+| `--agent` | Yes | The producer whose records to gather. `--producer` is an accepted alias. Use the name you anchored under |
+| `--from` | Yes | Start of the period |
+| `--to` | Yes | End of the period. A date-only bound names a whole day |
+| `--logs` | In practice | Your store root, the directory holding `content/` and `records/` |
+| `--out` | Yes | Where to write the zip |
+
+<Note>
+  `--logs` is optional to the parser and required in practice. The command reads your
+  record objects to work out which events are this producer's, because a
+  minimum-disclosure envelope does not carry that name.
+</Note>
+
+**Authentication** comes from `SANNING_API_KEY` in the environment. There is no flag for
+it. The key needs `anchor:read`.
+
+**It verifies its own output before writing.** If the assembled pack does not verify,
+nothing is written and the command exits non-zero. A pack that only fails at the auditor
+is a pack shipped broken.
+
+## verify
+
+Check a pack. No account, no key, no relationship with Sanning.
+
+```bash
+npx @sanning/proof verify bundle.json --logs logs/
+```
+
+| Argument | Meaning |
+|---|---|
+| `bundle.json` | The bundle file, extracted from the pack |
+| `--logs` | The folder of disclosed files, if the pack carries them |
+| A gateway URL | Optional positional. Re-fetches the witness and byte-compares it |
+
+| Exit | Means |
+|---|---|
+| 0 | Verified |
+| 1 | A check ran and failed. The output names the record |
+| 2 | The input could not be read |
+
+`sanning-proof` on PyPI is the same kernel and ships **no command line**. Use its library
+API. See [Verify at the command line](/verify/cli).
+
+## Getting help
+
+`--help` works on the top-level command in both languages. On a subcommand it exits 2 with
+`unknown argument: --help`, which is a rough edge rather than a failure.
+
+```bash
+sanning-anchor --help
+npx @sanning/anchor --help
+```

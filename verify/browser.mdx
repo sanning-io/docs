@@ -1,0 +1,46 @@
+---
+title: "Verify in a browser"
+description: "Drop a pack on the public verifier and read the result"
+---
+
+Open [verify.sanning.io](https://verify.sanning.io) and drop the pack on it.
+
+The page runs the same open kernel your counterparty would run at a command line, **in
+your browser**. The pack is not uploaded. Nothing about it reaches Sanning, which is what
+lets an auditor check evidence about a company we have never heard of.
+
+You need no account.
+
+## What the page shows
+
+Each card answers one question, and says plainly when it cannot answer.
+
+| Card | Answers |
+|---|---|
+| Signatures | Did the producer sign each record |
+| Event chain | Does each record link to the one before it |
+| Completeness | Is anything missing from what the stamp covered |
+| Source data | Do the disclosed files match the records that commit to them |
+| Public anchor | Does a public record hold this witness, and when |
+
+A card that could not run says so rather than passing. **An absent check is never rendered
+as a passed one**, which is the failure mode the page is built against.
+
+## The report
+
+The page offers a report of what it just checked. It is your own re-verification, rendered
+from the verdict computed in your browser, and it is unsigned because that is what it is.
+It is not a Sanning attestation and does not claim to be.
+
+## When the browser is not enough
+
+Use the [command line](/verify/cli) when you want to:
+
+- script the check, or run it in CI
+- confirm the witness against a gateway you choose
+- read per-record output rather than a summary
+
+## What a verdict does not claim
+
+Four limits, and they matter more than the green banner. See
+[What a verdict means](/verify/what-a-verdict-means).

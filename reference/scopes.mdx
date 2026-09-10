@@ -1,0 +1,46 @@
+---
+title: "Scopes"
+description: "What each scope allows, and the one combination that fails late"
+---
+
+An API key authenticates your organisation. It is not the key that signs your evidence.
+
+| Scope | Allows |
+|---|---|
+| `anchor:write` | Anchor records |
+| `anchor:read` | Read your own records back, which is how a pack is built |
+| `producer:enroll` | Enrol a signing key against a producer name |
+
+## The combination that fails late
+
+<Warning>
+  A key with `anchor:write` alone anchors correctly, possibly for weeks, and then fails
+  the first time you build a pack.
+</Warning>
+
+Building a pack reads your own records back, so it needs `anchor:read`. Nothing surfaces
+the gap until then, because anchoring never touches the read routes.
+
+Mint keys for a runtime with all three:
+
+```
+anchor:write  anchor:read  producer:enroll
+```
+
+## Why a runtime needs producer:enroll
+
+Both SDKs enrol the signing key before the first anchor, so the agent appears on your
+fleet with no registration step written by you. The enrolment happens **in the runtime**,
+which is where the signing key is, so the runtime's credential must be allowed to do it.
+
+## What the signing key does, and what it never leaves
+
+The API key and the signing key are different things and the split is the security model.
+
+| | Held by | Reaches Sanning |
+|---|---|---|
+| API key | Your organisation | Yes, as a bearer credential |
+| Signing key | Your agent | Never |
+
+Sanning cannot produce a record that verifies as yours, because it has never held the key
+that signs one.

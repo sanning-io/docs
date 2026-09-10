@@ -1,0 +1,61 @@
+---
+title: "The witness"
+description: "Why evidence is sealed on an interval, and what that means for you"
+---
+
+Sanning publishes a commitment to your records on a public record, so that a third party
+can confirm the records existed at a time without asking you or us.
+
+It publishes **one commitment per interval**, not one per event.
+
+## How it works
+
+Every record anchored inside an interval becomes a leaf in a Merkle tree. When the
+interval closes, Sanning signs the tree's root together with the interval bounds, and
+publishes that. Your pack carries the signed stamp and an inclusion proof from your
+record's leaf to that root.
+
+Your counterparty checks the proof offline. Confirming the published transaction is a
+separate, online step they can take whenever they like.
+
+## Why an interval
+
+**Cost.** Ten thousand events in an interval cost the same to witness as one. Per-event
+publishing would make continuous evidence too expensive to run.
+
+**Privacy.** The published commitment is a root and an interval, not a list of what you
+did. An observer sees that an organisation anchored something, not what.
+
+**Proof size.** An inclusion proof is a handful of hashes. Your counterparty verifies one
+record without holding anyone else's.
+
+## What it means for you
+
+<Warning>
+  A pack cannot be built until the interval containing its records is sealed and
+  published. Anchoring and handing over are minutes apart, not seconds.
+</Warning>
+
+If you build a pack too early, the command tells you:
+
+```
+bundle: no stamped records for agent claims-triage in 2026-09-01 → 2026-09-30
+```
+
+That means **not yet**. It does not mean the records are missing. Wait for the interval to
+close and run it again.
+
+The wait is the interval, plus a short lag before sealing, plus the time for the publish to
+settle. Plan for minutes.
+
+## What is published, and what is not
+
+| Published | Not published |
+|---|---|
+| A Merkle root over the interval | Any record |
+| The interval's start and end | Any content, or any hash of your data |
+| A keyed reference to the organisation | The organisation's name |
+| Sanning's signature | Your signature, or your key |
+
+The organisation reference is keyed rather than a plain hash of the name, deliberately.
+Organisation names are low-entropy, and a plain digest would let anyone confirm a guess.

@@ -1,0 +1,103 @@
+---
+title: "Verify at the command line"
+description: "Two commands, no account, and what each exit code means"
+---
+
+You have a pack and you want to check it yourself. You need Node and nothing else. You do
+not need a Sanning account, an API key, or any cooperation from the party who gave you the
+pack.
+
+## The two steps
+
+A pack is a zip. The kernel reads the bundle inside it, so extract first.
+
+```bash
+unzip pack.zip -d pack
+cd pack
+npx @sanning/proof verify bundle.json --logs logs/
+```
+
+A verified pack prints its per-record results and exits **0**:
+
+```
+VERIFIED  verified offline (no gateway re-fetch requested)
+  logs: 37/37 disclosed verified
+```
+
+## Exit codes
+
+| Code | Means |
+|---|---|
+| 0 | Verified |
+| 1 | A check ran and failed. The output names the record |
+| 2 | The input could not be read at all |
+
+## Two errors you might hit first
+
+Both exit 2, before any check runs.
+
+**You pointed it at the zip.** The kernel reads JSON, not an archive:
+
+```
+pack.zip is not valid JSON: Unexpected token 'P', "PK  "... is not valid JSON
+```
+
+Extract the zip and point at `bundle.json` inside it.
+
+**You pointed it at the directory.**
+
+```
+cannot read pack/: EISDIR: illegal operation on a directory, read
+```
+
+Name the file, not the folder that holds it.
+
+## Check the tamper-evidence yourself
+
+Do not take the verdict on trust. Break the pack and watch it fail.
+
+```bash
+# Change one byte of any disclosed log
+printf 'x' | dd of=logs/SOME_EVENT_ID.json bs=1 seek=200 conv=notrunc
+
+npx @sanning/proof verify bundle.json --logs logs/
+```
+
+It exits 1 and names the record you touched. Replace `SOME_EVENT_ID` with any filename
+from `logs/`.
+
+<Note>
+  Confirm the file actually changed, with `sha256sum` before and after. An edit that
+  writes the same byte back produces an identical file, which verifies clean and looks
+  exactly like a passing tamper test.
+</Note>
+
+## Confirm the witness on the public record
+
+The verdict above is offline. It names a witness without contacting it. To check that the
+witness holds those bytes, pass a gateway:
+
+```bash
+npx @sanning/proof verify bundle.json --logs logs/ https://arweave.net
+```
+
+That turns a claim you read into one you checked. See
+[What a verdict means](/verify/what-a-verdict-means) for why the two are different.
+
+## Python
+
+`sanning-proof` on PyPI is the same kernel and ships no command line. Use it as a library:
+
+```python
+import json, pathlib
+from sanning_proof.evidence import verify_evidence_bundle
+
+bundle = json.load(open("bundle.json"))
+content = {p.stem: p.read_bytes() for p in pathlib.Path("logs").glob("*.json")}
+
+result = verify_evidence_bundle(bundle, content=content)
+print(result.status)
+```
+
+Two kernels, one corpus. They agree record by record, and disagreeing is a bug we treat as
+release-blocking.

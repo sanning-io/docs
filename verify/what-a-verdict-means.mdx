@@ -1,0 +1,86 @@
+---
+title: "What a verdict means"
+description: "What a verified pack proves, and the four things it does not"
+---
+
+You have been handed an evidence pack and the kernel printed `VERIFIED`. This page tells
+you exactly what you may conclude from that, and what you may not.
+
+The limits are specified in
+[`evidence-bundle.md` §5.3.4](https://github.com/sanning-io/proof/blob/main/specs/evidence-bundle.md),
+which is the normative source. This page is the plain reading.
+
+## What a verified pack proves
+
+For every event in the pack:
+
+- **The producer signed it.** An Ed25519 signature over the envelope, checked against the
+  public key embedded in the artifact.
+- **The record matches its commitment**, where the producer disclosed the bytes. The
+  disclosed record hashes to the `payload_hash` the signature covers.
+- **It was included in the witnessed set.** An RFC 9162 inclusion proof from the event's
+  leaf to the Merkle root committed inside the signed stamp.
+
+All of it offline, against keys and bytes inside the pack. No call to Sanning, and no
+account.
+
+## What it does not claim
+
+<Warning>
+  Four boundaries. A verified verdict is a narrower statement than it first reads as, and
+  relying on the wider reading is how evidence gets over-trusted.
+</Warning>
+
+**It is not completeness.** A pack proves the events it carries were committed to that
+root. It says nothing about events the producer chose not to include. "Every step is
+here" is not a claim this artifact can make. If completeness matters to you, ask the
+producer what the pack covers and check that claim separately.
+
+**It is not proof the chain was consulted.** A `verified` verdict is offline and
+internally consistent, and it *names* a witness. Confirming that the witness actually
+holds those bytes is a separate, online act. Run the kernel with a gateway to do it, or
+fetch the transaction yourself.
+
+**It is not identity.** The envelope carries a public key, and a key is not a person.
+Binding a key to an organisation happens out of band. Producer identity informs a reader;
+it never gates verification.
+
+**It is not a statement about a per-agent slice.** A stamp covers an interval across a
+whole organisation. The pack carries only its own events, so it cannot tell you what else
+that organisation anchored in the same interval.
+
+## What a failure means
+
+If the kernel prints `FAILED`, it names the record that broke and why. The pack itself
+carries an asserted verdict from whoever produced it, and **the kernel throws that away
+and recomputes**. Where the two disagree, the recomputed answer wins and the output says
+so:
+
+```
+(producer asserted "verified"; recomputed verdict is "failed" — recomputed wins)
+```
+
+That is the property worth understanding. You are not reading the producer's claim about
+their own evidence. You are reading your own machine's answer.
+
+## What "undetermined" means
+
+A pack can verify while leaving some things unknown, and the kernel distinguishes that
+from failure on purpose.
+
+| Verdict | Means |
+|---|---|
+| `verified` | Every check the pack supports passed |
+| `failed` | A check ran and did not pass |
+| `partial` | The pack is sound, and something could not be checked |
+| `undetermined` | A check could not run at all |
+
+**Absent evidence is reported as absent, never as failure.** If a producer withheld the
+bytes for a record, its content binding is undetermined. That is a producer exercising
+minimum disclosure, not a defect, and treating it as tampering would be wrong.
+
+## Next
+
+<Card title="Verify at the command line" icon="terminal" href="/verify/cli">
+  The two commands, and what each exit code means.
+</Card>

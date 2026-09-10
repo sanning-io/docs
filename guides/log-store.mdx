@@ -1,0 +1,228 @@
+---
+title: "Keep what you anchored"
+description: "The bytes a commitment is over, where they live, and why a pack needs them"
+---
+
+Sanning holds a commitment to what your agent did. It never holds the thing
+itself. This page covers the half you keep, because a commitment to bytes
+nobody kept cannot be checked later.
+
+The log store is the SDK's answer to that. Configure one and the retention is
+handled for you, in a layout the hand-over pack and an auditor can both read.
+
+## What the store holds
+
+Two things, written before the event is anchored:
+
+- **The content you passed to `anchor`**, which was hashed in your process and
+  never sent.
+- **The canonical event record**, the bytes `payload_hash` commits to. In
+  TypeScript they are also on the result as `recordBytes`, in Python as
+  `record_bytes`.
+
+If the store write fails, nothing is anchored. There is no best-effort mode,
+because under this write path nothing else holds those bytes.
+
+The layout is a versioned contract named `sanning.logstore/v1`. A store root
+looks like this:
+
+```
+logstore/
+  sanning-logstore.json
+  content/
+  records/
+  events/
+```
+
+Anyone holding that directory can resolve an event's bytes with no connector
+and no call to Sanning.
+
+## Configure a store
+
+Pass a store when you build the anchorer. `FsLogStore` writes to a local
+directory and is the development destination.
+
+<CodeGroup>
+
+```ts TypeScript
+import {
+  createEnvelopeAnchorer,
+  FsLogStore,
+  LocalEd25519Signer,
+} from "@sanning/anchor";
+
+const anchorer = createEnvelopeAnchorer({
+  environment: "dev",
+  signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED),
+  subject: { type: "producer", producer_id: "claims-triage" },
+  controlPlane: { apiKey: process.env.SANNING_API_KEY },
+  logStore: new FsLogStore("./logstore"),
+});
+```
+
+```python Python
+import os
+
+from nacl.signing import SigningKey
+from sanning_anchor import Anchorer, FsLogStore
+
+anchorer = Anchorer(
+    environment="dev",
+    signing_key=SigningKey(bytes.fromhex(os.environ["SANNING_SIGNING_SEED"])),
+    subject={"type": "producer", "producer_id": "claims-triage"},
+    api_key=os.environ["SANNING_API_KEY"],
+    log_store=FsLogStore("./logstore"),
+)
+```
+
+</CodeGroup>
+
+Anchoring in production with no store configured is a warning, not a silent
+success. Both SDKs say the same thing: the bytes this commitment names are not
+being retained, and the anchor front can refuse the envelope.
+
+If you drain the bytes yourself instead, keep them keyed by event id. They are
+what an auditor's check runs against.
+
+## Why the pack command reads the store
+
+A hand-over pack is assembled by the `bundle` command, months after the run.
+It reads the proofs from the Sanning index and the bytes from your store.
+
+<CodeGroup>
+
+```bash TypeScript
+export SANNING_API_KEY=CONSOLE_API_KEY   # the key needs the anchor:read scope
+
+npx @sanning/anchor bundle \
+  --agent claims-triage \
+  --from 2026-06-01 --to 2026-06-30 \
+  --logs ./logstore \
+  --out claims-triage-2026-06.zip
+```
+
+```bash Python
+export SANNING_API_KEY=CONSOLE_API_KEY   # the key needs the anchor:read scope
+
+sanning-anchor bundle \
+  --agent claims-triage \
+  --from 2026-06-01 --to 2026-06-30 \
+  --logs ./logstore \
+  --out claims-triage-2026-06.zip
+```
+
+</CodeGroup>
+
+Replace `CONSOLE_API_KEY` with the key from the console. There is no flag for
+it, because a credential in argv lands in shell history and this is a command
+people paste into tickets.
+
+The flags mean the same in both languages:
+
+| Flag | What it names |
+|---|---|
+| `--agent` | The agent's `producer_id`, as committed in each record. `--producer` is an accepted alias. |
+| `--from` | Period start, inclusive. A date or an ISO instant. |
+| `--to` | Period end. A date names a whole day and is included; an ISO instant is exclusive. |
+| `--logs` | Your local store root, the directory holding `content/` and `records/`. |
+| `--out` | Where to write the pack. A `.zip` suffix is added when absent. |
+
+**`--logs` is optional in the flag grammar and required in practice.** The
+verb needs your record objects to work out which events are this agent's:
+`subject.producer_id` lives in the record, and a minimum-disclosure envelope
+does not carry it. Without the store the command exits `2` and says so.
+
+The verb verifies the whole pack, bundle and disclosed logs, before it writes
+anything, so a pack that would fail at the auditor is never produced.
+
+## When a pack can be built
+
+Sanning commits your records to the public record on an interval, rather than
+one transaction per event. Until the interval holding your records is sealed,
+there is no inclusion proof to put in a pack, and the command tells you so:
+
+```
+bundle: no stamped records for agent "claims-triage" in 2026-06-01 → 2026-06-30
+```
+
+**That means not yet, rather than you have no evidence.** A second line names
+how many records in the window are anchored and waiting for a stamp. Those
+records exist, they are signed, and they are retained. Read the second line
+before treating the first as a failure. Both languages print that pair, and
+the command exits `1`.
+
+## Store the bytes in a bucket you own
+
+For production, put the store behind object storage you control. The seam is
+the same in both languages: an object store inside a log store.
+
+<CodeGroup>
+
+```bash TypeScript
+npm install @sanning/anchor-s3 @aws-sdk/client-s3
+```
+
+```bash Python
+pip install "sanning-anchor[s3]"
+```
+
+</CodeGroup>
+
+<CodeGroup>
+
+```ts TypeScript
+import { createEnvelopeAnchorer, ObjectLogStore } from "@sanning/anchor";
+import { S3ObjectStore } from "@sanning/anchor-s3";
+import { S3Client } from "@aws-sdk/client-s3";
+
+const logStore = new ObjectLogStore(
+  new S3ObjectStore({ bucket: "evidence-claims", client: new S3Client({}) }),
+);
+```
+
+```python Python
+from sanning_anchor import ObjectLogStore
+from sanning_anchor.s3 import S3ObjectStore
+
+log_store = ObjectLogStore(S3ObjectStore(bucket="evidence-claims"))
+```
+
+</CodeGroup>
+
+It is your bucket and Sanning never sees it. The store takes your own client,
+so any credential arrangement works, and an `endpoint` with path-style
+addressing makes S3-compatible backends behave alike.
+
+On first use the store checks the bucket once, before it writes a byte, and
+reports what it could not establish rather than assuming. A bucket that
+already exists cannot have Object Lock turned on afterwards, so the check
+tells you to create a fresh one instead of sending you to a console page that
+cannot help.
+
+<Note>
+  A locator points at where the anchored bytes live, and it rides inside the
+  signed envelope, which is published permanently. Bucket names and object
+  keys routinely carry tenant, agent and model names, so treat anything that
+  can reach a locator as public. A `ref` or `payloadRef` you pass yourself is
+  signed verbatim.
+</Note>
+
+## Sync a bucket down before you build a pack
+
+The `bundle` command reads a local store root. It refuses an `s3://` argument
+rather than pretending to read one: it exits `2` and tells you to sync the
+store down and point `--logs` at the local copy. Reading the store over S3
+directly is a known gap.
+
+Copy the prefix down with your provider's own CLI first.
+
+## What to read next
+
+<CardGroup cols={2}>
+  <Card title="API keys and scopes" icon="key" href="/guides/keys-and-scopes">
+    The scope the pack command needs, and what a missing one looks like.
+  </Card>
+  <Card title="Dev and production" icon="server" href="/guides/environments">
+    What production means, and why a pack carries one environment.
+  </Card>
+</CardGroup>

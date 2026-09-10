@@ -1,0 +1,66 @@
+---
+title: "The trust boundary"
+description: "Why your counterparty does not have to trust Sanning, or you"
+---
+
+Most audit tooling asks a reviewer to trust the vendor. Sanning is built so that nobody
+has to.
+
+**Sanning is never in the trust path.** Verification runs against an open-source kernel,
+offline, on the recipient's machine. If Sanning is unreachable, or gone, evidence already
+handed over still checks out.
+
+This page is the argument for that claim, and its limits.
+
+## What we could do wrong, and why it would not matter
+
+Take the adversarial view. Assume Sanning is careless, compromised, or hostile.
+
+| If Sanning | Your counterparty |
+|---|---|
+| goes offline | verifies anyway, offline |
+| loses the index | still verifies a pack already handed over |
+| alters a stored record | fails verification, because your key signed the original |
+| forges a record | cannot, having never held your signing key |
+| lies about a verdict | is not consulted; the kernel recomputes locally |
+| publishes nothing | leaves the pack `partial`, which the verdict states |
+
+The one thing Sanning holds that matters is the **witness**: the published commitment that
+a set of records existed by a time. That lives on a public record, not with us, which is
+the point.
+
+## What you hold
+
+You hold the signing key and the raw data. That means two things.
+
+**Nobody can produce evidence as you.** Not Sanning, not a counterparty, not us under
+subpoena.
+
+**Nobody can reconstruct your evidence for you.** Sanning holds commitments, so if you
+lose your log store, the commitments stand and the bytes behind them are gone. This is why
+the SDK writes to your store before anchoring, and why a store failure stops the anchor.
+
+## What the control plane is, and is not
+
+The control plane at `console.sanning.io` handles issuance, the roster, metering and
+billing.
+
+**It is not in the trust path.** It can refuse to accept a record. It cannot make an
+invalid record verify, and it cannot make a valid one fail. Verification never consults
+the roster: the kernel checks a signature against a key embedded in the artifact.
+
+Producer identity **informs, never gates**. Knowing which agent signed is useful. It is not
+what makes the evidence sound.
+
+## The limits, stated plainly
+
+**Content-blind means we cannot vouch for your content.** Sanning records that a
+commitment existed at a time and that it has not changed since. Whether the thing recorded
+was true, correct, or complete is not ours to say. Your auditors reach conclusions;
+Sanning provides evidence they can check.
+
+**A pack does not prove completeness.** It proves what it carries. See
+[What a verdict means](/verify/what-a-verdict-means).
+
+**Tamper-evident, not tamper-proof.** Nothing here stops anyone changing a file they hold.
+It makes the change visible to anyone who checks.
