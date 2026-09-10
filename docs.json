@@ -36,12 +36,48 @@
     "codeblocks": "system"
   },
   "navigation": {
-    "pages": [
+    "groups": [
       {
         "group": "Getting started",
         "pages": [
           "index",
           "quickstart"
+        ]
+      },
+      {
+        "group": "Concepts",
+        "pages": [
+          "concepts/how-it-works",
+          "concepts/trust-boundary",
+          "concepts/witness"
+        ]
+      },
+      {
+        "group": "Guides",
+        "pages": [
+          "guides/anchor",
+          "guides/langchain",
+          "guides/file-records",
+          "guides/log-store",
+          "guides/keys-and-scopes",
+          "guides/environments"
+        ]
+      },
+      {
+        "group": "Verify",
+        "pages": [
+          "verify/browser",
+          "verify/cli",
+          "verify/what-a-verdict-means"
+        ]
+      },
+      {
+        "group": "Reference",
+        "pages": [
+          "reference/cli",
+          "reference/scopes",
+          "reference/errors",
+          "reference/wire-formats"
         ]
       }
     ]

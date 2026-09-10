@@ -1,0 +1,83 @@
+---
+title: "How Sanning works"
+description: "Three verbs, and the boundary that makes the third one meaningful"
+---
+
+Sanning records what your agents do, so someone else can check it later without trusting
+you, and without trusting us.
+
+The design has one constraint that shapes everything else: **Sanning is never in the trust
+path.** Verification runs against an open-source kernel, offline, on the recipient's own
+machine. If Sanning is unreachable, evidence you already handed over still checks out.
+
+## The three verbs
+
+<Steps>
+  <Step title="Anchor">
+    Your agent hashes each step locally and sends a signed commitment to it. The step's
+    content stays with you.
+  </Step>
+  <Step title="Read">
+    You resolve your own records later, through the API or the console, when you need to
+    assemble evidence.
+  </Step>
+  <Step title="Verify">
+    Whoever you hand evidence to checks it themselves, offline, against the open kernel.
+  </Step>
+</Steps>
+
+## What crosses the boundary
+
+This table is the product. Everything else is mechanism.
+
+| Sanning receives | Sanning never receives |
+|---|---|
+| A SHA-256 commitment to each step | The step's content |
+| An Ed25519 signature from your agent | Your agent's signing key |
+| Timing, ordering, and the producer's name | Your prompts, outputs, or documents |
+| A file's name, size and hash | The file |
+
+Being content-blind is not a privacy feature bolted on afterwards. It is why we cannot
+alter your evidence, and why an auditor does not have to take our word for anything.
+
+## Who holds what
+
+Three parties, and none of them has to trust the others.
+
+| | Holds | Can prove |
+|---|---|---|
+| **You** | Your signing key, your raw data, your log store | That a record is yours |
+| **Sanning** | Commitments, and the witness on a public record | That a commitment existed at a time |
+| **Your counterparty** | A pack you gave them, and the open kernel | Both of the above, without asking either of you |
+
+## The witness
+
+Sanning commits your records to a public record on an interval, not one transaction per
+event. A Merkle tree covers everything anchored in that interval, and the root is what
+gets published.
+
+That choice has consequences worth understanding before you build against it:
+
+- **Cost tracks intervals, not volume.** Anchoring ten thousand events in an interval
+  costs what anchoring one does.
+- **Evidence is not instant.** A record becomes part of a pack once the interval
+  containing it is sealed and published. See [The witness](/concepts/witness).
+- **An inclusion proof is small.** Your counterparty checks one record against a published
+  root without holding anyone else's data.
+
+## What you must keep
+
+Sanning holds commitments, so it cannot give your raw data back. You keep it.
+
+The SDK writes to a log store you own, and it writes there **before** anchoring. A store
+failure means no anchor, deliberately: a commitment to bytes you cannot produce is the
+one unrecoverable state in the system. See [Keep your log store](/guides/log-store).
+
+## Where to go next
+
+<Card title="Quickstart" icon="rocket" href="/quickstart">
+  Anchor a record and verify it, in about ten minutes.
+</Card>
+<Card title="What a verdict does not claim" icon="scale-balanced" href="/verify/what-a-verdict-means">
+  The limits, stated plainly. Read this before you rely on one.
+</Card>
