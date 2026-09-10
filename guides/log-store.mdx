@@ -230,14 +230,28 @@ cannot help.
   signed verbatim.
 </Note>
 
-## Sync a bucket down before you build a pack
+## Build a pack straight from the bucket
 
-The `bundle` command reads a local store root. It refuses an `s3://` argument
-rather than pretending to read one: it exits `2` and tells you to sync the
-store down and point `--logs` at the local copy. Reading the store over S3
-directly is a known gap.
+`--logs` takes a local store root or an `s3://` URL:
 
-Copy the prefix down with your provider's own CLI first.
+```bash
+sanning-anchor bundle --agent claims-triage \
+  --from 2026-06-01 --to 2026-06-30 \
+  --logs s3://evidence-claims/claims-triage \
+  --out claims-triage-2026-06.zip
+```
+
+Reading a bucket needs `SANNING_S3_ENDPOINT`, `SANNING_S3_ACCESS_KEY_ID` and
+`SANNING_S3_SECRET_ACCESS_KEY` in the environment. There is no flag for them,
+because a credential in argv lands in shell history. A missing one is named
+individually rather than reported as "credentials are missing", so you know
+which to set.
+
+The reader credential is enough: `s3:GetObject` and `s3:ListBucket`, and
+nothing that writes. See [Set up the bucket](/guides/bucket).
+
+A local copy still works, so syncing the prefix down first remains a valid
+route when you would rather hand the command a directory.
 
 ## What to read next
 
