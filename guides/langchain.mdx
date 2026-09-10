@@ -183,6 +183,65 @@ A tool that writes a file gets its own record, with no setup and no resolver
 to write. Anchoring the tool call proves the agent asked for a file; it does
 not prove which file came back, and the file record is what answers that.
 
+## The event vocabulary
+
+Sixteen types, one per anchored callback, exported as `EVENT_TYPES` in both
+languages.
+
+| Event | What it records |
+|---|---|
+| `langchain.chain_start` | A chain or agent step began: the chain, its inputs, tags, metadata and run type |
+| `langchain.chain_end` | It finished, with the outputs |
+| `langchain.chain_error` | It failed, with the error message |
+| `langchain.chat_model_start` | A chat model was called: the model, the messages and the invocation parameters |
+| `langchain.llm_start` | A completion model was called: the model and the prompts |
+| `langchain.llm_end` | The provider answered: generations, token usage, and whatever `llm_output` carried |
+| `langchain.llm_error` | The provider call failed |
+| `langchain.tool_start` | A tool was invoked: the tool, its input, and the model-emitted `tool_call_id` |
+| `langchain.tool_end` | The tool returned its output |
+| `langchain.tool_error` | The tool raised |
+| `langchain.retriever_start` | A retrieval began: the retriever and the query |
+| `langchain.retriever_end` | The documents it returned |
+| `langchain.artifact` | A file a tool produced: name, size and hash, one record per file |
+| `langchain.artifact_unreadable` | A file the tool named and the SDK could not hash, with the reason |
+| `langchain.agent_action` | The agent's decision to act: the tool it chose and the reasoning it stated |
+| `langchain.agent_finish` | The agent stopped, with its return values |
+
+## The promoted fields
+
+The whole step goes in the record body. On top of that, a **closed list** is
+copied into named metadata, so a reader can find a step without reading the body
+it may never be shown.
+
+| Field | Why it is promoted |
+|---|---|
+| `run.run_id` | Names the step, so its start, end and error events join without inference |
+| `run.parent_run_id` | Its parent, so the tree rebuilds from the records alone |
+| `run.root_run_id` | The invocation the set belongs to, which is how you select one run out of a store |
+| `run.seq` | Its ordinal within that root. A hole is a missing event, visible offline |
+| `run.prev_event_id` | The previous event's id. Delete one and the next pointer dangles |
+| `run.tool_call_id` | The model-emitted id, joining a tool step to the message that asked for it |
+| `artifact.name`, `artifact.byte_length`, `artifact.sha256` | The file a tool produced |
+| `otel.trace_id`, `otel.span_id` | The real OpenTelemetry span this step ran inside |
+| `model.id` | The model as you named it |
+| `model.id_returned` | The model the provider says answered, where it reports one |
+| `model.provider` | The provider or integration class the call went through |
+
+**Absent, never empty.** A field nobody knows does not appear: no empty string,
+no `"unknown"`. The two exceptions are `run.parent_run_id` and
+`run.prev_event_id`, which carry an explicit null, because there null is a fact:
+this step is a root, or this is the chain's first event. A reader must not have
+to guess which of absent and no-parent they are looking at.
+
+`otel` appears **only when a real span exists**. A LangChain run id is a UUID
+the framework invented; an OpenTelemetry span id is 16 bytes from an actual
+span. Promoting one as the other would assert an identity nobody obtained.
+
+<Note>
+  These are names you authored, and a model name can encode a project. They
+  record what the integration reported, never proof of what served the request.
+</Note>
+
 ## What to read next
 
 <CardGroup cols={2}>

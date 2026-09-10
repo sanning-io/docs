@@ -92,7 +92,7 @@ It reads the proofs from the Sanning index and the bytes from your store.
 <CodeGroup>
 
 ```bash TypeScript
-export SANNING_API_KEY=CONSOLE_API_KEY   # the key needs the anchor:read scope
+export SANNING_API_KEY=ANCHOR_READ_KEY   # the key needs the anchor:read scope
 
 npx @sanning/anchor bundle \
   --agent claims-triage \
@@ -102,7 +102,7 @@ npx @sanning/anchor bundle \
 ```
 
 ```bash Python
-export SANNING_API_KEY=CONSOLE_API_KEY   # the key needs the anchor:read scope
+export SANNING_API_KEY=ANCHOR_READ_KEY   # the key needs the anchor:read scope
 
 sanning-anchor bundle \
   --agent claims-triage \
@@ -113,7 +113,7 @@ sanning-anchor bundle \
 
 </CodeGroup>
 
-Replace `CONSOLE_API_KEY` with the key from the console. There is no flag for
+Replace `ANCHOR_READ_KEY` with a key from the console carrying `anchor:read`. There is no flag for
 it, because a credential in argv lands in shell history and this is a command
 people paste into tickets.
 
