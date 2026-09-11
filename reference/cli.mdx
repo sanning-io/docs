@@ -45,7 +45,7 @@ them, and neither passes by agreeing with the other.
 | `--agent` | Yes | The producer whose records to gather. `--producer` is an accepted alias. Use the name you anchored under |
 | `--from` | Yes | Start of the period |
 | `--to` | Yes | End of the period. A date-only bound names a whole day and is included; an ISO instant is exclusive |
-| `--logs` | In practice | Your store root, the directory holding `content/` and `records/` |
+| `--logs` | In practice | Your store root: the local directory holding `content/` and `records/`, or `s3://bucket` or `s3://bucket/prefix` |
 | `--out` | Yes | Where to write the zip |
 | `--allow-unstamped` | No | Assemble even when records in the period are not yet stamped. Takes no value |
 
