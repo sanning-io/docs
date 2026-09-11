@@ -124,7 +124,7 @@ The flags mean the same in both languages:
 | `--agent` | The agent's `producer_id`, as committed in each record. `--producer` is an accepted alias. |
 | `--from` | Period start, inclusive. A date or an ISO instant. |
 | `--to` | Period end. A date names a whole day and is included; an ISO instant is exclusive. |
-| `--logs` | Your local store root, the directory holding `content/` and `records/`. |
+| `--logs` | Your store root: the local directory holding `content/` and `records/`, or `s3://bucket` or `s3://bucket/prefix`. |
 | `--out` | Where to write the pack. A `.zip` suffix is added when absent. |
 
 **`--logs` is optional in the flag grammar and required in practice.** The
