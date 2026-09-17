@@ -57,7 +57,7 @@ const anchorer = createEnvelopeAnchorer({
   environment: "dev",
   // Your agent's identity. The seed stays on your machine.
   signer: LocalEd25519Signer.fromSeedHex(seedHex),
-  subject: { type: "producer", producer_id: "claims-triage" },
+  subject: { type: "agent", agent_id: "claims-triage" },
   controlPlane: { apiKey },
   // Keeps the bytes the commitment is over. See the log store guide.
   logStore: new FsLogStore("./logstore"),
@@ -89,7 +89,7 @@ anchorer = Anchorer(
     environment="dev",
     # Your agent's identity. The seed stays on your machine.
     signing_key=SigningKey(bytes.fromhex(os.environ["SANNING_SIGNING_SEED"])),
-    subject={"type": "producer", "producer_id": "claims-triage"},
+    subject={"type": "agent", "agent_id": "claims-triage"},
     api_key=os.environ["SANNING_API_KEY"],
     # Keeps the bytes the commitment is over. See the log store guide.
     log_store=FsLogStore("./logstore"),
@@ -123,14 +123,14 @@ Both samples use `environment: "dev"`. Production writes to a permanent public
 record, so it is a deliberate edit rather than a default you inherit:
 [Dev and production](/guides/environments) covers the move.
 
-## Enrolment is automatic
+## Enrollment is automatic
 
 Neither SDK needs a registration step, and its absence is not an omission. On
 the first `anchor` call, the SDK proves possession of your signing key to the
 control plane, and the agent appears on the console's fleet under its own key.
-One organisation key covers the whole fleet.
+One organization key covers the whole fleet.
 
-Do not write an enrolment call. If you would rather enrol at deploy time,
+Do not write an enrollment call. If you would rather enroll at deploy time,
 [API keys and scopes](/guides/keys-and-scopes) shows how to turn the automatic
 call off and drive it yourself.
 
@@ -144,7 +144,7 @@ bytes, so it cannot disclose them. The full boundary is on the
 
 Two consequences reach your code:
 
-- **`recordBytes` in TypeScript, `record_bytes` in Python, are yours to
+- **`eventBytes` in TypeScript, `event_bytes` in Python, are yours to
   keep.** They are what `payload_hash` commits to, and Sanning never holds
   them. Configuring a log store, as both samples do, discharges that for you.
 - **A locator binds as your own assertion.** Anything you pass as `ref` or
@@ -191,18 +191,18 @@ about whether the control plane accepted the envelope.
 <CodeGroup>
 
 ```ts TypeScript
-anchorer.gaps; // each carries the recordBytes for one event
+anchorer.gaps; // each carries the eventBytes for one event
 await anchorer.close(); // throws IncompleteTrailError if any remain
 ```
 
 ```python Python
-anchorer.gaps          # each carries the record_bytes for one event
+anchorer.gaps          # each carries the event_bytes for one event
 anchorer.close()       # raises IncompleteTrailError if any remain
 ```
 
 </CodeGroup>
 
-Retain the `recordBytes` on every gap before anything else. After a failed
+Retain the `eventBytes` on every gap before anything else. After a failed
 delivery they are the only copy of something the control plane may already
 hold.
 

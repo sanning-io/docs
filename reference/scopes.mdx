@@ -3,13 +3,20 @@ title: "Scopes"
 description: "What each scope allows, and the one combination that fails late"
 ---
 
-An API key authenticates your organisation. It is not the key that signs your evidence.
+An API key authenticates your organization. It is not the key that signs your evidence.
 
 | Scope | Allows |
 |---|---|
+| `agent:enroll` | Enroll a signing key against an agent name |
 | `anchor:write` | Anchor records |
-| `anchor:read` | Read your own records back, which is how a pack is built |
-| `producer:enroll` | Enrol a signing key against a producer name |
+| `anchor:read` | Read your own records back, which is how a pack is built and how `bundle` reports one |
+| `verify:submit` | Submit a record to a verify endpoint |
+| `verify:read` | Read back a verify verdict |
+
+In the console, **Create key** asks for a name and whether the key can
+**Verify**. Every key gets `agent:enroll`, `anchor:write` and `anchor:read`
+under **Anchor**; checking **Verify** adds `verify:submit` and `verify:read`.
+An agent runtime never needs the verify pair.
 
 ## The combination that fails late
 
@@ -24,13 +31,13 @@ the gap until then, because anchoring never touches the read routes.
 Mint keys for a runtime with all three:
 
 ```
-anchor:write  anchor:read  producer:enroll
+anchor:write  anchor:read  agent:enroll
 ```
 
-## Why a runtime needs producer:enroll
+## Why a runtime needs agent:enroll
 
-Both SDKs enrol the signing key before the first anchor, so the agent appears on your
-fleet with no registration step written by you. The enrolment happens **in the runtime**,
+Both SDKs enroll the signing key before the first anchor, so the agent appears on your
+fleet with no enrollment step written by you. The enrollment happens **in the runtime**,
 which is where the signing key is, so the runtime's credential must be allowed to do it.
 
 ## What the signing key does, and what it never leaves
@@ -39,7 +46,7 @@ The API key and the signing key are different things and the split is the securi
 
 | | Held by | Reaches Sanning |
 |---|---|---|
-| API key | Your organisation | Yes, as a bearer credential |
+| API key | Your organization | Yes, as a bearer credential |
 | Signing key | Your agent | Never |
 
 Sanning cannot produce a record that verifies as yours, because it has never held the key

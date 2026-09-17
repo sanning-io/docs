@@ -33,17 +33,17 @@ If you are deciding how much weight to put on a `verified` result, read that
 section rather than this site's summary of it.
 
 **`envelope-spec.md` §2** requires readers to ignore fields they do not
-recognise. That rule is what keeps every proof ever issued verifiable as the
+recognize. That rule is what keeps every proof ever issued verifiable as the
 format grows, and it has a sharp edge: a field bolted onto a body type a reader
 does not dispatch on is silently ignored rather than rejected.
 
 **`log-store.md` §4** explains why a store and a hand-over pack are laid out
 differently on purpose, and why unifying them would break either an auditor's
-ability to find a file or a traversal defence.
+ability to find a file or a traversal defense.
 
 ## The kernel ships with them
 
-The same tarball carries the kernel's own source under the MIT licence, so the
+The same tarball carries the kernel's own source under the MIT license, so the
 specification and the implementation that claims to satisfy it arrive together
 and can be read against each other. `@sanning/proof` on npm ships its
 TypeScript source the same way.

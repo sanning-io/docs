@@ -15,7 +15,8 @@ account, no key and no network.
 
 ## bundle
 
-Assemble the hand-over pack for one producer over one period.
+Assemble the hand-over pack for one agent over one period. This section is linked as
+`docs.sanning.io/reference/cli#bundle` from the console's **Evidence** page.
 
 <CodeGroup>
 ```bash TypeScript
@@ -42,7 +43,7 @@ them, and neither passes by agreeing with the other.
 
 | Flag | Required | Meaning |
 |---|---|---|
-| `--agent` | Yes | The producer whose records to gather. `--producer` is an accepted alias. Use the name you anchored under |
+| `--agent` | Yes | The agent whose records to gather. Use the name you anchored under |
 | `--from` | Yes | Start of the period |
 | `--to` | Yes | End of the period. A date-only bound names a whole day and is included; an ISO instant is exclusive |
 | `--logs` | In practice | Your store root: the local directory holding `content/` and `records/`, or `s3://bucket` or `s3://bucket/prefix` |
@@ -51,7 +52,7 @@ them, and neither passes by agreeing with the other.
 
 <Note>
   `--logs` is optional to the parser and required in practice. The command reads your
-  record objects to work out which events are this producer's, because a
+  record objects to work out which events are this agent's, because a
   minimum-disclosure envelope does not carry that name.
 </Note>
 
@@ -61,6 +62,22 @@ it. The key needs `anchor:read`.
 **It verifies its own output before writing.** If the assembled pack does not verify,
 nothing is written and the command exits non-zero. A pack that only fails at the auditor
 is a pack shipped broken.
+
+## Pack reporting
+
+After `bundle` writes the pack, it reports that it did so to Sanning, using the same API
+key, so the pack appears under **Evidence** in the console. The report carries your
+agent's name, the environment, the window, the record count, the SHA-256 of `bundle.json`,
+the SDK name and version, and the time the pack was built. It never carries the pack, a
+log, a record id, or a file name, and Sanning never receives the pack itself.
+
+Every run of `bundle` builds a new `bundle.json` with its own build time, so every run is
+reported, even one covering a period you have already handed over.
+
+If the report fails, `bundle` prints one line naming the pack's digest and still exits 0:
+the pack was assembled and verified before the report was attempted, so a reporting
+failure does not undo it. The credential needs `anchor:read`, the scope it already holds
+to read your records back.
 
 ## verify
 
@@ -81,9 +98,14 @@ npx @sanning/proof verify bundle.json --logs logs/
 | 0 | Verified |
 | 1 | A check ran and failed. The output names the record |
 | 2 | The input could not be read |
+| 3 | Verified offline as `partial`: a gateway re-fetch was asked for and something in it could not be checked |
 
-`sanning-proof` on PyPI is the same kernel and ships **no command line**. Use its library
-API. See [Verify at the command line](/verify/cli).
+Only an `arweave` witness with a 43-character transaction id is re-fetched from a
+gateway. A witness of any other kind, or an id that is not exactly 43 characters, is
+reported as not checked, and the run answers `partial` and exits `3`.
+
+`sanning-proof` on PyPI is the same kernel and ships the same `verify` command. See
+[Verify at the command line](/verify/cli).
 
 ## Getting help
 

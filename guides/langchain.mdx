@@ -46,7 +46,7 @@ import { envelopeAnchorCallbacks } from "@sanning/anchor-langchain";
 const anchorer = createEnvelopeAnchorer({
   environment: "dev",
   signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED),
-  subject: { type: "producer", producer_id: "claims-triage" },
+  subject: { type: "agent", agent_id: "claims-triage" },
   controlPlane: { apiKey: process.env.SANNING_API_KEY },
   logStore: new FsLogStore("./logstore"),
 });
@@ -69,7 +69,7 @@ from sanning_anchor import Anchorer, AnchorCallbackHandler, FsLogStore
 anchorer = Anchorer(
     environment="dev",
     signing_key=SigningKey(bytes.fromhex(os.environ["SANNING_SIGNING_SEED"])),
-    subject={"type": "producer", "producer_id": "claims-triage"},
+    subject={"type": "agent", "agent_id": "claims-triage"},
     api_key=os.environ["SANNING_API_KEY"],
     log_store=FsLogStore("./logstore"),
 )
@@ -94,13 +94,13 @@ anchorer.close()
 
 ## What a step commits
 
-Every callback commits the whole step: inputs, outputs, the serialised model,
+Every callback commits the whole step: inputs, outputs, the serialized model,
 tags, metadata, run name and tool call id. Nothing is curated, and nothing is
 edited before it is hashed.
 
 Only the hash reaches Sanning. Prompts, outputs and tool input and output are
 hashed in your process, and the bytes go to the log store you configured or
-stay in `recordBytes` for you to drain.
+stay in `eventBytes` for you to drain.
 
 The event vocabulary is exported as `EVENT_TYPES` in both languages:
 
@@ -174,7 +174,7 @@ A gap is reported as undelivered, never as a bad record. A timeout says
 nothing about whether the control plane accepted the envelope, so retain each
 gap's record bytes: after a failure they are the only copy.
 
-Provenance never takes the agent down. A payload that cannot be serialised is
+Provenance never takes the agent down. A payload that cannot be serialized is
 reported through a warning and skipped, and the run continues.
 
 ## Files a tool produces

@@ -19,7 +19,7 @@ The brand is defined once, in [`sanning-io/sanning-design-system`](https://githu
 ## Terminology
 
 - The lifecycle is **anchor → read → verify**. The write path is "the anchor front" at `/anchor`; never "Turbo" on a customer-facing surface.
-- The agent daemon is `sanningd`. Packages publish under the Sanning npm org (`@sanning/*`) and as `sanning-*` on PyPI. Nothing is `@ar.io/*` or `ario.*` on a Sanning-authored surface.
+- The signing party is the **agent**, not the producer. Packages publish under the Sanning npm org (`@sanning/*`) and as `sanning-*` on PyPI. Nothing is `@ar.io/*` or `ario.*` on a Sanning-authored surface.
 - The control plane is **not in the trust path**. Say so wherever issuance, roster, metering, or billing are described.
 - Company: Sanning Inc. GitHub org: `sanning-io`. Production console: `console.sanning.io`.
 

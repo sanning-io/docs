@@ -52,7 +52,7 @@ These resolve on their own. Retry rather than debugging.
   </Accordion>
   <Accordion title="--logs was not given, so this verb cannot read your log store">
     `--logs` is required in practice. The command reads your record objects to work out
-    which events belong to this producer, because a minimum-disclosure envelope does not
+    which events belong to this agent, because a minimum-disclosure envelope does not
     carry that name.
 
     Point it at your store root, the directory holding `content/` and `records/`.
@@ -90,19 +90,63 @@ These resolve on their own. Retry rather than debugging.
 ## Refused
 
 <AccordionGroup>
-  <Accordion title="the signing key is not enrolled in this organisation">
-    The plane accepts records only from keys the organisation knows, so that every record
+  <Accordion title="the signing key is not enrolled in this organization">
+    The plane accepts records only from keys the organization knows, so that every record
     has an identity behind it.
 
-    Both SDKs enrol automatically before the first anchor. If you see this, the key
+    Both SDKs enroll automatically before the first anchor. If you see this, the key
     reaching the plane is not the one that enrolled, or the credential lacks
-    `producer:enroll`.
+    `agent:enroll`.
   </Accordion>
-  <Accordion title="PRODUCER_LABEL_REVOKED">
-    That producer name was revoked. Revoking is deliberate and a revoked name cannot be
+  <Accordion title="AGENT_LABEL_REVOKED">
+    That agent name was revoked. Revoking is deliberate and a revoked name cannot be
     re-enrolled by anyone, including whoever holds the old key.
 
-    Recovering means re-keying the producer through the console, which keeps the lineage.
+    Recovering means an owner or admin re-keying the agent from **Settings, Signing
+    keys** in the console, which keeps the lineage. See
+    [How an agent enrolls](/guides/enrollment).
+  </Accordion>
+  <Accordion title="AGENT_ID_KEY_MISMATCH">
+    Your API key is bound to a different `agent_id` than the one in the request. A key
+    bound to one agent 403s for every other one; use an unbound org key to enroll several
+    agents, or the key that matches this agent.
+  </Accordion>
+  <Accordion title="AGENT_CHALLENGE_INVALID">
+    The proof-of-possession challenge is missing, expired, already used, or was not
+    issued for this agent. Request a fresh challenge and sign it straight away.
+  </Accordion>
+  <Accordion title="AGENT_POP_FAILED">
+    Proof-of-possession failed: the signature does not verify against the public key the
+    challenge names. Check that the signer holds the key you believe it holds.
+  </Accordion>
+  <Accordion title="AGENT_ROTATION_UNAUTHORIZED">
+    This agent already has an active signing key, and rotating it needs
+    `previous_signature`, the same challenge signed by the outgoing key. If that key is
+    lost, an owner or admin recovers the agent from **Settings, Signing keys**.
+  </Accordion>
+  <Accordion title="AGENT_REKEY_REQUIRED">
+    The signature verifies, but this agent has no active signing key left to rotate: its
+    only live key is still draining from an earlier rotation. The SDK will not rotate off
+    a draining key, so an owner or admin re-keys the agent from **Settings, Signing
+    keys** instead.
+  </Accordion>
+  <Accordion title="SIGNING_KEY_ALREADY_ENROLLED">
+    This public key is already enrolled in your organization, under this name or
+    another, whether active, retired or revoked. A public key belongs to one agent name
+    and cannot be reused, for a different agent or as a rotation back onto an earlier
+    key. Generate a new key where the agent runs and enroll that one instead. Nothing
+    was changed.
+  </Accordion>
+  <Accordion title="SIGNING_KEY_PREVIOUSLY_REVOKED">
+    This public key was revoked in your organization, so it cannot be enrolled again
+    under any name. Revoking a key repudiates it at every time, whichever name it was
+    enrolled under. Generate a new key where the agent runs and enroll that one instead.
+    Nothing was changed.
+  </Accordion>
+  <Accordion title="SIGNING_KEY_NOT_REVOKED">
+    A console re-key was asked for a name that is not revoked: one of its keys is still
+    active, or the name has already been re-keyed. Rotate a live key through the SDK
+    instead, which asks the outgoing key to counter-sign. Nothing was changed.
   </Accordion>
   <Accordion title="a store failure means no anchor">
     The SDK writes your bytes to your log store before anchoring, and a store failure

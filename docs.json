@@ -57,10 +57,12 @@
         "pages": [
           "guides/anchor",
           "guides/langchain",
+          "guides/vercel",
           "guides/file-records",
           "guides/log-store",
           "guides/bucket",
           "guides/keys-and-scopes",
+          "guides/enrollment",
           "guides/environments"
         ]
       },
@@ -83,6 +85,12 @@
       }
     ]
   },
+  "redirects": [
+    {
+      "source": "/guides/enrolment",
+      "destination": "/guides/enrollment"
+    }
+  ],
   "contextual": {
     "options": [
       "copy",

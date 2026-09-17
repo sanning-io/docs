@@ -16,27 +16,29 @@ Before you begin, you must have:
 ## Create an account
 
 Go to [console.sanning.io/signup](https://console.sanning.io/signup) and register with
-your email, a password, and an organisation name. The Developer tier costs nothing and
+your email, a password, and an organization name. The Developer tier costs nothing and
 takes no card.
 
 ## Create an API key
 
-In the console, open **Developer tools** and create a key with three scopes:
+In the console, open **Settings, API keys** and select **Create key**. Name the key and
+leave **Verify** unchecked: every key can already **Anchor**, which grants the three
+scopes an agent runtime needs together:
 
-- `producer:enroll`, so your agent can register its signing key on the first anchor.
+- `agent:enroll`, so your agent can enroll its signing key on the first anchor.
 - `anchor:write`, so it can anchor.
 - `anchor:read`, so you can build a pack later.
 
-Grant all three now. Each missing one fails at a different moment, and the later ones fail
-long after you would have stopped looking:
+Each missing one fails at a different moment, and the later ones fail long after you
+would have stopped looking:
 
 | Missing | Fails at |
 |---|---|
-| `producer:enroll` | the first anchor, because the key cannot enrol |
+| `agent:enroll` | the first anchor, because the key cannot enroll |
 | `anchor:write` | the first anchor, because the key cannot write |
 | `anchor:read` | the hand-over, because building a pack reads your records back |
 
-Store the key as `SANNING_API_KEY`. It authenticates your organisation. It is not the key
+Store the key as `SANNING_API_KEY`. It authenticates your organization. It is not the key
 that signs your evidence.
 
 ## Install the SDK
@@ -62,12 +64,12 @@ import os
 from nacl.signing import SigningKey
 from sanning_anchor import Anchorer, FsLogStore
 
-# Persist this seed. A fresh key every run makes a new producer every run.
+# Persist this seed. A fresh key every run makes a new agent every run.
 seed = bytes.fromhex(os.environ["SANNING_SIGNING_SEED"])
 
 anchorer = Anchorer(
     api_key=os.environ["SANNING_API_KEY"],
-    subject={"type": "producer", "producer_id": "claims-triage"},
+    subject={"type": "agent", "agent_id": "claims-triage"},
     signing_key=SigningKey(seed),
     environment="production",
     # Your store, on your disk. The SDK writes here before it anchors, and a
@@ -89,11 +91,11 @@ Replace the following:
   on your fleet.
 - `SANNING_SIGNING_SEED` with 64 hex characters. Generate them once with
   `openssl rand -hex 32` and keep them in your secret store. A fresh seed on
-  the next boot reads as an unauthorised identity rotation and fails.
+  the next boot reads as an unauthorized identity rotation and fails.
 
 `content` is hashed locally. The hash is anchored; the bytes are not sent.
 
-The SDK enrols your signing key with your organisation before the first anchor, so the
+The SDK enrolls your signing key with your organization before the first anchor, so the
 agent appears on your fleet without a separate registration step.
 
 <Warning>
@@ -166,12 +168,17 @@ Replace the following:
   `records/`.
 
 `--logs` is required in practice. The command reads your record objects to work out which
-events belong to this producer, because a minimum-disclosure envelope does not carry that
+events belong to this agent, because a minimum-disclosure envelope does not carry that
 name. Without the store it cannot tell your events from anyone else's.
 
 The command reads your records back from the index, fetches each inclusion proof and the
 stamp that witnessed it, pulls the disclosed bytes from your own store, and verifies the
 result before writing anything. If the pack does not verify, nothing is written.
+
+Once the pack writes, `bundle` reports it to Sanning with the API key it already holds:
+your agent, the environment, the window, the record count, the SHA-256 of `bundle.json`,
+and the SDK name and version. It never sends the pack itself. Find it later under
+**Evidence** in the console.
 
 The TypeScript SDK takes the same flags and produces the same `bundle.json`:
 

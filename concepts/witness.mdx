@@ -8,6 +8,14 @@ can confirm the records existed at a time without asking you or us.
 
 It publishes **one commitment per interval**, not one per event.
 
+## Received and witnessed are not the same moment
+
+**Received** means Sanning holds the record: your agent anchored it, and it is in the
+index. **Witnessed** means a stamp covering that record has reached the public record. A
+record is received the moment you anchor it, and witnessed only once its interval closes
+and is published. The console's **Records** page states which of the two applies to each
+row; do not read "received" as "witnessed" for a record whose interval has not closed yet.
+
 The public record is **Arweave**. A stamp is an Arweave transaction, and your
 pack carries its transaction id, so your counterparty can fetch it from any
 Arweave gateway without asking Sanning.
@@ -28,7 +36,7 @@ separate, online step they can take whenever they like.
 publishing would make continuous evidence too expensive to run.
 
 **Privacy.** The published commitment is a root and an interval, not a list of what you
-did. An observer sees that an organisation anchored something, not what.
+did. An observer sees that an organization anchored something, not what.
 
 **Proof size.** An inclusion proof is a handful of hashes. Your counterparty verifies one
 record without holding anyone else's.
@@ -81,8 +89,8 @@ chain, whatever the interval width.
 |---|---|
 | A Merkle root over the interval | Any record |
 | The interval's start and end | Any content, or any hash of your data |
-| A keyed reference to the organisation | The organisation's name |
+| A keyed reference to the organization | The organization's name |
 | Sanning's signature | Your signature, or your key |
 
-The organisation reference is keyed rather than a plain hash of the name, deliberately.
-Organisation names are low-entropy, and a plain digest would let anyone confirm a guess.
+The organization reference is keyed rather than a plain hash of the name, deliberately.
+Organization names are low-entropy, and a plain digest would let anyone confirm a guess.
