@@ -1,0 +1,83 @@
+---
+title: "How an agent enrolls"
+description: "The SDK enrolls a signing key on the first anchor, and an owner or admin recovers one from the console"
+---
+
+An agent's identity is its signing key, and nothing in the console creates
+one. This page is the whole lifecycle: how a key enrolls itself, what it
+means for one organization, and what an owner or admin does when it needs to
+change.
+
+## Enrollment happens on the first anchor, not before
+
+You write no enrollment step. The first time your agent calls `anchor`, the
+SDK proves possession of its signing key to the control plane, and the agent
+appears on the console's **Agents** page under that key. One organization API
+key, carrying `agent:enroll`, covers every agent in your fleet.
+
+Re-enrolling the same key on a later boot is a no-op, which is what makes it
+safe to run every time your service starts. See
+[API keys and scopes](/guides/keys-and-scopes) for the scope, and
+[Anchor from your agent](/guides/anchor) for the call itself.
+
+## One key, one agent name, one organization
+
+A signing public key belongs to one agent name in your organization. Two
+rules follow from that, and both SDK enrollment and the console's re-key
+enforce them:
+
+- **A key already enrolled under another name is refused.** Registering it
+  again under a different name would let one key sign for two identities.
+  This is `SIGNING_KEY_ALREADY_ENROLLED` (409), whether the key is active,
+  retired or revoked under that other name.
+- **A revoked key is refused everywhere, permanently.** Revocation repudiates
+  the key itself, not only the name that held it, so no name in your
+  organization may register it again. This is `SIGNING_KEY_PREVIOUSLY_REVOKED`
+  (409) from the SDK lane.
+
+Replicas of one agent share its name and key. Use a distinct key for every
+agent, in every organization it anchors under: a key one deployment already
+holds cannot enroll under a second name, and cannot come back after it is
+revoked.
+
+## Nothing in the console enrolls a key
+
+**Settings, Signing keys** lists every key enrolled to sign an agent's
+envelopes, but it has no **Create** action. A key's row exists because an
+agent anchored with it, not because someone added it.
+
+## Revoke an active key
+
+An owner or admin opens **Settings, Signing keys**, finds the active key, and
+selects **Revoke**. Revocation is scoped to your organization: it stops that
+key from anchoring anything further under your roster, and it cannot be
+undone by re-enrolling the same key, including by whoever holds it. Records
+the key signed before revocation are untouched and still verify.
+
+## Re-key a revoked name
+
+A revoked name does not disappear and cannot enroll through the SDK again, so
+recovering it is a console action, not a runtime one.
+
+Generate a new key pair where the agent runs, using the same tool you used the
+first time (`openssl rand -hex 32` produces a seed; derive the public half
+from it). In **Settings, Signing keys**, select **Re-key** on the revoked
+name and enter that public key. Restart the agent with the new seed, and it
+anchors under the same name its next time.
+
+The public half is all the console ever needs. Sanning never sees the seed
+that produced it, before or after a re-key. Re-key refuses a name that is not
+revoked (`SIGNING_KEY_NOT_REVOKED`, 409): a live key rotates through the SDK
+instead, with the outgoing key's counter-signature. See
+[Errors](/reference/errors) for both codes.
+
+## What to read next
+
+<CardGroup cols={2}>
+  <Card title="API keys and scopes" icon="key" href="/guides/keys-and-scopes">
+    The scope enrollment needs, and what a missing one looks like.
+  </Card>
+  <Card title="Anchor from your agent" icon="anchor" href="/guides/anchor">
+    Where the signing key is built and the first anchor call is made.
+  </Card>
+</CardGroup>

@@ -1,0 +1,211 @@
+---
+title: "Trace a Vercel AI SDK call"
+description: "One language-model middleware turns every generate and stream into a signed record"
+---
+
+This page wraps a model instead of an application. You add one middleware,
+and every `generateText` and `streamText` call through that model becomes its
+own signed record.
+
+The middleware needs an anchorer, which
+[Anchor from your agent](/guides/anchor) builds and explains.
+
+## Install the adapter
+
+```bash
+npm install @sanning/anchor-vercel @sanning/anchor ai
+```
+
+`@sanning/anchor-vercel` takes the Vercel `ai` package as a peer dependency.
+
+## Wrap the model
+
+```ts
+import { createEnvelopeAnchorer, FsLogStore, LocalEd25519Signer } from "@sanning/anchor";
+import { envelopeAnchorMiddleware } from "@sanning/anchor-vercel";
+import { generateText, wrapLanguageModel } from "ai";
+import { openai } from "@ai-sdk/openai"; // your model provider
+
+const anchorer = createEnvelopeAnchorer({
+  // Writes to a permanent public record. Use "dev" until you mean it.
+  environment: "production",
+  signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED),
+  subject: { type: "agent", agent_id: "claims-triage" },
+  // The key needs `agent:enroll` and `anchor:write`, and `anchor:read` too
+  // if it will later build a hand-over pack.
+  controlPlane: { apiKey: process.env.SANNING_API_KEY },
+  logStore: new FsLogStore("./logstore"),
+});
+
+const evidence = envelopeAnchorMiddleware(anchorer);
+const model = wrapLanguageModel({ model: openai("gpt-4o"), middleware: evidence });
+
+await generateText({ model, prompt: question });
+
+// End of request, run or process: settle every event and look at the holes.
+const { steps, gaps, unbuilt } = await evidence.close();
+```
+
+**Prompts, settings and outputs are hashed in this process.** The signed
+envelope carries only the hash, so the bytes never reach Sanning. What each
+event committed stays with you, in the `logStore` you configured, or in
+`step.result.eventBytes` if you drain it yourself.
+
+Each event is one signed envelope sent to Sanning, and nothing comes back: no
+receipt and no transaction id. Sanning witnesses envelopes on an interval, and
+the proof travels in the pack you build at hand-over.
+
+Enrollment is automatic before the first anchor, so there is no enrollment
+step to write. Production refuses auto-generated secrets: `createEnvelopeAnchorer`
+throws unless you pass a signer and a subject. Dev records are permanently
+marked `environment: "dev"` inside the signed bytes, so a dev record can never
+be presented as production evidence.
+
+## Group calls into a chain
+
+The middleware wraps the **model**, not the application, so unlike
+[Trace a LangChain agent](/guides/langchain), whose callbacks give a run
+*tree*, events here form a **flat chain** (`run.seq` plus
+`run.prev_event_id`, committed in each record's metadata). You choose what
+groups them:
+
+- **Correlation id, the choice for multi-call requests.** Pass an id through
+  `providerOptions.sanning.chainKey` and every call sharing it links in order:
+  your request id, conversation id, or agent-loop id.
+
+  ```ts
+  await generateText({
+    model,
+    prompt,
+    // ONE anchorer instance must write this key. Serverless: read the caution below.
+    providerOptions: { sanning: { chainKey: requestId } },
+  });
+  ```
+
+- **Session fallback, zero config.** With no id, all calls through one
+  middleware instance link in emission order under a per-instance
+  `session:<uuid>` chain.
+
+The same key names the record chain the anchorer keeps: each record's
+`previous_hash` is the previous record's hash, set before the envelope is sent.
+An event that never arrived leaves a pointer that dangles and a hole in
+`run.seq`, both visible offline. Pass `chain: false` to turn the record chain
+off; `run.seq` is still committed.
+
+<Warning>
+  A `chainKey` must have exactly one writer: one anchorer instance, for as
+  long as the key is in use. Two writers on one key start from the same head,
+  which gives one chain two branches that both verify. This happens on a
+  serverless or multi-instance deployment handling one conversation id on
+  several instances, on a process restart that reuses a stable `chainKey`
+  over the default in-memory store, or when several instances share one
+  durable store with no compare-and-set.
+
+  A stable `chainKey` is safe only when one long-lived process owns it, with a
+  durable store so a restart continues the chain. Where you cannot promise one
+  writer, leave `chainKey` unset and use the session fallback, which is a
+  fresh id per middleware instance and is not affected.
+</Warning>
+
+## Event vocabulary
+
+`vercel_ai.generate_start`, `_end` and `_error`, plus `vercel_ai.stream_start`,
+`_end` and `_error`: one event type per anchored operation, exported as
+`EVENT_TYPES`.
+
+Each operation gets exactly one terminal event, `_end` on success and `_error`
+on failure. For streams, a provider failure arrives in-band as an `error` part
+and anchors `stream_error`, while chunks pass through untouched. A hard
+transport abort, where the stream rejects with no error part, anchors neither
+terminal event: the `stream_start` stands, and its missing completion is
+itself the signal, because its chain pointer dangles.
+
+## What the hash commits to
+
+**The whole step**, nothing curated. Only the hash reaches Sanning; the bytes
+go to your own store.
+
+- **`model`**, the model surface the middleware sees: `specificationVersion`,
+  `provider`, `modelId`.
+- **`params`**, the call options in full: prompt, temperature, `topP` and
+  `topK`, penalties, `stopSequences`, `maxOutputTokens`, `seed`,
+  `responseFormat`, the tools bound, `toolChoice`, headers and
+  `providerOptions`.
+- **the result**, the provider response in full: content, usage, finish
+  reason, provider metadata, the request and response envelopes, warnings.
+
+Credential-shaped values are scrubbed automatically, which matters here
+because `params.headers` is where a bearer token actually lives, and a
+committed record cannot be redacted afterwards.
+
+For a stream, the terminal event commits every non-delta part: the
+`stream-start` warnings, the `response-metadata`, the whole `finish` part,
+plus the part count and the request and response envelopes. Content
+**deltas are not transcribed**: they are your own output, arriving in your
+hands chunk by chunk, and re-committing them here would carry a second copy of
+every streamed call's transcript. Anchor that content yourself if you want it
+hashed.
+
+`onEvent` lets you watch what is committed. It cannot change it:
+
+```ts
+const evidence = envelopeAnchorMiddleware(anchorer, {
+  onEvent: (e) => metrics.count(e.type), // observe; cannot alter
+});
+```
+
+## The promoted fields
+
+A closed list is copied into named metadata alongside the body, so a reader
+can select one call, or one model, without opening it: `run.run_id` (this
+call's own id), `run.parent_run_id` (always `null`: this seam has no run
+tree), `run.root_run_id` (the resolved chain key), `run.seq`,
+`run.prev_event_id`, `model.id`, `model.id_returned` (the model the
+**provider** reports answered, where it reports one), `model.provider`, and
+`otel.trace_id` / `otel.span_id` when a real OpenTelemetry span exists.
+
+A field that is unknown is absent, never empty, with the two exceptions above
+that carry an explicit `null`. Whether a chain key was your own or the
+adapter's session fallback is recorded separately, in its own namespace:
+`vercel_ai.caller_supplied_chain`.
+
+## Close the middleware and read the gaps
+
+<CodeGroup>
+
+```ts TypeScript
+const { steps, gaps, unbuilt } = await evidence.close();
+evidence.isComplete; // false if anything is missing
+```
+
+</CodeGroup>
+
+- `steps` are the events that were delivered, each with its `AnchorResult`.
+- `gaps` are events whose chain slot was spent and whose envelope did not
+  arrive. A gap is reported `undelivered`, never as a bad record: a timeout
+  says nothing about whether Sanning accepted it. Its `eventBytes` are
+  retained, and after a failure they are the only copy of something that may
+  already be committed.
+- `unbuilt` are events that never reached the anchorer, such as a payload
+  that fails to serialize. They have no record and no bytes to retain.
+
+`close()` does not throw by default, because it runs in a `finally` block and
+a throw there would replace the request's real error. Pass
+`{ raiseOnGaps: true }` to make an incomplete trail an error, or call
+`evidence.assertComplete()` on the success path.
+
+Provenance never crashes the call: a failure to anchor is reported through a
+warning and recorded in `unbuilt`, and the model call still runs and returns.
+Errors from the model are anchored as `_error` events and re-thrown to your
+code unchanged.
+
+## What to read next
+
+<CardGroup cols={2}>
+  <Card title="Keep what you anchored" icon="database" href="/guides/log-store">
+    The store the hand-over pack reads, and what breaks without it.
+  </Card>
+  <Card title="Trace a LangChain agent" icon="link" href="/guides/langchain">
+    The same anchorer, wired to a run tree instead of one model.
+  </Card>
+</CardGroup>

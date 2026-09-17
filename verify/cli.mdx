@@ -31,6 +31,7 @@ VERIFIED  verified offline (no gateway re-fetch requested)
 | 0 | Verified |
 | 1 | A check ran and failed. The output names the record |
 | 2 | The input could not be read at all |
+| 3 | Verified offline as `partial`: a gateway re-fetch was asked for and something in it could not be checked |
 
 ## Two errors you might hit first
 
@@ -90,11 +91,19 @@ checking through a gateway you chose is a stronger result than checking through
 ours.
 
 <Note>
+  **Only an `arweave` witness with a 43-character transaction id is re-fetched.**
+  That is the one witness kind and id shape the kernel knows how to look up. A
+  witness of any other kind, or an `arweave` witness whose id is not exactly 43
+  characters, is reported as not checked rather than skipped silently, and the
+  run answers `partial` and exits `3`.
+</Note>
+
+<Note>
   **A stamp reaches the chain before an index can serve it.** It is submitted,
   then bundled, then indexed, so a gateway can answer `404` for a few minutes
-  on a stamp that exists. That is exit code `3`, gateway-unavailable, and it is
-  a statement about reachability rather than about your evidence. The offline
-  check does not wait on any of it. Retry the online one.
+  on a stamp that exists. That is exit code `3` as well, and it is a statement
+  about reachability rather than about your evidence. The offline check does
+  not wait on any of it. Retry the online one.
 </Note>
 
 ## Python

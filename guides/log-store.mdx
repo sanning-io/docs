@@ -17,8 +17,8 @@ Two things, written before the event is anchored:
 - **The content you passed to `anchor`**, which was hashed in your process and
   never sent.
 - **The canonical event record**, the bytes `payload_hash` commits to. In
-  TypeScript they are also on the result as `recordBytes`, in Python as
-  `record_bytes`.
+  TypeScript they are also on the result as `eventBytes`, in Python as
+  `event_bytes`.
 
 If the store write fails, nothing is anchored. There is no best-effort mode,
 because under this write path nothing else holds those bytes.
@@ -54,7 +54,7 @@ import {
 const anchorer = createEnvelopeAnchorer({
   environment: "dev",
   signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED),
-  subject: { type: "producer", producer_id: "claims-triage" },
+  subject: { type: "agent", agent_id: "claims-triage" },
   controlPlane: { apiKey: process.env.SANNING_API_KEY },
   logStore: new FsLogStore("./logstore"),
 });
@@ -69,7 +69,7 @@ from sanning_anchor import Anchorer, FsLogStore
 anchorer = Anchorer(
     environment="dev",
     signing_key=SigningKey(bytes.fromhex(os.environ["SANNING_SIGNING_SEED"])),
-    subject={"type": "producer", "producer_id": "claims-triage"},
+    subject={"type": "agent", "agent_id": "claims-triage"},
     api_key=os.environ["SANNING_API_KEY"],
     log_store=FsLogStore("./logstore"),
 )
@@ -121,7 +121,7 @@ The flags mean the same in both languages:
 
 | Flag | What it names |
 |---|---|
-| `--agent` | The agent's `producer_id`, as committed in each record. `--producer` is an accepted alias. |
+| `--agent` | The agent's `agent_id`, as committed in each record. |
 | `--from` | Period start, inclusive. A date or an ISO instant. |
 | `--to` | Period end. A date names a whole day and is included; an ISO instant is exclusive. |
 | `--logs` | Your store root: the local directory holding `content/` and `records/`, or `s3://bucket` or `s3://bucket/prefix`. |
@@ -129,7 +129,7 @@ The flags mean the same in both languages:
 
 **`--logs` is optional in the flag grammar and required in practice.** The
 verb needs your record objects to work out which events are this agent's:
-`subject.producer_id` lives in the record, and a minimum-disclosure envelope
+`subject.agent_id` lives in the record, and a minimum-disclosure envelope
 does not carry it. Without the store the command exits `2` and says so.
 
 The verb verifies the whole pack, bundle and disclosed logs, before it writes
