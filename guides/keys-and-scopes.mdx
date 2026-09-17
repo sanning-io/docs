@@ -11,11 +11,9 @@ This page is about the key.
 
 ## Create a key
 
-Sign up at
-[console.sanning.io/signup](https://console.sanning.io/signup) with an email,
-a password and an organization name. No card.
-
-In the console, open **Settings, API keys** and select **Create key**. Name
+Access to `console.sanning.io` starts with a conversation with the Sanning
+team, not a sign-up form. Once your organization exists on the roster, open
+**Settings, API keys** and select **Create key**. Name
 the key, and leave **Verify** unchecked unless this key will also submit
 records to a verify endpoint you run. Store it as `SANNING_API_KEY` in
 whatever your service already uses for secrets. The key is a credential for
@@ -41,7 +39,7 @@ runtime never needs it.
 Both failures are explicit, and neither is reported as an absence of evidence:
 
 - **No `agent:enroll`.** The first `anchor` call raises
-  `EnrolmentFailedError`, carrying the control plane's own code and HTTP 403.
+  `EnrollmentFailedError`, carrying the control plane's own code and HTTP 403.
   Nothing is anchored.
 - **No `anchor:read`.** The `bundle` command exits `2` and reports it as a
   scope to widen. Your records are intact and anchored; the key cannot read
@@ -113,15 +111,17 @@ anchorer = Anchorer(
 
 A rotation is never inferred from a refusal. That is what stops a leaked
 organization key taking over an identity that is already producing evidence.
-If the retiring key is genuinely lost, an owner or admin re-keys the agent
-from **Settings, Signing keys** in the console instead.
+If the retiring key is genuinely lost, an owner or admin pins a new key for
+the agent from **Settings, Signing keys** in the console, and the agent
+completes the re-key on its next boot. See
+[Re-key a revoked name](/guides/enrollment#re-key-a-revoked-name).
 
 ## Enroll at deploy time instead
 
 Where you would rather enroll out of band, turn the automatic call off and
 drive it yourself. A fleet that cold-starts together shares one rate limit,
 because enrollment is limited per API key, so this is the answer to
-`EnrolmentThrottledError` as well.
+`EnrollmentThrottledError` as well.
 
 <CodeGroup>
 

@@ -59,6 +59,11 @@ them, and neither passes by agreeing with the other.
 **Authentication** comes from `SANNING_API_KEY` in the environment. There is no flag for
 it. The key needs `anchor:read`.
 
+**`--agent` is checked twice.** The records route the command reads from filters by this
+name on the server, and the command also refuses if a record it gets back names a
+different agent. A misspelled `--agent` surfaces as a 404 from the records route rather
+than an empty or mismatched pack.
+
 **It verifies its own output before writing.** If the assembled pack does not verify,
 nothing is written and the command exits non-zero. A pack that only fails at the auditor
 is a pack shipped broken.
