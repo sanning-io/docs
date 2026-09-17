@@ -4,9 +4,8 @@ description: "The SDK enrolls a signing key on the first anchor, and an owner or
 ---
 
 An agent's identity is its signing key, and nothing in the console creates
-one. This page is the whole lifecycle: how a key enrolls itself, what it
-means for one organization, and what an owner or admin does when it needs to
-change.
+one. This page is the whole lifecycle: how a key enrolls itself, what makes a
+key unique, and what an owner or admin does when a name needs a new one.
 
 ## Enrollment happens on the first anchor, not before
 
@@ -20,25 +19,27 @@ safe to run every time your service starts. See
 [API keys and scopes](/guides/keys-and-scopes) for the scope, and
 [Anchor from your agent](/guides/anchor) for the call itself.
 
-## One key, one agent name, one organization
+## One key, one agent name, forever
 
-A signing public key belongs to one agent name in your organization. Two
-rules follow from that, and both SDK enrollment and the console's re-key
-enforce them:
+A signing public key is unique across all of Sanning, not only your
+organization, and stays that way in any state, forever. Two rules follow from
+that, and both SDK enrollment and the console's re-key enforce them:
 
 - **A key already enrolled under another name is refused.** Registering it
   again under a different name would let one key sign for two identities.
   This is `SIGNING_KEY_ALREADY_ENROLLED` (409), whether the key is active,
-  retired or revoked under that other name.
+  retired or revoked under that other name, in your organization or another.
+  The error names no organization.
 - **A revoked key is refused everywhere, permanently.** Revocation repudiates
-  the key itself, not only the name that held it, so no name in your
-  organization may register it again. This is `SIGNING_KEY_PREVIOUSLY_REVOKED`
-  (409) from the SDK lane.
+  the key itself, not only the name that held it, so no name, in any
+  organization, may register it again. This is `SIGNING_KEY_PREVIOUSLY_REVOKED`
+  (409) from the SDK lane. A key stays reserved even if the organization that
+  enrolled it is later deleted.
 
 Replicas of one agent share its name and key. Use a distinct key for every
-agent, in every organization it anchors under: a key one deployment already
-holds cannot enroll under a second name, and cannot come back after it is
-revoked.
+agent you run, anywhere: a key one deployment already holds cannot enroll
+under a second name or a second organization, and cannot come back after it
+is revoked.
 
 ## Nothing in the console enrolls a key
 
@@ -57,18 +58,23 @@ the key signed before revocation are untouched and still verify.
 ## Re-key a revoked name
 
 A revoked name does not disappear and cannot enroll through the SDK again, so
-recovering it is a console action, not a runtime one.
+recovering it takes both a console step and a runtime one.
 
-Generate a new key pair where the agent runs, using the same tool you used the
-first time (`openssl rand -hex 32` produces a seed; derive the public half
-from it). In **Settings, Signing keys**, select **Re-key** on the revoked
-name and enter that public key. Restart the agent with the new seed, and it
-anchors under the same name its next time.
+1. Generate a new key pair where the agent runs, using the same tool you used
+   the first time (`openssl rand -hex 32` produces a seed; derive the public
+   half from it).
+2. In **Settings, Signing keys**, an owner or admin selects **Re-key** on the
+   revoked name and pins that public key. This step only reserves the key: it
+   does not yet let the name anchor.
+3. Restart the agent with the new seed. On its first anchor, the SDK's
+   enrollment proves possession of the pinned key to the control plane, which
+   completes the re-key and lets the name anchor again.
 
 The public half is all the console ever needs. Sanning never sees the seed
-that produced it, before or after a re-key. Re-key refuses a name that is not
-revoked (`SIGNING_KEY_NOT_REVOKED`, 409): a live key rotates through the SDK
-instead, with the outgoing key's counter-signature. See
+that produced it, before or after a re-key. A pin that is never claimed can be
+cancelled from the same **Settings, Signing keys** screen. Re-key refuses a
+name that is not revoked (`SIGNING_KEY_NOT_REVOKED`, 409): a live key rotates
+through the SDK instead, with the outgoing key's counter-signature. See
 [Errors](/reference/errors) for both codes.
 
 ## What to read next

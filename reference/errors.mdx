@@ -79,6 +79,13 @@ These resolve on their own. Retry rather than debugging.
     The command refuses rather than quietly dropping them, because a pack that silently
     omits records an auditor asked for is worse than no pack.
   </Accordion>
+  <Accordion title="404 from the records route">
+    The plane's records route filters by `--agent` on the server, so a name that does not
+    match an agent on your roster 404s there before `bundle` reads anything back.
+
+    Check the spelling against the console's **Agents** page. `--agent` takes the name you
+    anchored under, not a display name you renamed it to later.
+  </Accordion>
   <Accordion title="pack.zip is not valid JSON: Unexpected token 'P'">
     You handed the kernel a zip. `PK` is the archive's own signature.
 
@@ -102,9 +109,10 @@ These resolve on their own. Retry rather than debugging.
     That agent name was revoked. Revoking is deliberate and a revoked name cannot be
     re-enrolled by anyone, including whoever holds the old key.
 
-    Recovering means an owner or admin re-keying the agent from **Settings, Signing
-    keys** in the console, which keeps the lineage. See
-    [How an agent enrolls](/guides/enrollment).
+    Recovering keeps the lineage: an owner or admin pins a new key for the name from
+    **Settings, Signing keys** in the console, then the agent completes the re-key by
+    restarting with that key. See
+    [Re-key a revoked name](/guides/enrollment#re-key-a-revoked-name).
   </Accordion>
   <Accordion title="AGENT_ID_KEY_MISMATCH">
     Your API key is bound to a different `agent_id` than the one in the request. A key
@@ -122,26 +130,29 @@ These resolve on their own. Retry rather than debugging.
   <Accordion title="AGENT_ROTATION_UNAUTHORIZED">
     This agent already has an active signing key, and rotating it needs
     `previous_signature`, the same challenge signed by the outgoing key. If that key is
-    lost, an owner or admin recovers the agent from **Settings, Signing keys**.
+    lost, an owner or admin recovers the agent by pinning a new key from **Settings,
+    Signing keys**, which the agent then claims by restarting with it.
   </Accordion>
   <Accordion title="AGENT_REKEY_REQUIRED">
     The signature verifies, but this agent has no active signing key left to rotate: its
     only live key is still draining from an earlier rotation. The SDK will not rotate off
-    a draining key, so an owner or admin re-keys the agent from **Settings, Signing
-    keys** instead.
+    a draining key, so an owner or admin pins a new key for the agent from **Settings,
+    Signing keys** instead, and the agent claims it on its next restart.
   </Accordion>
   <Accordion title="SIGNING_KEY_ALREADY_ENROLLED">
-    This public key is already enrolled in your organization, under this name or
-    another, whether active, retired or revoked. A public key belongs to one agent name
-    and cannot be reused, for a different agent or as a rotation back onto an earlier
-    key. Generate a new key where the agent runs and enroll that one instead. Nothing
-    was changed.
+    This public key is already enrolled somewhere in Sanning, under this name or
+    another, in your organization or a different one, whether active, retired or
+    revoked. A signing key is unique across every organization, not only your own, and
+    cannot be reused for a different agent or as a rotation back onto an earlier key.
+    The message names no other organization. Generate a new key where the agent runs
+    and enroll that one instead. Nothing was changed.
   </Accordion>
   <Accordion title="SIGNING_KEY_PREVIOUSLY_REVOKED">
-    This public key was revoked in your organization, so it cannot be enrolled again
-    under any name. Revoking a key repudiates it at every time, whichever name it was
-    enrolled under. Generate a new key where the agent runs and enroll that one instead.
-    Nothing was changed.
+    This public key was revoked somewhere in Sanning, so it cannot be enrolled again
+    under any name, in any organization, even one deleted since the revocation.
+    Revoking a key repudiates it at every time, whichever name or organization it was
+    enrolled under. Generate a new key where the agent runs and enroll that one
+    instead. Nothing was changed.
   </Accordion>
   <Accordion title="SIGNING_KEY_NOT_REVOKED">
     A console re-key was asked for a name that is not revoked: one of its keys is still
