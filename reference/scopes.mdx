@@ -1,44 +1,56 @@
 ---
 title: "Scopes"
-description: "What each scope allows, and the one combination that fails late"
+description: "The two sets a key can carry, and what each one contains"
 ---
 
 An API key authenticates your organization. It is not the key that signs your evidence.
+
+## The two sets
+
+A key can **anchor**, or **anchor and verify**. The console shows those two
+words; the scope names travel on the API and appear inside a refusal. They are
+listed here to be recognized, not to be picked from.
+
+| Choice | Scopes on the key |
+|---|---|
+| Anchor | `agent:enroll`, `anchor:write`, `anchor:read` |
+| Anchor and verify | those three, plus `verify:submit` and `verify:read` |
+
+**A key you create carries one of those two sets and nothing else.** Scopes are
+not selected individually. `POST /api/v1/user/keys` refuses any other
+combination, with its own message: "A key can anchor, or anchor and verify.
+Send scopes with exactly the three anchor scopes, or those three and the two
+verify scopes."
+
+What each scope allows:
 
 | Scope | Allows |
 |---|---|
 | `agent:enroll` | Enroll a signing key against an agent name |
 | `anchor:write` | Anchor records |
 | `anchor:read` | Read your own records back, which is how a pack is built and how `bundle` reports one |
-| `verify:submit` | Submit a record to a verify endpoint |
-| `verify:read` | Read back a verify verdict |
+| `verify:submit` | Ask Sanning for a verdict |
+| `verify:read` | Read a verdict back |
 
-In the console, **Create key** asks for a name and whether the key can
-**Verify**. Every key gets `agent:enroll`, `anchor:write` and `anchor:read`
-under **Anchor**; checking **Verify** adds `verify:submit` and `verify:read`.
-An agent runtime never needs the verify pair.
+## Why the three anchor scopes travel together
 
-## The combination that fails late
+Each one is useless without the others, which is why they are one choice rather
+than three.
 
-<Warning>
-  A key with `anchor:write` alone anchors correctly, possibly for weeks, and then fails
-  the first time you build a pack.
-</Warning>
+- **`agent:enroll` runs first.** Both SDKs enroll the signing key before the
+  first anchor, in the runtime, which is where the signing key is. A key that
+  could write but not enroll would anchor nothing, because the plane refuses an
+  envelope signed by a key it has no agent for.
+- **`anchor:read` runs last.** Building a hand-over pack reads your own records
+  back, and `bundle` reports each pack it writes with the same key. Anchoring
+  never touches the read routes, so a key that could write but not read would
+  work for weeks and fail the first time you hand anything over.
 
-Building a pack reads your own records back, so it needs `anchor:read`. Nothing surfaces
-the gap until then, because anchoring never touches the read routes.
-
-Mint keys for a runtime with all three:
-
-```
-anchor:write  anchor:read  agent:enroll
-```
-
-## Why a runtime needs agent:enroll
-
-Both SDKs enroll the signing key before the first anchor, so the agent appears on your
-fleet with no enrollment step written by you. The enrollment happens **in the runtime**,
-which is where the signing key is, so the runtime's credential must be allowed to do it.
+The verify pair is separate because it is a different act: asking Sanning for a
+verdict, rather than producing evidence. An agent runtime never needs it. The
+console's Create key dialog always shows the choice, disabled and with a
+sentence naming the address to ask, where an organization does not have
+verify access.
 
 ## What the signing key does, and what it never leaves
 

@@ -16,7 +16,8 @@ These resolve on their own. Retry rather than debugging.
 <AccordionGroup>
   <Accordion title="no stamped records for agent claims-triage in ...">
     The interval containing your records has not been sealed and published yet. It means
-    *not yet*, never *you have no evidence*.
+    *not yet*, never *you have no evidence*. If records in the window are anchored and
+    waiting for a stamp, a second line names how many.
 
     Wait for the interval to close and run the command again. See
     [The witness](/concepts/witness).
@@ -43,12 +44,19 @@ These resolve on their own. Retry rather than debugging.
 
 <AccordionGroup>
   <Accordion title="SCOPE_NOT_ALLOWED, required: anchor:read">
-    Your key can anchor and cannot read. Building a pack reads your own records back, so it
-    needs `anchor:read` as well as `anchor:write`.
+    Two different refusals produce this line, and the response body tells them apart.
 
-    A key with only `anchor:write` anchors correctly for weeks and then fails the first
-    time you try to hand anything over. Mint a key with both. See
-    [Keys and scopes](/guides/keys-and-scopes).
+    If it carries a sentence naming an address to write to, this is not a key you built
+    wrong: every key you create already carries `anchor:read`, so the refusal means your
+    organization is not enabled for that route. Your records are intact and anchored;
+    the credential cannot read them back.
+
+    If it carries no sentence, only `required` and the key's own `keyScopes`, the key
+    itself genuinely lacks the scope. This is the case for a key an operator minted
+    through `POST /api/v1/admin/keys`, which is not bound to the two-scope-set rule
+    `POST /api/v1/user/keys` enforces. Check what the key was minted with.
+
+    See [API keys and scopes](/guides/keys-and-scopes).
   </Accordion>
   <Accordion title="--logs was not given, so this verb cannot read your log store">
     `--logs` is required in practice. The command reads your record objects to work out
@@ -63,7 +71,7 @@ These resolve on their own. Retry rather than debugging.
     The message names the ones that are missing.
 
     There is no flag for them: a credential in argv lands in shell history. See
-    [Retain what you anchored](/guides/log-store).
+    [Keep what you anchored](/guides/log-store).
   </Accordion>
   <Accordion title="bundle: missing required flag(s): --from, --to">
     The pack covers a period and you must name it. `--agent`, `--from`, `--to` and `--out`
@@ -101,9 +109,9 @@ These resolve on their own. Retry rather than debugging.
     The plane accepts records only from keys the organization knows, so that every record
     has an identity behind it.
 
-    Both SDKs enroll automatically before the first anchor. If you see this, the key
-    reaching the plane is not the one that enrolled, or the credential lacks
-    `agent:enroll`.
+    Both SDKs enroll automatically before the first anchor. If you see this, the signing
+    key reaching the plane is not the one that enrolled. The message names the two calls
+    that enroll a key by hand, if you drive enrollment yourself.
   </Accordion>
   <Accordion title="AGENT_LABEL_REVOKED">
     That agent name was revoked. Revoking is deliberate and a revoked name cannot be
@@ -115,9 +123,12 @@ These resolve on their own. Retry rather than debugging.
     [Re-key a revoked name](/guides/enrollment#re-key-a-revoked-name).
   </Accordion>
   <Accordion title="AGENT_ID_KEY_MISMATCH">
-    Your API key is bound to a different `agent_id` than the one in the request. A key
-    bound to one agent 403s for every other one; use an unbound org key to enroll several
-    agents, or the key that matches this agent.
+    Your API key is bound to a different `agent_id` than the one in the request, and a key
+    bound to one agent 403s for every other one.
+
+    A key you create in the console is never bound to an agent, so this appears only on a
+    key Sanning bound for you. Use an ordinary key from **Settings, API keys**, which
+    covers your whole fleet.
   </Accordion>
   <Accordion title="AGENT_CHALLENGE_INVALID">
     The proof-of-possession challenge is missing, expired, already used, or was not
@@ -144,14 +155,17 @@ These resolve on their own. Retry rather than debugging.
     another, in your organization or a different one, whether active, retired or
     revoked. A signing key is unique across every organization, not only your own, and
     cannot be reused for a different agent or as a rotation back onto an earlier key.
-    The message names no other organization. Generate a new key where the agent runs
-    and enroll that one instead. Nothing was changed.
+    A key revoked in *your own* organization answers with the more specific
+    `SIGNING_KEY_PREVIOUSLY_REVOKED` instead. The message names no other organization.
+    Generate a new key where the agent runs and enroll that one instead. Nothing was
+    changed.
   </Accordion>
   <Accordion title="SIGNING_KEY_PREVIOUSLY_REVOKED">
-    This public key was revoked somewhere in Sanning, so it cannot be enrolled again
-    under any name, in any organization, even one deleted since the revocation.
-    Revoking a key repudiates it at every time, whichever name or organization it was
-    enrolled under. Generate a new key where the agent runs and enroll that one
+    This public key was revoked in your organization, so it cannot be enrolled again
+    under any name there. Revoking a key repudiates it at every time, whichever name
+    held it. A key revoked in a different organization is refused too, as
+    `SIGNING_KEY_ALREADY_ENROLLED`, and so is a key belonging to an organization
+    deleted since. Generate a new key where the agent runs and enroll that one
     instead. Nothing was changed.
   </Accordion>
   <Accordion title="SIGNING_KEY_NOT_REVOKED">
@@ -164,7 +178,7 @@ These resolve on their own. Retry rather than debugging.
     stops the anchor. There is no best-effort mode on this path.
 
     Anchoring a commitment to bytes you cannot produce is the one state that cannot be
-    repaired afterwards. See [Keep your log store](/guides/log-store).
+    repaired afterwards. See [Keep what you anchored](/guides/log-store).
   </Accordion>
 </AccordionGroup>
 

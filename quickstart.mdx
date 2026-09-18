@@ -18,21 +18,14 @@ Before you begin, you must have:
 ## Create an API key
 
 In the console, open **Settings, API keys** and select **Create key**. Name the key and
-leave **Verify** unchecked: every key can already **Anchor**, which grants the three
-scopes an agent runtime needs together:
+leave **Verify** unchecked. Every key can already anchor, which covers everything an
+agent runtime does: enrolling its signing key on the first anchor (`agent:enroll`),
+anchoring (`anchor:write`), and reading your records back so you can build a pack
+(`anchor:read`).
 
-- `agent:enroll`, so your agent can enroll its signing key on the first anchor.
-- `anchor:write`, so it can anchor.
-- `anchor:read`, so you can build a pack later.
-
-Each missing one fails at a different moment, and the later ones fail long after you
-would have stopped looking:
-
-| Missing | Fails at |
-|---|---|
-| `agent:enroll` | the first anchor, because the key cannot enroll |
-| `anchor:write` | the first anchor, because the key cannot write |
-| `anchor:read` | the hand-over, because building a pack reads your records back |
+Those three travel together, and a key you create carries either them or them plus the
+two verify scopes. There is nothing to select. See
+[API keys and scopes](/guides/keys-and-scopes).
 
 Store the key as `SANNING_API_KEY`. It authenticates your organization. It is not the key
 that signs your evidence.

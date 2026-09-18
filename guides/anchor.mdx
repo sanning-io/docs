@@ -7,10 +7,10 @@ This page puts one anchor call inside an agent you already have. What comes
 back is a signed commitment to that step, which a third party can check later
 without Sanning and without you.
 
-You need an API key from the console. Create it with all three scopes, as
-[API keys and scopes](/guides/keys-and-scopes) describes: a key that anchors
-but cannot read its own records back works for months and then fails on the
-day someone asks for the evidence.
+You need an API key from the console. Every key can anchor, which covers
+enrolling the signing key, anchoring, and reading your records back at
+hand-over, so a key created for this needs nothing added to it.
+[API keys and scopes](/guides/keys-and-scopes) has the detail.
 
 ## Install the SDK
 
@@ -127,8 +127,8 @@ record, so it is a deliberate edit rather than a default you inherit:
 
 Neither SDK needs a registration step, and its absence is not an omission. On
 the first `anchor` call, the SDK proves possession of your signing key to the
-control plane, and the agent appears on the console's fleet under its own key.
-One organization key covers the whole fleet.
+control plane, and the agent appears on the console's **Agents** page under its
+own key. One organization key covers the whole fleet.
 
 Do not write an enrollment call. If you would rather enroll at deploy time,
 [API keys and scopes](/guides/keys-and-scopes) shows how to turn the automatic

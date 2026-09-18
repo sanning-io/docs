@@ -69,10 +69,11 @@ anchorer = Anchorer(
 Three things change, and each one is a refusal rather than a warning you might
 miss:
 
-- **Production refuses an auto-generated identity.** Building an anchorer for
-  production without an explicit signer and subject raises
+- **Production refuses an auto-generated identity.** In TypeScript, building an
+  anchorer for production without an explicit signer and subject raises
   `ProductionConfigError` at construction, so a dev-mode identity cannot reach
-  it by accident.
+  it by accident. Python cannot reach that state at all: `signing_key` and
+  `subject` are required arguments.
 - **The environment is inside the signature.** Nothing downstream can relabel
   a dev record as a production one. The value travels with the evidence.
 - **Retention stops being optional in practice.** Anchoring in production with
@@ -81,9 +82,9 @@ miss:
 
 ## Move an agent to production
 
-1. Create the production key in the console, with all three scopes.
-   [API keys and scopes](/guides/keys-and-scopes) covers what each one
-   permits.
+1. Create the production key in the console. Every key can anchor, which is
+   what a production runtime needs. [API keys and scopes](/guides/keys-and-scopes)
+   covers what that covers.
 2. Generate a signing seed for this agent and put it in your secret store.
    Load the same seed on every boot.
 3. Configure a log store that outlives the process, in object storage you
@@ -113,6 +114,6 @@ it.
     The store production expects, and the bucket it belongs in.
   </Card>
   <Card title="API keys and scopes" icon="key" href="/guides/keys-and-scopes">
-    The key production needs, and the scope people forget.
+    The key production needs, and the two things a key can do.
   </Card>
 </CardGroup>

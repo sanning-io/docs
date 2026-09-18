@@ -11,12 +11,13 @@ key unique, and what an owner or admin does when a name needs a new one.
 
 You write no enrollment step. The first time your agent calls `anchor`, the
 SDK proves possession of its signing key to the control plane, and the agent
-appears on the console's **Agents** page under that key. One organization API
-key, carrying `agent:enroll`, covers every agent in your fleet.
+appears on the console's **Agents** page under that key. Enrolling is part of
+what every key can do, so one organization API key covers every agent in your
+fleet.
 
 Re-enrolling the same key on a later boot is a no-op, which is what makes it
 safe to run every time your service starts. See
-[API keys and scopes](/guides/keys-and-scopes) for the scope, and
+[API keys and scopes](/guides/keys-and-scopes) for what a key carries, and
 [Anchor from your agent](/guides/anchor) for the call itself.
 
 ## One key, one agent name, forever
@@ -27,14 +28,19 @@ that, and both SDK enrollment and the console's re-key enforce them:
 
 - **A key already enrolled under another name is refused.** Registering it
   again under a different name would let one key sign for two identities.
-  This is `SIGNING_KEY_ALREADY_ENROLLED` (409), whether the key is active,
-  retired or revoked under that other name, in your organization or another.
-  The error names no organization.
+  This is `SIGNING_KEY_ALREADY_ENROLLED` (409): for another name in your own
+  organization, when the key is active or retired there; for a name in a
+  different organization, whatever state the key is in there, including
+  revoked. A key revoked under a name in your own organization gets the more
+  specific refusal below instead. The error names no other organization.
 - **A revoked key is refused everywhere, permanently.** Revocation repudiates
   the key itself, not only the name that held it, so no name, in any
-  organization, may register it again. This is `SIGNING_KEY_PREVIOUSLY_REVOKED`
-  (409) from the SDK lane. A key stays reserved even if the organization that
-  enrolled it is later deleted.
+  organization, may register it again. Inside your own organization the
+  refusal is `SIGNING_KEY_PREVIOUSLY_REVOKED` (409); a key revoked in another
+  organization is refused as `SIGNING_KEY_ALREADY_ENROLLED` (409), because a
+  refusal that reaches across organizations says nothing about the state a key
+  is in somewhere you cannot see. A key stays reserved even if the
+  organization that enrolled it is later deleted.
 
 Replicas of one agent share its name and key. Use a distinct key for every
 agent you run, anywhere: a key one deployment already holds cannot enroll
@@ -81,7 +87,7 @@ through the SDK instead, with the outgoing key's counter-signature. See
 
 <CardGroup cols={2}>
   <Card title="API keys and scopes" icon="key" href="/guides/keys-and-scopes">
-    The scope enrollment needs, and what a missing one looks like.
+    What a key carries, and the two sets it can carry.
   </Card>
   <Card title="Anchor from your agent" icon="anchor" href="/guides/anchor">
     Where the signing key is built and the first anchor call is made.
