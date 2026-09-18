@@ -13,3 +13,5 @@ The skills speak in terms of five canonical triage roles. This file maps those r
 When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding label string from this table.
 
 Edit the right-hand column to match whatever vocabulary you actually use.
+
+`decision` is not one of the five. It means a founder must decide, and it always sits beside one of the five: usually `ready-for-human`, which means a person must act.
