@@ -35,3 +35,17 @@ The brand is defined once, in [`sanning-io/sanning-design-system`](https://githu
 
 - Claims about versions, packages, and shipped behaviour are verified against the `sanning-io` org repos on GitHub and against npm / PyPI, never against a local working tree.
 - These docs describe what ships, not what is planned.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs for this repo live as GitHub issues on this repo. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five default triage labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` and `docs/adr/` at the repo root, created when a term or a decision first needs them. See `docs/agents/domain.md`.
