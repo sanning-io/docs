@@ -87,9 +87,9 @@ anchorer.close()
 </CodeGroup>
 
 <Note>
-  In TypeScript the entry point is `envelopeAnchorCallbacks`.
-  `anchorCallbacks`, which autocomplete also offers, is an earlier handler on a
-  different path and records no files.
+  In TypeScript the entry point is `envelopeAnchorCallbacks`, which returns an
+  `EnvelopeAnchorCallbackHandler`. Those two names are the whole public surface
+  of the adapter.
 </Note>
 
 ## What a step commits

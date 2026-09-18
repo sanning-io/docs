@@ -8,7 +8,7 @@ it, so its settings are yours to get right, and the SDK is built to tell you
 when they are not.
 
 This page covers the bucket. For what the store *contains* and how a reader
-resolves it, see [Retain what you anchored](/guides/log-store).
+resolves it, see [Keep what you anchored](/guides/log-store).
 
 ## What the SDK does on first use
 
@@ -175,17 +175,14 @@ Object Lock is the backstop for a credential that gets one anyway.
 
 ## Backends
 
-| Backend | Object Lock | Notes |
-|---|---|---|
-| AWS S3 | Yes | The reference behavior |
-| MinIO | Yes | Needs erasure-coded mode |
-| Cloudflare R2 | Partial | Verify before relying on it |
-| Backblaze B2 | Yes | S3-compatible endpoint |
-| Railway Buckets | Unconfirmed | The SDK reports what it finds |
+The store takes your own client, and an `endpoint` with path-style addressing
+makes an S3-compatible backend behave like S3. Object Lock support differs
+between backends and changes between their releases, so this page names none of
+them.
 
-Do not take this table as settled for your deployment. **The SDK detects and
-reports, which is the only claim that survives a backend changing under you.**
-Verify against a real bucket before you rely on it.
+**The SDK detects and reports, which is the only claim that survives a backend
+changing under you.** Run the readiness check against a real bucket on the
+backend you intend to use, and read what it says before you rely on it.
 
 ## Check without gating
 
