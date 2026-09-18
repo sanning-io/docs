@@ -18,7 +18,9 @@ listed here to be recognized, not to be picked from.
 
 **A key you create carries one of those two sets and nothing else.** Scopes are
 not selected individually. `POST /api/v1/user/keys` refuses any other
-combination, with its own sentence: "A key can anchor, or anchor and verify."
+combination, with its own message: "A key can anchor, or anchor and verify.
+Send scopes with exactly the three anchor scopes, or those three and the two
+verify scopes."
 
 What each scope allows:
 
@@ -45,9 +47,10 @@ than three.
   work for weeks and fail the first time you hand anything over.
 
 The verify pair is separate because it is a different act: asking Sanning for a
-verdict, rather than producing evidence. An agent runtime never needs it, and
-the choice appears in the console only when your organization has verify
-access.
+verdict, rather than producing evidence. An agent runtime never needs it. The
+console's Create key dialog always shows the choice; it stays disabled, with
+a sentence naming the address to ask, once your organization's access has
+loaded and shows no verify access.
 
 ## What the signing key does, and what it never leaves
 

@@ -35,8 +35,10 @@ and appear inside a refusal, so they are worth recognizing:
 
 **Those are the only two sets a key you create can carry.** Scopes are not
 selected one at a time, and `POST /api/v1/user/keys` accepts nothing else: it
-answers "A key can anchor, or anchor and verify." The same route takes only a
-name and the scope set. Sanning sets every other property of the key.
+answers "A key can anchor, or anchor and verify. Send scopes with exactly the
+three anchor scopes, or those three and the two verify scopes." The same
+route takes only a name and the scope set. Sanning sets every other property
+of the key.
 
 The three anchor scopes travel together because each one is useless without
 the others. A key that can write but cannot enroll anchors nothing, because
@@ -44,8 +46,10 @@ the plane refuses an envelope signed by a key it has no agent for. A key that
 can write but cannot read anchors for months and then fails on the day someone
 asks for a pack, because building one reads your own records back.
 
-The **Verify** choice appears only when your organization has verify access.
-Where it does not, the dialog says so and names the address to ask.
+The **Verify** choice always appears in the dialog. While your organization's
+access is loading it shows disabled with no explanation; once loading
+finishes, it stays disabled with a sentence naming the address to ask if your
+organization does not have verify access.
 
 ## Enrollment happens on the first anchor
 

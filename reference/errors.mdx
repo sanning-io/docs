@@ -14,10 +14,10 @@ Sanning's errors fall into three groups, and telling them apart saves the most t
 These resolve on their own. Retry rather than debugging.
 
 <AccordionGroup>
-  <Accordion title="no stamped records for agent 'claims-triage' in ...">
+  <Accordion title="no stamped records for agent claims-triage in ...">
     The interval containing your records has not been sealed and published yet. It means
-    *not yet*, never *you have no evidence*. A second line names how many records in the
-    window are anchored and waiting for a stamp.
+    *not yet*, never *you have no evidence*. If records in the window are anchored and
+    waiting for a stamp, a second line names how many.
 
     Wait for the interval to close and run the command again. See
     [The witness](/concepts/witness).
@@ -44,12 +44,19 @@ These resolve on their own. Retry rather than debugging.
 
 <AccordionGroup>
   <Accordion title="SCOPE_NOT_ALLOWED, required: anchor:read">
-    Every key you create already carries `anchor:read`, so this is not a key you built
-    wrong. It means your organization is not enabled for that route, and the refusal
-    carries the sentence that says so and names the address to write to.
+    Two different refusals produce this line, and the response body tells them apart.
 
-    Your records are intact and anchored; the credential cannot read them back. See
-    [API keys and scopes](/guides/keys-and-scopes).
+    If it carries a sentence naming an address to write to, this is not a key you built
+    wrong: every key you create already carries `anchor:read`, so the refusal means your
+    organization is not enabled for that route. Your records are intact and anchored;
+    the credential cannot read them back.
+
+    If it carries no sentence, only `required` and the key's own `keyScopes`, the key
+    itself genuinely lacks the scope. This is the case for a key an operator minted
+    through `POST /api/v1/admin/keys`, which is not bound to the two-scope-set rule
+    `POST /api/v1/user/keys` enforces. Check what the key was minted with.
+
+    See [API keys and scopes](/guides/keys-and-scopes).
   </Accordion>
   <Accordion title="--logs was not given, so this verb cannot read your log store">
     `--logs` is required in practice. The command reads your record objects to work out

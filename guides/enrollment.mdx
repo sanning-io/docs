@@ -28,9 +28,11 @@ that, and both SDK enrollment and the console's re-key enforce them:
 
 - **A key already enrolled under another name is refused.** Registering it
   again under a different name would let one key sign for two identities.
-  This is `SIGNING_KEY_ALREADY_ENROLLED` (409), whether the key is active,
-  retired or revoked under that other name, and whether that name is in your
-  organization or another. The error names no other organization.
+  This is `SIGNING_KEY_ALREADY_ENROLLED` (409): for another name in your own
+  organization, when the key is active or retired there; for a name in a
+  different organization, whatever state the key is in there, including
+  revoked. A key revoked under a name in your own organization gets the more
+  specific refusal below instead. The error names no other organization.
 - **A revoked key is refused everywhere, permanently.** Revocation repudiates
   the key itself, not only the name that held it, so no name, in any
   organization, may register it again. Inside your own organization the
