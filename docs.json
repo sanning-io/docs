@@ -61,6 +61,7 @@
           "guides/vercel",
           "guides/file-records",
           "guides/handoff",
+          "guides/handoff-case",
           "guides/log-store",
           "guides/bucket",
           "guides/keys-and-scopes",

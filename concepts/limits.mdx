@@ -61,28 +61,38 @@ your own systems, never by `receive`.
 Pairing looks for a signed counterpart by key and by record type. It does not
 look at case, at sequence, or at which message a receipt names to narrow that
 search. When the other side holds more than one record that could be a
-counterpart, two messages in the same direction, fan-in, fan-out, or the same
-pair of records appearing again in another case, `@sanning/proof` 0.11.0
-grades every one of those candidates and reports the worst.
+counterpart (two messages in the same direction, fan-in, fan-out, or the same
+pair of records appearing again in another case), the reader grades every one
+of those candidates and reports the worst.
 
-An honest exchange of several messages in one direction lands there. Each
-`handoff.sent` record now has more than one candidate `handoff.received`
-record signed by the same key, and each `handoff.received` record has more
-than one candidate `handoff.sent` record; every one of them reads `failed` on
-`message_hash` and `sequence`, with the finding `counterpart_ambiguous`, and
-the case reads `mixed`.
+With `@sanning/proof` 0.11.x, an honest exchange of several messages in one
+direction lands there. Each `handoff.sent` record has more than one candidate
+`handoff.received` record signed by the same key, and each `handoff.received`
+record has more than one candidate `handoff.sent` record. Every one of them
+reads `failed` on `message_hash` and `sequence`, with the finding
+`counterpart_ambiguous`, and the case reads `mixed`. You can tell this apart
+from a genuine tamper by reading the candidates themselves: one of them reads
+`verified`, and the rest are the exchange's other honest messages, not a decoy
+planted beside a broken pair.
 
-You can tell this apart from a genuine tamper by reading the candidates
-themselves: one of them reads `verified`, and the rest are the exchange's
-other honest messages, not a decoy planted beside a broken pair. A change to
-this reading is under review.
+From 0.12.0, a candidate that another record already accounts for, as a
+mutually named pair with the same message and the same sequence, is set aside
+before the reader grades. An honest exchange of several messages in one
+direction then reads `verified`.
+
+From 0.11.1, a formed pair also has to name each other: the sent record names
+the receipt's signer, and the receipt names the sender's. An honest record can
+fail that check, `counterparty_named`, when its counterparty signed a second
+record of the same message at the same sequence, for example one message sent
+to two recipients.
 
 ## Declared records that are not hand-off sides
 
-A case pack may declare records beside its hand-off sides: a step record, an
-ordinary log line. When a pack declares a record and its own declaration
-claims it as none of its hand-offs, the case reader names that record rather
-than reading past it, so a case holding one does not read `verified`.
+A case pack may declare records beside its hand-off sides: a step record, a
+closing record, an ordinary log line. When a pack declares a record and its
+own declaration claims it as none of its hand-offs, the case reader names that
+record rather than reading past it, so a case holding one does not read
+`verified`.
 
 The check cannot take the audited party's own word for which of its records
 are hand-off sides, so an unclaimed one is always named rather than assumed

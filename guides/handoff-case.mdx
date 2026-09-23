@@ -1,0 +1,318 @@
+---
+title: "Hand over and verify a case"
+description: "Close each run, bundle one pack per agent, and read both parties' packs as one case"
+---
+
+This page takes the hand-offs two agents recorded to one verdict that a third
+party can reproduce without you and without Sanning. It is for the developer
+whose agents already record hand-offs as
+[Record a hand-off between two agents](/guides/handoff) describes.
+
+A case is one exchange between agents. Each side hands over a pack of its own
+records, and a reader who holds every side's pack reads them together and gets
+one verdict, with every exception named.
+
+<Note>
+  `bundle --case`, as this page describes it, needs `@sanning/anchor` 0.15.0 or
+  `sanning-anchor` 0.9.0. Reading a case needs `@sanning/proof` or
+  `sanning-proof` 0.11.0 or later. Where a statement holds only from a later
+  version, it names that version.
+</Note>
+
+## The path
+
+Each side does the first three steps on its own records, and the reader does
+the last two:
+
+1. Name the case on every record in it.
+2. Close each run.
+3. Bundle one pack per agent, with a declaration.
+4. Hand every pack to the reader.
+5. Verify the case, on the page or at the command line, and read the verdict.
+
+## Name the case on every record
+
+`createHandoff` writes the case id into the two hand-off records for you. Any
+other record that belongs to the case needs it passed by hand:
+
+<CodeGroup>
+
+```ts TypeScript
+await anchorer.anchor({
+  type: "app.step",
+  data: JSON.stringify(step),
+  caseId: "case-5d1e9a",
+});
+```
+
+```python Python
+anchorer.anchor(
+    event_type="app.step",
+    content=json.dumps(step).encode(),
+    case_id="case-5d1e9a",
+)
+```
+
+</CodeGroup>
+
+`bundle --case` selects records by the case id signed into each one, so a
+record that names no case cannot be placed. When the pack carries a
+declaration, `bundle` refuses a window that holds such a record rather than
+guess, and names how many it found.
+
+<Warning>
+  The LangChain and Vercel adapters do not write a case id into the records
+  they make. Their `unit` option lands in the closing record's metadata, which
+  `bundle` does not read. An agent whose window holds adapter records cannot
+  build a declared case pack at 0.15.0: `bundle --case` refuses the records
+  that name no case, and `bundle` without `--case` refuses the hand-off records
+  that name one. Build that agent's pack without `SANNING_SIGNING_SEED`, and
+  expect the case to read with an exception for a pack that does not say what
+  it holds.
+</Warning>
+
+## Close each run
+
+A closing record says how a run ended. It lists the records the run delivered,
+what was observed (`completed`, `failed` or `unknown`), and, separately, what
+your code states. The two are never merged, so a run that ended cleanly inside
+a case that failed says both.
+
+With the LangChain adapter, name the unit when you build the handler and state
+the outcome when you close it:
+
+<CodeGroup>
+
+```ts TypeScript
+import { envelopeAnchorCallbacks } from "@sanning/anchor-langchain";
+
+const evidence = envelopeAnchorCallbacks(anchorer, { unit: "case-5d1e9a" });
+try {
+  await agent.invoke(input, { callbacks: [evidence] });
+  await evidence.close({ outcome: "completed" });
+} catch (err) {
+  await evidence.close({ outcome: "failed", reason: String(err) });
+  throw err;
+}
+```
+
+```python Python
+from sanning_anchor import AnchorCallbackHandler
+
+handler = AnchorCallbackHandler(anchorer, unit="case-5d1e9a")
+try:
+    agent.invoke(inputs, config={"callbacks": [handler]})
+    handler.close(outcome="completed")
+except Exception as err:
+    handler.close(outcome="failed", reason=str(err))
+    raise
+```
+
+</CodeGroup>
+
+The adapter writes one closing record per root run, `langchain.run_closed`,
+with `closing.outcome.observed` from the run's own end and
+`closing.outcome.stated` from your `close()`. The Vercel middleware takes the
+same `unit` and `close({ outcome, reason })`; it cannot see how a run ended, so
+its observed status is always `unknown`.
+
+Without an adapter, anchor a closing record yourself. `promotedClosing` builds
+the same `closing` field the adapters write:
+
+<CodeGroup>
+
+```ts TypeScript
+import { promotedClosing } from "@sanning/anchor";
+
+await anchorer.anchor({
+  type: "app.run_closed",
+  data: JSON.stringify({ closed: "case-5d1e9a" }),
+  caseId: "case-5d1e9a",
+  metadata: promotedClosing(
+    deliveredEventIds,
+    { status: "unknown" },
+    { stated: { status: "completed" }, unitId: "case-5d1e9a" },
+  ),
+});
+```
+
+```python Python
+from sanning_anchor.langchain import promoted_closing
+
+anchorer.anchor(
+    event_type="app.run_closed",
+    content=json.dumps({"closed": "case-5d1e9a"}).encode(),
+    case_id="case-5d1e9a",
+    metadata=promoted_closing(
+        delivered_event_ids,
+        {"status": "unknown"},
+        stated={"status": "completed"},
+        unit_id="case-5d1e9a",
+    ),
+)
+```
+
+</CodeGroup>
+
+Replace `deliveredEventIds` (`delivered_event_ids`) with the event ids this run
+anchored. Pass `unknown` as the observed status unless something watched the
+run end, and put what your code knows in `stated`.
+
+No kernel reads a closing record's metadata. A reader sees it as one more
+record the agent signed, and the case reader names it, as
+[Read the verdict](#read-the-verdict) shows.
+
+## Bundle one pack per agent
+
+Wait until the interval holding the case's records is sealed, which takes
+minutes. Then build each agent's pack where that agent's log store and seed
+are:
+
+<CodeGroup>
+
+```bash TypeScript
+export SANNING_API_KEY=API_KEY
+export SANNING_SIGNING_SEED=AGENT_SIGNING_SEED
+npx @sanning/anchor bundle \
+  --agent assessor --from 2026-09-21 --to 2026-09-21 \
+  --case case-5d1e9a \
+  --logs ./logstore --out assessor-case-5d1e9a.zip
+```
+
+```bash Python
+export SANNING_API_KEY=API_KEY
+export SANNING_SIGNING_SEED=AGENT_SIGNING_SEED
+sanning-anchor bundle \
+  --agent assessor --from 2026-09-21 --to 2026-09-21 \
+  --case case-5d1e9a \
+  --logs ./logstore --out assessor-case-5d1e9a.zip
+```
+
+</CodeGroup>
+
+Replace the following:
+
+- `API_KEY` with the organization's API key.
+- `AGENT_SIGNING_SEED` with the seed the `assessor` agent signs its records
+  with. `bundle` signs the declaration and the pack with it.
+- `assessor`, the dates and `./logstore` with the agent, the days and the log
+  store root that hold the case.
+
+`--from` and `--to` select on the time Sanning received each record, which can
+sit a moment before the time your code captured. Widen the window rather than
+cut it close.
+
+The summary names the case, the records the declaration lists, and the
+hand-off sides it claims:
+
+```
+  case         case-5d1e9a  (selected on each record's own signed context.case_id)
+  declaration  case case-5d1e9a, 2 record(s) declared, 2 hand-off side(s) claimed
+               each claim names ONE side; the counterparty holds the other, and the pair closes across both packs
+  seal         the agent's own key: this pack carries a signed declaration
+```
+
+Three things about the pack that are not obvious:
+
+- **A hand-off record's message is never in the pack.** The record commits to
+  the message's hash, so the declaration lists it as `content_withheld` and the
+  pack carries no file for it under `logs/`. A pack that holds only hand-off
+  records has no `logs/` directory at all.
+- **Without `SANNING_SIGNING_SEED`, the pack has no declaration.** `bundle`
+  seals it with a one-time key and says so. A case reader cannot tell such a
+  pack from a trimmed one.
+- **A declared pack needs a local log store.** With `SANNING_SIGNING_SEED` set,
+  `bundle` refuses an `s3://` value for `--logs`.
+
+## Hand every pack to the reader
+
+Send each pack zip to the reader by whatever channel you use for evidence.
+Each organization sends its own: the reader needs every party's pack, because
+a pack holds only one side of each hand-off. Nothing about this step touches
+Sanning.
+
+## Verify on the page
+
+Open [verify.sanning.io](https://verify.sanning.io), then select or drop every
+pack zip at once. A single zip holding the packs in folders works too. The
+page reads them as one case, in the reader's browser, and shows one verdict
+with every exception listed in the kernel's own words. No pack is uploaded.
+
+## Verify at the command line
+
+Each pack verifies on its own, from inside the unzipped pack:
+
+```bash
+unzip assessor-case-5d1e9a.zip -d assessor-pack
+cd assessor-pack
+npx @sanning/proof verify bundle.json
+```
+
+Add `--logs logs/` when the pack has a `logs/` directory. A pack of hand-off
+records has none, and pointing `--logs` at a directory that does not exist is
+an input error that exits 2.
+
+An honest pack of hand-off records prints `INCOMPLETE` and exits 3, because
+none of its records discloses content, so the content binding of each is
+unknown. The signatures, the inclusion proofs and the declaration still pass,
+and the output says so on its own lines.
+
+A single-pack check does not pair anything. To read the case, pass every pack
+to `readCase` (`read_case` in Python), as
+[What a verdict means](/verify/what-a-verdict-means#a-verdict-over-a-case)
+shows. From `@sanning/proof` and `sanning-proof` 0.12.0, the kernel's own
+`case` command does the same:
+
+```bash
+npx @sanning/proof case assessor-pack/ reviewer-pack/
+```
+
+The following table lists the `case` command's exit codes:
+
+| Exit | Case verdict |
+|---|---|
+| 0 | `verified` |
+| 1 | `failed` |
+| 2 | `malformed`, or an input that cannot be read as a case |
+| 3 | `incomplete` or `partial` |
+| 4 | `mixed` |
+
+## Read the verdict
+
+A case reads `verified` only when every hand-off found its counterpart and the
+reader names no exception. The following table shows how honest cases read, as
+measured with both kernels:
+
+| The case holds | `@sanning/proof` 0.11.x | From 0.12.0 |
+|---|---|---|
+| One message each way, and nothing else | `verified` | `verified` |
+| Two or more messages in one direction | `mixed`, each hand-off record `FAILED on message_hash, sequence` beside a `counterpart_ambiguous` line | `verified` |
+| A closing record or a step record beside the hand-offs | `mixed`, naming each such record as declared and claimed in no hand-off pair | `mixed`, the same |
+| A pack with no declaration | `mixed`, naming the pack as one that does not say what it holds | `mixed`, the same |
+
+**`mixed` on an honest case is not a finding against anyone.** It means the
+contributions differ. Read the exception lines: a line ending in `UNKNOWN`
+names something the reader could not establish, and a `FAILED` line beside a
+`counterpart_ambiguous` line for the same record, before 0.12.0, is the
+several-messages reading rather than an altered message. An altered message
+fails with no ambiguity line beside it:
+
+```
+failed
+assessor-pack/a634bed2-0495-461b-ac51-b092f09fbb72 FAILED on message_hash
+reviewer-pack/93d88dca-4dbb-4ec3-997f-5299135efdc6 FAILED on message_hash
+```
+
+A verified case carries the limits a verified pack carries, and more.
+[What a hand-off record does not prove](/concepts/limits) states them.
+
+## What to read next
+
+<CardGroup cols={2}>
+  <Card title="What a verdict means" icon="circle-check" href="/verify/what-a-verdict-means">
+    Every verdict word, and reading a case from your own code.
+  </Card>
+  <Card title="What a hand-off record does not prove" icon="scale-balanced" href="/concepts/limits">
+    Integrity, not accuracy, and the other limits to state to a reader.
+  </Card>
+</CardGroup>

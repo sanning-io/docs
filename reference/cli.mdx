@@ -50,7 +50,7 @@ them, and neither passes by agreeing with the other.
 | `--logs` | In practice | Your store root: the local directory holding `content/` and `records/`, or `s3://bucket` or `s3://bucket/prefix` |
 | `--out` | Yes | Where to write the zip |
 | `--allow-unstamped` | No | Assemble even when records in the period are not yet stamped. Takes no value |
-| `--case` | No | From 0.15.0. Select the records whose own `context.case_id` is this case. See [Record a hand-off between two agents](/guides/handoff#hand-the-case-over) |
+| `--case` | No | From 0.15.0. Select the records whose own `context.case_id` is this case, and declare the pack about it. See [Hand over and verify a case](/guides/handoff-case#bundle-one-pack-per-agent) |
 
 <Note>
   `--logs` is optional to the parser and required in practice. The command reads your
@@ -61,11 +61,13 @@ them, and neither passes by agreeing with the other.
 **Authentication** comes from `SANNING_API_KEY` in the environment. There is no flag for
 it. The key needs `anchor:read`.
 
-**`--case` needs `SANNING_SIGNING_SEED` too.** Selecting a case builds a declaration, the
-pack's own signed statement of what it holds, and a declaration needs a real key. Without
-`SANNING_SIGNING_SEED` set, `bundle` seals the pack with a one-time key it mints and
-discards, and no declaration is built. See
-[Hand the case over](/guides/handoff#hand-the-case-over).
+**A declaration needs `SANNING_SIGNING_SEED`.** Set it to the seed of the agent whose
+records you are bundling, 64 lowercase hex characters, and `bundle` signs a declaration,
+the pack's own statement of what it holds, and seals the pack with that key. Without it,
+`bundle` seals the pack with a one-time key it mints and discards, and builds no
+declaration. With it set, `bundle` refuses a window holding a record that names no case,
+a window holding more than one case, and an `s3://` log store. See
+[Hand over and verify a case](/guides/handoff-case#bundle-one-pack-per-agent).
 
 **`--agent` is checked twice.** The records route the command reads from filters by this
 name on the server, and the command also refuses if a record it gets back names a
@@ -109,9 +111,9 @@ npx @sanning/proof verify bundle.json --logs logs/
 | Exit | Means |
 |---|---|
 | 0 | Verified |
-| 1 | A check ran and failed. The output names the record |
+| 1 | A check ran and failed, or the pack deviates from its own declaration. The output names the record |
 | 2 | The input could not be read |
-| 3 | Verified offline as `partial`: a gateway re-fetch was asked for and something in it could not be checked |
+| 3 | Undetermined: the pack reads `incomplete`, or a gateway re-fetch was asked for and something in it could not be checked |
 
 Only an `arweave` witness with a 43-character transaction id is re-fetched from a
 gateway. A witness of any other kind, or an id that is not exactly 43 characters, is
@@ -119,6 +121,27 @@ reported as not checked, and the run answers `partial` and exits `3`.
 
 `sanning-proof` on PyPI is the same kernel and ships the same `verify` command. See
 [Verify at the command line](/verify/cli).
+
+## case
+
+From `@sanning/proof` and `sanning-proof` 0.12.0. Read several packs as one case and
+print one verdict, with every exception named. Name each pack as an unzipped directory or
+as its zip.
+
+```bash
+npx @sanning/proof case assessor-pack/ reviewer-pack/
+```
+
+| Exit | Case verdict |
+|---|---|
+| 0 | `verified` |
+| 1 | `failed` |
+| 2 | `malformed`, or an input that cannot be read as a case |
+| 3 | `incomplete` or `partial` |
+| 4 | `mixed` |
+
+`--gateways` takes a comma-separated list and re-fetches each witness, outside the case
+reading. See [Hand over and verify a case](/guides/handoff-case#verify-at-the-command-line).
 
 ## Getting help
 

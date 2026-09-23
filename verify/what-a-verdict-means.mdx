@@ -104,8 +104,10 @@ minimum disclosure, not a defect, and treating it as tampering would be wrong.
 
 A case is several packs that together hold both sides of one or more hand-offs,
 often from two organizations. A reader drops them together and gets one
-verdict, with every exception named. It needs `@sanning/proof` 0.11.0 or
-`sanning-proof` 0.11.0.
+verdict, with every exception named. It needs `@sanning/proof` or
+`sanning-proof` 0.11.0 or later. From 0.11.1, a formed pair verifies only when
+each record names the other's signer, and a pair that does not fails the check
+`counterparty_named`.
 
 The verdict is reached by one rule. Every hand-off whose two sides were found
 and checked contributes a verdict, and so does every exception. If they all say
@@ -125,7 +127,10 @@ shows:
 Two more land in the "reader could not tell" group: more than one record on the
 other side could be a hand-off's counterpart (fan-in, fan-out, or several
 messages one way), and a pack declares a record that is neither of its
-hand-off sides. [What a hand-off record does not prove](/concepts/limits)
+hand-off sides, such as a step record or a closing record. From
+`@sanning/proof` 0.12.0, a candidate that another record already accounts for
+is set aside, so an honest exchange of several messages in one direction reads
+`verified`. [What a hand-off record does not prove](/concepts/limits)
 says what each looks like and why the reader cannot resolve either on its own.
 
 One kind carries a pack's own verdict instead: a pack whose signature holds and
@@ -135,13 +140,13 @@ reads better than its weakest pack.
 **A missing side is an exception, never a failure.** No pack signed by the
 counterparty's key was in what you dropped; that is not proof the counterparty
 recorded nothing, and it is not tampering. The verify page prints each
-exception in the kernel's own words. A plain-language explanation beside each
-one is a separate piece of work on the verify page itself, not on this page or
-on `@sanning/proof`; whether it has shipped by the time you read this is the
-verify page's own release, not this page's.
+exception in the kernel's own words.
 
 To read a case without the page, pass the packs to `readCase` (`read_case` in
-Python). There is no command-line verb for a case in `@sanning/proof` 0.11.0.
+Python). From `@sanning/proof` and `sanning-proof` 0.12.0, the `case` command
+does the same from a terminal, as
+[Hand over and verify a case](/guides/handoff-case#verify-at-the-command-line)
+shows.
 
 <CodeGroup>
 
@@ -153,7 +158,9 @@ import { readCase, renderException } from "@sanning/proof";
 async function pack(dir) {
   const bundle = JSON.parse(await readFile(`${dir}/bundle.json`, "utf8"));
   const content = {};
-  for (const name of await readdir(`${dir}/logs`)) {
+  // A pack of hand-off records only has no logs/ directory.
+  const names = await readdir(`${dir}/logs`).catch(() => []);
+  for (const name of names) {
     content[name.replace(/\.json$/, "")] = await readFile(`${dir}/logs/${name}`);
   }
   return { ref: dir, bundle, content };
@@ -191,13 +198,14 @@ for exception in reading.exceptions:
 
 </CodeGroup>
 
-Run it with one directory per pack, each holding `bundle.json` and `logs/`.
-Over a case whose two sides disagree, both languages print the same lines:
+Run it with one directory per pack, each holding `bundle.json` and, when the
+pack has one, `logs/`. Over a case whose two sides disagree, both languages
+print the same lines:
 
 ```
 failed
-org-a-pack/handoff-sent-a1 FAILED on message_hash
-org-b-pack/handoff-received-b1 FAILED on message_hash
+assessor-pack/a634bed2-0495-461b-ac51-b092f09fbb72 FAILED on message_hash
+reviewer-pack/93d88dca-4dbb-4ec3-997f-5299135efdc6 FAILED on message_hash
 ```
 
 A case verdict carries the same limits as a pack verdict, and more:
