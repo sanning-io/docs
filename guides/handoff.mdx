@@ -1,0 +1,252 @@
+---
+title: "Record a hand-off between two agents"
+description: "One call on each side, so a reader can check the second agent acted on exactly what the first sent"
+---
+
+This page records a message that one agent sends to another. When the message
+leaves one run and crosses your own transport, nothing inside either run
+records it. Two calls fix that: the sender records what it sent, the receiver
+records what arrived, and anyone who holds both records can check that they
+match.
+
+It works over any transport (HTTP, a queue, gRPC, a framework's own channel)
+and needs no framework.
+
+<Note>
+  The hand-off calls need `@sanning/anchor` 0.15.0 or later, or `sanning-anchor`
+  0.9.0 or later. `@sanning/anchor` 0.14.0 and `sanning-anchor` 0.8.x do not
+  have them. Where a statement on this page holds only from a given version, it
+  names that version.
+</Note>
+
+Each agent needs its own anchorer, with its own signing key, built as
+[Anchor from your agent](/guides/anchor) describes.
+
+## Send a message
+
+Create one hand-off helper per case, then call `send` with the message and the
+receiver's public key.
+
+<CodeGroup>
+
+```ts TypeScript
+import { createHandoff } from "@sanning/anchor";
+
+// `anchorer` is this agent's anchorer. `caseId` groups every message in
+// one exchange, and is committed permanently, so keep it opaque.
+const handoff = createHandoff({ anchorer, caseId: "case-5d1e9a" });
+
+const sent = await handoff.send({
+  message: {
+    task: "credit-assessment",
+    recommendation: "approve",
+    tier: 2,
+  },
+  // The receiving agent's Ed25519 public key, 64 hex characters.
+  to: RECEIVER_PUBLIC_KEY,
+});
+
+// The message bytes, and the evidence that travels beside them.
+await transport.send({ body: sent.wireBytes, sanning: sent.attachment });
+```
+
+```python Python
+from sanning_anchor import create_handoff
+
+# `anchorer` is this agent's anchorer. `case_id` groups every message in
+# one exchange, and is committed permanently, so keep it opaque.
+handoff = create_handoff(anchorer=anchorer, case_id="case-5d1e9a")
+
+sent = handoff.send(
+    message={
+        "task": "credit-assessment",
+        "recommendation": "approve",
+        "tier": 2,
+    },
+    # The receiving agent's Ed25519 public key, 64 hex characters.
+    to=RECEIVER_PUBLIC_KEY,
+)
+
+# The message bytes, and the evidence that travels beside them.
+transport.send(body=sent.wire_bytes, sanning=sent.attachment)
+```
+
+</CodeGroup>
+
+Replace `RECEIVER_PUBLIC_KEY` with the receiving agent's public key, and
+`transport` with however your agents talk to each other.
+
+`send` signs a `handoff.sent` record in your process, writes it to your own log
+store, and anchors it. It returns the bytes to send (`wireBytes`) and an
+attachment to send beside them (`attachment`). The attachment is plain JSON
+that holds the signed record, which the receiver checks on arrival.
+
+## Receive it
+
+On the receiving side, pass what arrived to `receive` before your agent acts on
+it.
+
+<CodeGroup>
+
+```ts TypeScript
+import { createHandoff } from "@sanning/anchor";
+
+const handoff = createHandoff({ anchorer, caseId: "case-5d1e9a" });
+
+const received = await handoff.receive({
+  attachment: arrived.sanning,
+  wireBytes: arrived.body,
+  outcome: "accepted",
+});
+
+// This is the message the sender committed to.
+await agent.handle(received.message);
+```
+
+```python Python
+from sanning_anchor import create_handoff
+
+handoff = create_handoff(anchorer=anchorer, case_id="case-5d1e9a")
+
+received = handoff.receive(
+    attachment=arrived["sanning"],
+    wire_bytes=arrived["body"],
+    outcome="accepted",
+)
+
+# This is the message the sender committed to.
+agent.handle(received.message)
+```
+
+</CodeGroup>
+
+`receive` verifies the sender's record with the open kernel, in your process,
+with no call to Sanning. Then it records `handoff.received`, committing to the
+message this side holds, and returns that message. `outcome` records what your
+agent did with it: `accepted`, `rejected` or `failed`.
+
+## What receive checks, and what it refuses
+
+`receive` throws rather than hand your agent a message it cannot stand behind.
+Each refusal has its own error, with the same name in both languages:
+
+| Error | When | Is a record written? |
+|---|---|---|
+| `HandoffUnverifiedError` | The sender's record does not verify: its signature, its version, or its binding to its own bytes | No |
+| `HandoffAlteredError` | The record verifies, and the message that arrived is not the message it commits to | Yes: a `handoff.received` with `outcome: "rejected"`, written before the error is thrown |
+| `HandoffMisroutedError` | The record is addressed to a different key than this receiver's, or names a different case or record type | No |
+| `HandoffMalformedRecordError` | The sender's record breaks the rules for its own fields | No |
+| `HandoffReplayError` | This helper already received the same sender's message with the same sequence number | No |
+
+**An altered message leaves a record, on purpose.** If it left nothing, a
+reader would see one sent record with no counterpart, which reads as an
+absence rather than as tampering. The rejected record commits to what this side
+actually held, so the pair forms and fails, and the failure names the record.
+
+**The replay guard lasts as long as one helper.** A new process, or a second
+helper for the same case, does not see what an earlier one received.
+
+**Identity does not decide whether a record verifies.** `receive` does not look
+up who a key belongs to. A key you have never seen verifies exactly as a known
+one does. `received.senderPublicKey` (`sender_public_key` in Python) gives you the key, and whether it is
+enrolled and not revoked is a question you answer on your own terms, after the
+record has verified.
+
+## What the record commits to
+
+`event.message_hash` is SHA-256 over the canonical form of the message object
+(JCS, RFC 8785), never over the bytes on the wire. A transport that parses and
+re-serializes your JSON changes the bytes and not the object, so an honest
+hand-off still matches.
+
+From 0.15.0, a transport may change key order, whitespace, string escapes and
+number spelling, and add one leading byte order mark, and the hand-off still
+matches. Bytes that are not UTF-8, a repeated member name, or nesting deeper
+than a parser holds read as altered.
+
+The raw-byte hash is recorded beside it as `event.message_bytes_hash`, and it is
+a diagnostic only. Nothing pairs or grades on it, and the two sides of an honest
+hand-off can differ there.
+
+From 0.15.0, `send` refuses an integer outside plus or minus 2<sup>53</sup> - 1
+before it spends a sequence number. JCS writes every number as a double, so a
+reader that keeps the integer on the wire would see a number nobody supplied.
+Send an exact large id as a string.
+
+## Send a file
+
+A file travels as a descriptor inside the message: its media type, its SHA-256
+and its length. The bytes never enter the record and are never sent to Sanning.
+
+<CodeGroup>
+
+```ts TypeScript
+import { filePart } from "@sanning/anchor";
+
+const part = await filePart({ bytes: pdfBytes, mediaType: "application/pdf" });
+// { kind: "file", media_type, content_hash, content_length }
+```
+
+```python Python
+from sanning_anchor import file_part
+
+part = file_part(data=pdf_bytes, media_type="application/pdf")
+```
+
+</CodeGroup>
+
+Put the descriptor in the message's parts, and send the file beside the message
+however you like. A different descriptor changes the message, so the pair
+fails.
+
+<Warning>
+  At 0.15.0, `receive` does not compare the bytes that arrive beside a
+  descriptor with its `content_hash`. Hash the file yourself and compare before
+  your agent acts on it.
+</Warning>
+
+## Numbering within a case
+
+Each sender numbers its own messages in a case, starting at 1, and the receiver
+records the sender's number unchanged. Two agents in one case each start at 1
+and do not collide, because a number is read against the key that signed it. A
+number is spent even when the record fails to write, so a gap in one sender's numbers is
+visible to a reader. To resume a case after a restart, pass `startSequence`
+(`start_sequence` in Python).
+
+## Hand the case over
+
+A reader needs both sides. Each organization builds a pack of its own side, with
+the case named, and the reader verifies the two packs together. From 0.15.0,
+`bundle --case` selects the records of one case and signs a declaration of what
+the pack holds, including the hand-off sides it holds:
+
+```bash
+npx @sanning/anchor bundle \
+  --agent assessor --from 2026-09-21 --to 2026-09-21 \
+  --case case-5d1e9a \
+  --logs ./logstore --out case-5d1e9a.zip
+```
+
+`--case` selects on each record's own case, so pass `caseId` (`case_id` in
+Python) on every record in the case, not only the hand-offs. The hand-off helper
+sets it on the two hand-off records for you. With `SANNING_SIGNING_SEED` set,
+the command signs the declaration with the agent's key and refuses a window
+holding a record that names no case, rather than guessing. See
+[Command line](/reference/cli#bundle) for every flag.
+
+To check both packs as one case, drop them together on the
+[verify page](/verify/browser), or read them yourself as
+[What a verdict means](/verify/what-a-verdict-means#a-verdict-over-a-case)
+shows.
+
+## What to read next
+
+<CardGroup cols={2}>
+  <Card title="What a hand-off record does not prove" icon="scale-balanced" href="/concepts/limits">
+    Integrity, not accuracy, and the other limits to state to a reader.
+  </Card>
+  <Card title="The A2A 1.0.0 mapping" icon="table" href="/reference/a2a-mapping">
+    Where each part of an A2A message ends up in the record.
+  </Card>
+</CardGroup>

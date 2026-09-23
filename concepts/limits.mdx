@@ -1,0 +1,82 @@
+---
+title: "What a hand-off record does not prove"
+description: "Integrity, not accuracy; attribution, not independence; a record, not a control; and the wait for independent time"
+---
+
+A verified hand-off is a narrow statement: the message the second agent
+recorded is the message the first agent recorded, and each side was signed by
+the key it names. This page states four things that statement does not reach.
+Say them to whoever relies on your evidence, before they read more into it.
+
+## Integrity, not accuracy
+
+A record proves what was recorded, not that it was true.
+
+If an assessing agent recommends approval and a reviewing agent receives that
+recommendation, a verified pair shows the reviewer acted on exactly the
+recommendation the assessor produced. It says nothing about whether the
+recommendation was right, whether the data behind it was correct, or whether
+the model was fit for the task. Those are conclusions for the people reviewing
+the work. Sanning is content-blind: it holds commitments, never the content,
+so it cannot vouch for the content either.
+
+## Attribution, not independence between organizations
+
+A pair across two organizations proves that two keys each signed their own
+side. It does not prove that two independent parties hold those keys.
+
+Pairing matches on keys and hashes and never on which account a record came
+from, so a pair verifies across packs from two organizations. The kernel flags
+one key signing both sides of a hand-off. It cannot tell two keys held by one
+party from two keys held by two, because binding a key to an organization
+happens outside the evidence. An agent's identity informs a reader and never
+decides whether evidence verifies. If independence matters to your review,
+establish who holds each key by other means.
+
+## A record, not a control
+
+Sanning records what agents did, and lets anyone check the record later. It
+does not approve, block or enforce what an agent may do, and a verified record
+of a decision is not evidence that the decision was permitted.
+
+The one refusal in the hand-off calls is about integrity, not policy: `receive`
+does not hand your agent a message that differs from the one the sender
+committed to. Whether an agent is allowed to send a message, or to act on one,
+is decided by your own systems.
+
+## The wait for independent time
+
+A record is witnessed only once its interval is stamped.
+
+Until then, the only time on a record is the time the agent signed into it,
+which is the agent's own claim. When a receiver checks a hand-off on arrival,
+it checks the sender's signature and the message, offline, in the moment; it
+does not check when the record was made. Independent time arrives when the
+interval holding the record closes and its stamp is published on the public
+record, minutes later rather than seconds. [The witness](/concepts/witness)
+explains the interval and how long the wait is.
+
+## What a receiver cannot check on arrival
+
+Three questions stay open at the moment a message arrives, and each has a
+different answer later:
+
+- **Whether the sender's key is enrolled and not revoked.** That is a roster
+  question, and `receive` deliberately does not ask it. Weigh it on your own
+  terms after the record verifies.
+- **When the record was made.** Independent time comes with the stamp, as the
+  previous section describes.
+- **Whether anything was left out.** A pack's signed declaration says what its
+  holder claims the pack holds, and a reader checks the pack against that claim.
+  Nothing proves a party showed you every exchange there was.
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="What a verdict means" icon="circle-check" href="/verify/what-a-verdict-means">
+    What a verified pack proves, and what it does not.
+  </Card>
+  <Card title="The trust boundary" icon="shield" href="/concepts/trust-boundary">
+    Why your counterparty does not have to trust Sanning, or you.
+  </Card>
+</CardGroup>

@@ -1,0 +1,108 @@
+---
+title: "A2A 1.0.0 mapping"
+description: "Where each part of an A2A 1.0.0 message ends up in a Sanning hand-off record"
+---
+
+This page maps the message structure of the Agent2Agent (A2A) protocol,
+version 1.0.0, onto the Sanning hand-off record. It is for a developer whose
+agents already exchange A2A messages and who wants to know what a hand-off
+record says about one.
+
+The hand-off record uses its own names with its own definitions. This table is
+a mapping between two sets of names. It is not a claim that Sanning implements
+or supports the A2A protocol.
+
+<Note>
+  **Dated mapping.** Read on 2026-09-23 from the A2A specification at version
+  1.0.0: the
+  [A2A 1.0.0 specification](https://a2a-protocol.org/v1.0.0/specification/),
+  and its normative Protocol Buffers definition,
+  [`specification/a2a.proto` at the `v1.0.0` tag](https://github.com/a2aproject/A2A/blob/v1.0.0/specification/a2a.proto),
+  whose commit is dated 2026-03-12. A later A2A version can change any row, and
+  this page does not follow it until it is re-read.
+</Note>
+
+The Sanning side of each row holds for `@sanning/anchor` 0.15.0 and
+`sanning-anchor` 0.9.0, the first releases with the hand-off calls. See
+[Record a hand-off between two agents](/guides/handoff).
+
+## How an A2A message becomes a record
+
+Pass the A2A `Message` object, in its JSON form, as the `message` argument to
+`send`. The `handoff.sent` record commits to SHA-256 over that object's
+canonical form (JCS, RFC 8785), in `event.message_hash`. The receiver commits to
+the object it received in the same way, and the two hashes match only if the
+objects are equal.
+
+So every A2A field is inside one commitment. None of them is copied into a
+field of its own, and a reader checks them by comparing the hash, not by
+reading them out of the record.
+
+For example, this A2A 1.0.0 message, sent through both SDKs, produced the same
+`message_hash` in each (`623664a4…a132`), and re-serializing it with different
+whitespace on the way did not change the hash:
+
+```json
+{
+  "messageId": "9f0c7a52-3b1e-4d6a-8c2f-5e7b1a9d0c34",
+  "contextId": "ctx-5d1e9a",
+  "role": "ROLE_AGENT",
+  "parts": [
+    { "text": "Assessment: approve at tier 2." },
+    { "data": { "score": 712 }, "mediaType": "application/json" }
+  ]
+}
+```
+
+## The message fields
+
+The following table covers each field of the A2A 1.0.0 `Message`, by its JSON
+name:
+
+| A2A 1.0.0 field | In the Sanning record | How the two relate |
+|---|---|---|
+| `messageId` | Inside `event.message_hash` only | A2A says the message creator creates it. Sanning names a message by its hash, not by an id, so no record field carries it. |
+| `contextId` | Closest to `context.case_id` | Both group related messages. `case_id` is yours to choose, at most 128 characters matching `^[A-Za-z0-9_.:-]+$`, and must be opaque because it is committed permanently and indexed. A2A lets the server agent generate a `contextId`. Reuse one as `case_id` only when it meets those rules. |
+| `taskId` | Inside `event.message_hash` only | A2A has the server agent generate it. No record field carries it. |
+| `referenceTaskIds` | Inside `event.message_hash` only | `context.in_reply_to` is not its counterpart: it names one earlier message by that message's `message_hash`, and names no task. |
+| `role` | Inside `event.message_hash` only | A2A's `ROLE_USER` and `ROLE_AGENT` say client or server. Which side of a hand-off wrote a record is its record type, `handoff.sent` or `handoff.received`. |
+| `parts` | Inside `event.message_hash` only | Each part is committed as JSON inside the message object. The next table covers them. |
+| `metadata` | Inside `event.message_hash` only | Not the record's own `metadata`, which is yours and which no verifier reads. |
+| `extensions` | Inside `event.message_hash` only | Committed as it appears. |
+
+## The part fields
+
+In A2A 1.0.0 a `Part` carries one of `text`, `raw`, `url` or `data`, and may
+carry `mediaType`, `filename` and `metadata` beside it. The following table
+says what the commitment covers for each:
+
+| A2A 1.0.0 part field | What the commitment covers |
+|---|---|
+| `text` | The string. |
+| `data` | The JSON value. |
+| `raw` | The base64 string as it sits in the message, so a changed file changes `message_hash`. |
+| `url` | **The URL string only.** The file it points to is not committed, and nothing checks it. |
+| `mediaType` | The string. It is not `event.content_type`, which names what the whole committed message is (`application/json` by default). |
+| `filename`, `metadata` | The values, as they appear. |
+
+A2A 1.0.0 defines no content hash for a part. To commit a file that travels
+beside the message rather than inside it, put a Sanning file descriptor in the
+message instead of a `url` part: `filePart` (`file_part` in Python) builds one
+that carries the file's SHA-256 and length. The
+[hand-off guide](/guides/handoff#send-a-file) says what `receive` does and does
+not check about it.
+
+## Record fields with no A2A counterpart
+
+The following fields exist in the hand-off record and have no counterpart in
+the A2A 1.0.0 `Message`:
+
+| Record field | What it holds |
+|---|---|
+| `event.counterparty_public_key` | The Ed25519 key on the other side: the intended receiver on a sent record, the sender on a received one. A2A 1.0.0 defines signatures for Agent Cards and not for messages. |
+| `event.sequence` | The sender's number for this message within the case, starting at 1. |
+| `event.outcome` | On a received record only: `accepted`, `rejected` or `failed`, for what the receiving agent did with the message. |
+| `event.content_type` | What the committed bytes are, `application/json` by default. |
+| `event.message_bytes_hash` | The hash of the bytes as they crossed the transport. A diagnostic only: nothing pairs or grades on it. |
+| `context.in_reply_to` | The `message_hash` of the message this one answers. |
+| `context.protocol` | A marker for a reader, saying which protocol's names the mapping follows. Both SDKs write `a2a/1.0.0` by default, whatever the message is; pass `protocol` to write another. It is never a claim of protocol support. |
