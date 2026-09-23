@@ -21,17 +21,37 @@ A verified pack prints its per-record results and exits **0**:
 
 ```
 VERIFIED  verified offline (no gateway re-fetch requested)
-  logs: 37/37 disclosed verified
+  declaration: this pack holds exactly what it declares: 2 record(s), 0 withheld on purpose
+  logs: 2/2 record(s) content-verified
 ```
+
+Leave out `--logs` when the pack has no `logs/` directory. A pack of hand-off
+records has none, and `--logs` naming a directory that does not exist exits 2.
 
 ## Exit codes
 
+This is the one table every verb of `@sanning/proof` and `sanning-proof`
+uses, `verify`, `export` and `case` alike:
+
 | Code | Means |
 |---|---|
-| 0 | Verified |
-| 1 | A check ran and failed. The output names the record |
+| 0 | Verified, or the export was written |
+| 1 | A check ran and failed, or the pack deviates from its own declaration. The output names the record |
 | 2 | The input could not be read at all |
-| 3 | Verified offline as `partial`: a gateway re-fetch was asked for and something in it could not be checked |
+| 3 | Undetermined: the pack reads `incomplete` or `partial`, or a gateway re-fetch was asked for and something in it could not be checked |
+| 4 | Mixed: more than one outcome, none of them failed |
+
+A pack whose declaration says a record's content is withheld on purpose still
+reads `verified`: a hand-off record commits to a message's hash and the pack
+carries no file for it, and the declaration says so, so its content binding
+is undetermined rather than missing. A pack with **no** declaration (built
+with no signing seed) and a record that discloses nothing reads `incomplete`
+instead, because nothing says the absence was on purpose. Either way the
+signatures, the inclusion proofs and the declaration, where the pack has one,
+are still checked, and the output says so on its own lines.
+
+This command reads one pack. To read several parties' packs as one case, see
+[Hand over and verify a case](/guides/handoff-case#read-the-case-at-the-command-line).
 
 ## Two errors you might hit first
 

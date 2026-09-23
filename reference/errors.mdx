@@ -94,6 +94,26 @@ These resolve on their own. Retry rather than debugging.
     Check the spelling against the console's **Agents** page. `--agent` takes the name you
     anchored under, not a display name you renamed it to later.
   </Accordion>
+  <Accordion title="N record(s) ... carry no context.case_id">
+    From 0.15.0. `bundle --case` with `SANNING_SIGNING_SEED` set found records in the
+    window that name no case, so it cannot tell whether they belong to the case it is
+    declaring.
+
+    Pass the case id on every record in the case when you anchor it (`caseId` in
+    TypeScript, `case_id` in Python), then run `bundle` again. See
+    [Name the case on every record](/guides/handoff-case#name-the-case-on-every-record).
+  </Accordion>
+  <Accordion title="this pack would declare itself about case ..., and N selected record(s) name N other case(s)">
+    From 0.15.0. `bundle` without `--case`, with `SANNING_SIGNING_SEED` set, found
+    records that name a case. A declared pack names one case, so it refuses rather than
+    put those records under the agent's name.
+
+    Pass `--case` and run the command once per case.
+  </Accordion>
+  <Accordion title="cannot read --logs logs/: ENOENT">
+    The pack has no `logs/` directory. A pack of hand-off records has none, because no
+    hand-off record discloses content. Run `verify` without `--logs`.
+  </Accordion>
   <Accordion title="pack.zip is not valid JSON: Unexpected token 'P'">
     You handed the kernel a zip. `PK` is the archive's own signature.
 
