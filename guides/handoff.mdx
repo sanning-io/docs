@@ -5,9 +5,9 @@ description: "One call on each side, so a reader can check the second agent reco
 
 This page records a message that one agent sends to another. When the message
 leaves one run and crosses your own transport, nothing inside either run
-records it. Two calls fix that: the sender records what it sent, the receiver
-records what arrived, and anyone who holds both records can check that they
-match.
+records it. Two calls fix that: the sender writes a **sent record**, the
+receiver writes a **received record**, and anyone who holds both can check
+that they match.
 
 It works over any transport (HTTP, a queue, gRPC, a framework's own channel)
 and needs no framework. When both sides have recorded their hand-offs,
@@ -15,10 +15,8 @@ and needs no framework. When both sides have recorded their hand-offs,
 verdict a third party can reproduce.
 
 <Note>
-  The hand-off calls need `@sanning/anchor` 0.15.0 or later, or `sanning-anchor`
-  0.9.0 or later. `@sanning/anchor` 0.14.0 and `sanning-anchor` 0.8.x do not
-  have them. Where a statement on this page holds only from a given version, it
-  names that version.
+  This page uses `@sanning/anchor` and `sanning-anchor` 0.15.0, the current
+  release of each SDK. Where a call is new in 0.15.0, this page says so.
 </Note>
 
 ## Before you start
@@ -63,7 +61,7 @@ key and give it to the agent on the other side:
 
 ```ts TypeScript
 // 64 lowercase hex characters: the key the other side addresses.
-const publicKey = await anchorer.publicKey();
+const publicKey = await anchorer.publicKeyHex();
 ```
 
 ```python Python
@@ -84,7 +82,7 @@ receiver's public key.
 import { createHandoff } from "@sanning/anchor";
 
 // `anchorer` is this agent's anchorer. `caseId` groups every message in
-// one exchange, and is committed permanently, so keep it opaque.
+// one case, and is committed permanently, so keep it opaque.
 const handoff = createHandoff({ anchorer, caseId: "case-5d1e9a" });
 
 const sent = await handoff.send({
@@ -105,7 +103,7 @@ await transport.send({ body: sent.wireBytes, sanning: sent.attachment });
 from sanning_anchor import create_handoff
 
 # `anchorer` is this agent's anchorer. `case_id` groups every message in
-# one exchange, and is committed permanently, so keep it opaque.
+# one case, and is committed permanently, so keep it opaque.
 handoff = create_handoff(anchorer=anchorer, case_id="case-5d1e9a")
 
 sent = handoff.send(
@@ -148,16 +146,12 @@ import { createHandoff } from "@sanning/anchor";
 
 const handoff = createHandoff({ anchorer, caseId: "case-5d1e9a" });
 
-// Refuse a sender you do not deal with before anything is recorded.
-const claimed = String(arrived.sanning.envelope.public_key).toLowerCase();
-if (claimed !== SENDER_PUBLIC_KEY) {
-  throw new Error(`not from the agent this service deals with: ${claimed}`);
-}
-
 const received = await handoff.receive({
   attachment: arrived.sanning,
   wireBytes: arrived.body,
   outcome: "accepted",
+  // Refuse a sender you do not deal with before anything is recorded.
+  expectedSender: SENDER_PUBLIC_KEY,
 });
 
 // This is the message the sender committed to.
@@ -169,15 +163,12 @@ from sanning_anchor import create_handoff
 
 handoff = create_handoff(anchorer=anchorer, case_id="case-5d1e9a")
 
-# Refuse a sender you do not deal with before anything is recorded.
-claimed = str(arrived["sanning"]["envelope"]["public_key"]).lower()
-if claimed != SENDER_PUBLIC_KEY:
-    raise RuntimeError(f"not from the agent this service deals with: {claimed}")
-
 received = handoff.receive(
     attachment=arrived["sanning"],
     wire_bytes=arrived["body"],
     outcome="accepted",
+    # Refuse a sender you do not deal with before anything is recorded.
+    expected_sender=SENDER_PUBLIC_KEY,
 )
 
 # This is the message the sender committed to.
@@ -187,99 +178,86 @@ agent.handle(received.message)
 </CodeGroup>
 
 Replace `SENDER_PUBLIC_KEY` with the sending agent's public key, in lowercase.
+Either case of a key is the same key.
 
 `receive` verifies the sender's record with the open kernel, in your process,
 with no call to Sanning. Then it records `handoff.received`, committing to the
 message this side holds, and returns that message. `outcome` records what your
-agent did with it: `accepted`, `rejected` or `failed`. It defaults to
-`accepted`.
+agent did with it: `accepted`, `rejected` or `failed`. It is required: this SDK
+never signs a decision on your behalf, and a missing or invalid value raises
+`HandoffOutcomeRequiredError` before anything verifies or is written.
 
-**Check the sender before `receive`, not after.** `receive` verifies the
-signature and does not decide who you deal with: a key you have never seen
-verifies exactly as a known one does. The record it writes carries the
+**`expectedSender` (`expected_sender` in Python) refuses a sender you did not
+name, before anything is recorded.** `receive` verifies the signature and does
+not, on its own, decide who you deal with: a key you have never seen verifies
+exactly as a known one does. Pass the counterparty's public key here and a
+message signed by any other key raises `HandoffUnexpectedSenderError`,
+naming the key it actually carried. The record `receive` writes carries the
 `outcome` you passed, so a check you make afterwards cannot change what the
 record says. The key in the attachment is only a claim until `receive`
 verifies it, and a forged claim fails there with `HandoffUnverifiedError`.
 
-## Confirm receipt to the sender
+## Confirm the hand-off to the sender
 
 The receiver's `handoff.received` record is itself signed, so it can travel
-back as the confirmation. The SDK has no call for this step; the following
-pattern uses the kernel's `verifyEnvelope` (`verify_envelope` in Python).
-
-On the receiving side, send back the record `receive` wrote:
+back as the confirmation. Send back the record `receive` wrote, then let the
+sender's own `handoff` helper check it:
 
 <CodeGroup>
 
 ```ts TypeScript
-const confirmation = {
-  envelope: received.result.envelope,
-  event_record: JSON.parse(new TextDecoder().decode(received.result.eventBytes)),
-};
+// On the receiving side: send back the record `receive` wrote.
+await transport.sendBack({ receivedRecord: received.receivedRecord });
 ```
 
 ```python Python
-import json
-
-confirmation = {
-    "envelope": dict(received.result.envelope),
-    "event_record": json.loads(received.result.event_bytes),
-}
+# On the receiving side: send back the record `receive` wrote.
+transport.send_back(received_record=received.received_record)
 ```
 
 </CodeGroup>
 
-On the sending side, count the hand-off as confirmed only when that record
-verifies, was signed by the receiver, names this sender, and commits to this
-message at this sequence:
-
 <CodeGroup>
 
 ```ts TypeScript
-import { jcs, utf8, verifyEnvelope } from "@sanning/proof";
+// On the sending side: `handoff` is the same helper `send` used, and
+// `backConfirmation` is whatever the receiver sent back above.
+const confirmation = await handoff.confirm({
+  sent,
+  receivedRecord: backConfirmation.receivedRecord,
+});
 
-async function confirmed(confirmation, sent, receiverKey, senderKey) {
-  const { envelope, event_record: record } = confirmation;
-  const check = await verifyEnvelope(envelope, {
-    payloadBytes: utf8(jcs(record)),
-  });
-  const event = record.event ?? {};
-  return (
-    check.ok &&
-    String(envelope.public_key).toLowerCase() === receiverKey &&
-    record.event_type === "handoff.received" &&
-    event.counterparty_public_key === senderKey &&
-    String(event.message_hash).toLowerCase() === sent.messageHash &&
-    event.sequence === sent.sequence &&
-    event.outcome === "accepted"
+if (!confirmation.confirmed) {
+  throw new Error(
+    `hand-off not confirmed: ${confirmation.reasons.map((r) => r.detail).join("; ")}`,
   );
 }
 ```
 
 ```python Python
-from sanning_proof import canonical_json, verify_envelope
+# On the sending side: `handoff` is the same helper `send` used, and
+# `back_confirmation` is whatever the receiver sent back above.
+confirmation = handoff.confirm(
+    sent=sent,
+    received_record=back_confirmation["received_record"],
+)
 
-
-def confirmed(confirmation, sent, receiver_key, sender_key):
-    envelope = confirmation["envelope"]
-    record = confirmation["event_record"]
-    check = verify_envelope(envelope, payload_bytes=canonical_json(record))
-    event = record.get("event") or {}
-    return (
-        check.ok
-        and str(envelope.get("public_key")).lower() == receiver_key
-        and record.get("event_type") == "handoff.received"
-        and event.get("counterparty_public_key") == sender_key
-        and str(event.get("message_hash")).lower() == sent.message_hash
-        and event.get("sequence") == sent.sequence
-        and event.get("outcome") == "accepted"
-    )
+if not confirmation.confirmed:
+    reasons = "; ".join(reason.detail for reason in confirmation.reasons)
+    raise RuntimeError(f"hand-off not confirmed: {reasons}")
 ```
 
 </CodeGroup>
 
-Pass the two public keys in lowercase. A reply that says "accepted" with no
-signed record behind it is not a confirmation.
+`confirm` (from 0.15.0) checks the receiver's record with the open kernel: that
+it verifies, was signed by the receiver, names this sender, and commits to
+this message at this sequence. It never throws on a bad or forged
+confirmation, because a confirmation is untrusted by definition: it returns
+`{ confirmed, reasons, outcome, receiverPublicKey, readings }`
+(`confirmed`, `reasons`, `outcome`, `receiver_public_key`, `readings` in
+Python), and `reasons` names every check that failed. A reply that says
+"accepted" with no signed record behind it is not a confirmation, and `confirm`
+reports it as unconfirmed rather than raising.
 
 ## What receive checks, and what it refuses
 
@@ -288,12 +266,14 @@ Each refusal has its own error, with the same name in both languages:
 
 | Error | When | Is a record written? |
 |---|---|---|
+| `HandoffOutcomeRequiredError` | `outcome` is missing or is not `accepted`, `rejected` or `failed` | No |
+| `HandoffUnexpectedSenderError` | `expectedSender` was passed and the record's signed key is a different one | No |
 | `HandoffUnverifiedError` | The sender's record does not verify: its signature, its version, or its binding to its own bytes | No |
 | `HandoffAlteredError` | The record verifies, and the message that arrived is not the message it commits to | Yes: a `handoff.received` with `outcome: "rejected"`, written before the error is thrown |
 | `HandoffMisroutedError` | The record is addressed to a different key than this receiver's, or names a different case or record type | No |
 | `HandoffMalformedRecordError` | The sender's record breaks the rules for its own fields | No |
 | `HandoffReplayError` | This helper already received the same sender's message with the same sequence number | No |
-| `RecordNotDurableError` | From 0.15.0: this side is buffering, and the record for this call is not yet durable in the buffer | Yes, on both `send` and `receive` |
+| `RecordNotDurableError` | This side is buffering, and the record for this call is not yet durable in the buffer | Yes, on both `send` and `receive` |
 
 **An altered message leaves a record, on purpose.** If it left nothing, a
 reader would see one sent record with no counterpart, which reads as an
@@ -304,8 +284,8 @@ actually held, so the pair forms and fails, and the failure names the record.
 helper for the same case, does not see what an earlier one received.
 
 **`RecordNotDurableError` on `receive` is retryable, and the retry hands back
-the message.** From 0.15.0, the record for a `receive` call is written before
-the buffering gate is asked whether it is durable yet. Retrying the identical
+the message.** The record for a `receive` call is written before the
+buffering gate is asked whether it is durable yet. Retrying the identical
 delivery (the same sender, the same sequence, the same message) asks the gate
 again and, once the record is durable, returns the message your agent was
 already owed, writing no second record. A different message arriving at that
@@ -313,9 +293,10 @@ same sequence still raises `HandoffReplayError`, never
 `RecordNotDurableError`.
 
 **Identity does not decide whether a record verifies.** `receive` does not look
-up who a key belongs to. `received.senderPublicKey` (`sender_public_key` in
-Python) gives you the key, and whether it is enrolled and not revoked is a
-question you answer on your own terms.
+up who a key belongs to. `expectedSender` narrows who you accept before
+anything is written; it is not a roster check. `received.senderPublicKey`
+(`sender_public_key` in Python) gives you the key, and whether it is enrolled
+and not revoked is a question you answer on your own terms.
 
 ## What the record commits to
 
@@ -324,17 +305,17 @@ question you answer on your own terms.
 re-serializes your JSON changes the bytes and not the object, so an honest
 hand-off still matches.
 
-From 0.15.0, a transport may change key order, whitespace, string escapes and
-number spelling, and add one leading byte order mark, and the hand-off still
-matches. Bytes that are not UTF-8, a repeated member name, or nesting deeper
-than a parser holds read as altered.
+A transport may change key order, whitespace, string escapes and number
+spelling, and add one leading byte order mark, and the hand-off still matches.
+Bytes that are not UTF-8, a repeated member name, or nesting deeper than a
+parser holds read as altered.
 
 The raw-byte hash is recorded beside it as `event.message_bytes_hash`, and it is
 a diagnostic only. Nothing pairs or grades on it, and the two sides of an honest
 hand-off can differ there.
 
-From 0.15.0, `send` refuses an integer outside plus or minus 2<sup>53</sup> - 1
-with `UnrepresentableValueError`, before it spends a sequence number. JCS writes
+`send` refuses an integer outside plus or minus 2<sup>53</sup> - 1 with
+`UnrepresentableValueError`, before it spends a sequence number. JCS writes
 every number as a double, so a reader that keeps the integer on the wire would
 see a number nobody supplied. Send an exact large id as a string.
 
@@ -348,14 +329,14 @@ and its length. The bytes never enter the record and are never sent to Sanning.
 ```ts TypeScript
 import { filePart } from "@sanning/anchor";
 
-const part = await filePart({ bytes: pdfBytes, mediaType: "application/pdf" });
+const part = await filePart({ content: pdfBytes, mediaType: "application/pdf" });
 // { kind: "file", media_type, content_hash, content_length }
 ```
 
 ```python Python
 from sanning_anchor import file_part
 
-part = file_part(data=pdf_bytes, media_type="application/pdf")
+part = file_part(content=pdf_bytes, media_type="application/pdf")
 ```
 
 </CodeGroup>
@@ -365,9 +346,9 @@ however you like. A different descriptor changes the message, so the pair
 fails.
 
 <Warning>
-  At 0.15.0, `receive` takes no file bytes, so it does not compare the bytes
-  that arrive beside a descriptor with its `content_hash`. Hash the file
-  yourself and compare before your agent acts on it.
+  `receive` takes no file bytes, so it does not compare the bytes that arrive
+  beside a descriptor with its `content_hash`. Hash the file yourself and
+  compare before your agent acts on it.
 </Warning>
 
 ## Numbering within a case
@@ -394,14 +375,14 @@ means depends on whether the anchorer buffers:
   name. `send` returns, and the SDK delivers the record to Sanning afterwards,
   retrying while Sanning is unreachable.
 
-From 0.15.0, name a buffer directory to turn buffering on:
+Name a buffer directory to turn buffering on:
 
 <CodeGroup>
 
 ```ts TypeScript
 import { FsRecordBuffer } from "@sanning/anchor";
 
-const anchorer = createEnvelopeAnchorer({
+const anchorer = createAnchorer({
   // Your other options, as in "Anchor from your agent".
   buffer: new FsRecordBuffer("/var/lib/assessor/sanning-buffer"),
 });

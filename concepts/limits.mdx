@@ -20,9 +20,10 @@ accepted them.
 Pairing grades whether the two sides commit to the same message, and never
 what the receiver did with it. `outcome` on a `handoff.received` record says
 what the receiving agent claims it did (`accepted`, `rejected` or `failed`),
-and pairing does not read that field: a receipt carrying `outcome: "rejected"`
-pairs exactly as `verified` / `verified` as one carrying `"accepted"`. A
-verified pair over a rejected receipt still says only that the reviewer's
+and pairing does not read that field: a received record carrying
+`outcome: "rejected"` pairs exactly as `verified` / `verified` as one carrying
+`"accepted"`. A verified pair over a rejected received record still says only
+that the reviewer's
 record matches the assessor's; it says nothing about whether the reviewer
 acted on the recommendation, whether the recommendation was right, whether the
 data behind it was correct, or whether the model was fit for the task. Those
@@ -59,44 +60,45 @@ your own systems, never by `receive`.
 ## More than one message in one direction
 
 Pairing looks for a signed counterpart by key and by record type. It does not
-look at case, at sequence, or at which message a receipt names to narrow that
-search. When the other side holds more than one record that could be a
-counterpart (two messages in the same direction, fan-in, fan-out, or the same
-pair of records appearing again in another case), the reader grades every one
-of those candidates and reports the worst.
+look at case, at sequence, or at which message a sent or received record names
+to narrow that search. When the other side holds more than one record that
+could be a counterpart (two messages in the same direction, fan-in, fan-out, or
+the same pair of records appearing again in another case), the reader grades
+every one of those candidates and reports the worst, unless a candidate is
+already accounted for.
 
-With `@sanning/proof` 0.11.x, an honest exchange of several messages in one
-direction lands there. Each `handoff.sent` record has more than one candidate
-`handoff.received` record signed by the same key, and each `handoff.received`
-record has more than one candidate `handoff.sent` record. Every one of them
-reads `failed` on `message_hash` and `sequence`, with the finding
-`counterpart_ambiguous`, and the case reads `mixed`. You can tell this apart
-from a genuine tamper by reading the candidates themselves: one of them reads
-`verified`, and the rest are the exchange's other honest messages, not a decoy
-planted beside a broken pair.
+A candidate that another record already accounts for, as a mutually named
+pair with the same message and the same sequence, is set aside before the
+reader grades. An honest exchange of several messages in one direction then
+reads `verified`, rather than `failed` on `message_hash` and `sequence` with
+the finding `counterpart_ambiguous`, which is what an unaccounted-for
+candidate still reads as. You can tell that apart from a genuine tamper by
+reading the candidates themselves: one of them reads `verified`, and the rest
+are the exchange's other honest messages, not a decoy planted beside a broken
+pair.
 
-From 0.12.0, a candidate that another record already accounts for, as a
-mutually named pair with the same message and the same sequence, is set aside
-before the reader grades. An honest exchange of several messages in one
-direction then reads `verified`.
+A formed pair also has to name each other: the sent record names the received
+record's signer, and the received record names the sender's. An honest record
+can fail that check, `counterparty_named`, when its counterparty signed a
+second record of the same message at the same sequence, for example one
+message sent to two recipients.
 
-From 0.11.1, a formed pair also has to name each other: the sent record names
-the receipt's signer, and the receipt names the sender's. An honest record can
-fail that check, `counterparty_named`, when its counterparty signed a second
-record of the same message at the same sequence, for example one message sent
-to two recipients.
+## Step records declared under the wrong role
 
-## Declared records that are not hand-off sides
+A pack's declaration marks every record it holds with a `role`, `handoff` or
+`step` (`sanning.declaration/v2`). A record declared `handoff` must be claimed
+in the declaration's hand-off sides; a record declared `step`, such as a
+closing record or an ordinary log line, must not be, and sits outside the
+hand-off scope test entirely. A record signed under the wrong role, or claimed
+under the wrong role, is named rather than read past, so a case holding one
+does not read `verified`. Within its own role, a step record's content can
+still be withheld on purpose without moving the verdict.
 
-A case pack may declare records beside its hand-off sides: a step record, a
-closing record, an ordinary log line. When a pack declares a record and its
-own declaration claims it as none of its hand-offs, the case reader names that
-record rather than reading past it, so a case holding one does not read
-`verified`.
-
-The check cannot take the audited party's own word for which of its records
-are hand-off sides, so an unclaimed one is always named rather than assumed
-innocent.
+A `sanning.declaration/v1` pack carries no `role` field. Its declared records
+that no pair claims are named the same way, and a pack with no declaration at
+all is named as one that does not say what it holds. The check cannot take
+the audited party's own word for which of its records are hand-off sides, so
+an unclaimed one is always named rather than assumed innocent.
 
 ## The wait for independent time
 

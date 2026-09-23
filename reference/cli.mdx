@@ -106,42 +106,45 @@ npx @sanning/proof verify bundle.json --logs logs/
 |---|---|
 | `bundle.json` | The bundle file, extracted from the pack |
 | `--logs` | The folder of disclosed files, if the pack carries them |
-| A gateway URL | Optional positional. Re-fetches the witness and byte-compares it |
+| `--gateways` | Comma-separated gateway URLs. Re-fetches each witness and byte-compares it |
+| `--json` | Print the verdict, the causes and the exit code as JSON |
+
+`verify`, `export` and `case` share one exit table:
 
 | Exit | Means |
 |---|---|
-| 0 | Verified |
+| 0 | Verified, or the export was written |
 | 1 | A check ran and failed, or the pack deviates from its own declaration. The output names the record |
 | 2 | The input could not be read |
-| 3 | Undetermined: the pack reads `incomplete`, or a gateway re-fetch was asked for and something in it could not be checked |
+| 3 | Undetermined: the pack reads `incomplete` or `partial`, or a gateway re-fetch was asked for and something in it could not be checked |
+| 4 | Mixed: more than one outcome, none of them failed |
 
-Only an `arweave` witness with a 43-character transaction id is re-fetched from a
-gateway. A witness of any other kind, or an id that is not exactly 43 characters, is
-reported as not checked, and the run answers `partial` and exits `3`.
+A pack whose declaration says a record's content is withheld on purpose reads
+`verified`; a pack with no declaration and an undisclosed record reads
+`incomplete` instead, because nothing says the absence was on purpose. Only an
+`arweave` witness with a 43-character transaction id is re-fetched from a
+gateway. A witness of any other kind, or an id that is not exactly 43
+characters, is reported as not checked, and the run answers `partial` and
+exits `3`.
 
 `sanning-proof` on PyPI is the same kernel and ships the same `verify` command. See
 [Verify at the command line](/verify/cli).
 
 ## case
 
-From `@sanning/proof` and `sanning-proof` 0.12.0. Read several packs as one case and
-print one verdict, with every exception named. Name each pack as an unzipped directory or
-as its zip.
+Read one or more packs, or a case file, as one case, and print one verdict
+with every exception named. Each argument is a pack folder, a folder holding
+several packs, or a case file named `<name>.zip`:
 
 ```bash
 npx @sanning/proof case assessor-pack/ reviewer-pack/
+npx @sanning/proof case case-5d1e9a.zip
 ```
 
-| Exit | Case verdict |
-|---|---|
-| 0 | `verified` |
-| 1 | `failed` |
-| 2 | `malformed`, or an input that cannot be read as a case |
-| 3 | `incomplete` or `partial` |
-| 4 | `mixed` |
-
-`--gateways` takes a comma-separated list and re-fetches each witness, outside the case
-reading. See [Hand over and verify a case](/guides/handoff-case#verify-at-the-command-line).
+`case` shares `verify`'s exit table, above. `--gateways` takes a
+comma-separated list and re-fetches each pack's witnesses, reported on their
+own line; the lookup never moves the verdict. See
+[Hand over and verify a case](/guides/handoff-case#read-the-case-at-the-command-line).
 
 ## Getting help
 

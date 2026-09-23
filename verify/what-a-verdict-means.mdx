@@ -102,17 +102,20 @@ minimum disclosure, not a defect, and treating it as tampering would be wrong.
 
 ## A verdict over a case
 
-A case is several packs that together hold both sides of one or more hand-offs,
-often from two organizations. A reader drops them together and gets one
-verdict, with every exception named. It needs `@sanning/proof` or
-`sanning-proof` 0.11.0 or later. From 0.11.1, a formed pair verifies only when
-each record names the other's signer, and a pair that does not fails the check
+A case reading is one reader's reading over the packs it was handed: several
+packs that together hold both sides of one or more hand-offs, often from two
+organizations. A reader drops every pack together and gets one **case
+verdict**, with every exception named. It needs `@sanning/proof` or
+`sanning-proof` 0.13.0 or later. A formed pair verifies only when each record
+names the other's signer, and a pair that does not fails the check
 `counterparty_named`.
 
 The verdict is reached by one rule. Every hand-off whose two sides were found
 and checked contributes a verdict, and so does every exception. If they all say
-the same word, that word is the case verdict. If they differ, the case is
-`mixed`. A case reads `verified` only when there is no exception at all.
+the same word, that word is the case verdict. If they differ, and none of them
+is a proven failure, the case is `mixed`. Any proven failure keeps the
+headline: a case with even one `failed` contribution reads `failed`. A case
+reads `verified` only when there is no exception at all.
 
 Each kind of exception contributes one verdict word, as the following table
 shows:
@@ -124,35 +127,49 @@ shows:
 | The reader could not tell | No pack signed by the key one side of a hand-off names is in what you dropped | `incomplete` |
 | Something was not there to read | A pack does not say what it holds | `partial` |
 
-Two more land in the "reader could not tell" group: more than one record on the
-other side could be a hand-off's counterpart (fan-in, fan-out, or several
-messages one way), and a pack declares a record that is neither of its
-hand-off sides, such as a step record or a closing record. From
-`@sanning/proof` 0.12.0, a candidate that another record already accounts for
-is set aside, so an honest exchange of several messages in one direction reads
-`verified`. [What a hand-off record does not prove](/concepts/limits)
-says what each looks like and why the reader cannot resolve either on its own.
+Two more land in the "reader could not tell" group: more than one record on
+the other side could be a hand-off's counterpart (fan-in, fan-out, or several
+messages one way), and a pack declares a record under the wrong **role**: a
+record marked `handoff` that no pair claims, or a record marked `step` that is
+actually a hand-off side. A candidate that another record already
+accounts for is set aside before the reader grades, so an honest exchange of
+several messages in one direction reads `verified`. A **step record**, such as
+a closing record, is signed as one under `sanning.declaration/v2` and sits
+outside the hand-off scope test entirely, so a full pack, hand-offs and step
+records together, reads cleanly. [What a hand-off record does not prove](/concepts/limits)
+says what each exception looks like and why the reader cannot resolve it on
+its own.
 
 One kind carries a pack's own verdict instead: a pack whose signature holds and
 which does not verify on its own passes its verdict to the case, so a case never
-reads better than its weakest pack.
+reads better than its weakest pack. A pack whose declaration says a record's
+content is withheld on purpose is not one of these: it still reads `verified`,
+and the reading's **notes** (never an exception) say how many records are
+withheld.
 
 **A missing side is an exception, never a failure.** No pack signed by the
 counterparty's key was in what you dropped; that is not proof the counterparty
-recorded nothing, and it is not tampering. The verify page prints each
-exception in the kernel's own words.
+recorded nothing, and it is not tampering. The kernel prints each exception in
+its own words, under a **scope sentence** that names the packs, the signing
+keys, the hand-off records and the exceptions in the reading, and a **witness
+line** that says whether any witness was looked up on the public record,
+independently of the headline.
 
-To read a case without the page, pass the packs to `readCase` (`read_case` in
-Python). From `@sanning/proof` and `sanning-proof` 0.12.0, the `case` command
-does the same from a terminal, as
-[Hand over and verify a case](/guides/handoff-case#verify-at-the-command-line)
+To read a case from your own code, pass the packs to `readCase` (`read_case`
+in Python). The `case` command does the same from a terminal, as
+[Hand over and verify a case](/guides/handoff-case#read-the-case-at-the-command-line)
 shows.
 
 <CodeGroup>
 
 ```js JavaScript
 import { readFile, readdir } from "node:fs/promises";
-import { readCase, renderException } from "@sanning/proof";
+import {
+  readCase,
+  renderCaseSummary,
+  renderCaseNote,
+  renderException,
+} from "@sanning/proof";
 
 // One pack: its bundle.json, and every log file beside it, keyed by event id.
 async function pack(dir) {
@@ -170,8 +187,12 @@ const reading = await readCase(
   await Promise.all(process.argv.slice(2).map(pack)),
 );
 console.log(reading.verdict);
+console.log(renderCaseSummary(reading));
 for (const exception of reading.exceptions) {
   console.log(renderException(exception));
+}
+for (const note of reading.notes) {
+  console.log(renderCaseNote(note));
 }
 ```
 
@@ -180,7 +201,13 @@ import json
 import sys
 from pathlib import Path
 
-from sanning_proof import CasePack, read_case, render_exception
+from sanning_proof import (
+    CasePack,
+    read_case,
+    render_case_note,
+    render_case_summary,
+    render_exception,
+)
 
 
 def pack(directory: str) -> CasePack:
@@ -192,15 +219,27 @@ def pack(directory: str) -> CasePack:
 
 reading = read_case([pack(d) for d in sys.argv[1:]])
 print(reading.verdict)
+print(render_case_summary(reading))
 for exception in reading.exceptions:
     print(render_exception(exception))
+for note in reading.notes:
+    print(render_case_note(note))
 ```
 
 </CodeGroup>
 
 Run it with one directory per pack, each holding `bundle.json` and, when the
-pack has one, `logs/`. Over a case whose two sides disagree, both languages
-print the same lines:
+pack has one, `logs/`. Over an honest case with every record withheld on
+purpose, both languages print the same lines:
+
+```
+verified
+2 pack(s), 2 signing key(s), 6 hand-off record(s), 0 exception(s), read offline. 6 record(s)' content withheld by their holder: their signatures and commitments were checked, their content was not.
+assessor withholds the content of 3 record(s) by its own signed declaration: their signatures and commitments were checked, their content was not
+challenger withholds the content of 3 record(s) by its own signed declaration: their signatures and commitments were checked, their content was not
+```
+
+Over a case whose two sides disagree, both languages instead print:
 
 ```
 failed
