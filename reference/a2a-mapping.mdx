@@ -92,6 +92,15 @@ that carries the file's SHA-256 and length. The
 [hand-off guide](/guides/handoff#send-a-file) says what `receive` does and does
 not check about it.
 
+<Warning>
+  The commitment covers the base64 string itself, not the bytes it decodes to.
+  A proto-JSON intermediary that re-encodes a `raw` part, with different
+  padding, a different alphabet, or line breaks, respells that string without
+  changing what it decodes to. The receiver reads the respelled message as
+  altered, because its bytes differ from what the sender committed to, even
+  though the underlying file did not change.
+</Warning>
+
 ## Record fields with no A2A counterpart
 
 The following fields exist in the hand-off record and have no counterpart in

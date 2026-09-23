@@ -1,6 +1,6 @@
 ---
 title: "Record a hand-off between two agents"
-description: "One call on each side, so a reader can check the second agent acted on exactly what the first sent"
+description: "One call on each side, so a reader can check the second agent recorded exactly what the first sent"
 ---
 
 This page records a message that one agent sends to another. When the message
@@ -137,6 +137,7 @@ Each refusal has its own error, with the same name in both languages:
 | `HandoffMisroutedError` | The record is addressed to a different key than this receiver's, or names a different case or record type | No |
 | `HandoffMalformedRecordError` | The sender's record breaks the rules for its own fields | No |
 | `HandoffReplayError` | This helper already received the same sender's message with the same sequence number | No |
+| `RecordNotDurableError` | From 0.15.0: this side is buffering (recording to a local buffer before sending), and the record for this call is not yet durable in that buffer | Yes, on both `send` and `receive` |
 
 **An altered message leaves a record, on purpose.** If it left nothing, a
 reader would see one sent record with no counterpart, which reads as an
@@ -145,6 +146,15 @@ actually held, so the pair forms and fails, and the failure names the record.
 
 **The replay guard lasts as long as one helper.** A new process, or a second
 helper for the same case, does not see what an earlier one received.
+
+**`RecordNotDurableError` on `receive` is retryable, and the retry hands back
+the message.** From 0.15.0, the record for a `receive` call is written before
+the buffering gate is asked whether it is durable yet. Retrying the identical
+delivery (the same sender, the same sequence, the same message) asks the gate
+again and, once the record is durable, returns the message your agent was
+already owed, writing no second record. A different message arriving at that
+same sequence still raises `HandoffReplayError`, never
+`RecordNotDurableError`.
 
 **Identity does not decide whether a record verifies.** `receive` does not look
 up who a key belongs to. A key you have never seen verifies exactly as a known
@@ -210,9 +220,12 @@ fails.
 Each sender numbers its own messages in a case, starting at 1, and the receiver
 records the sender's number unchanged. Two agents in one case each start at 1
 and do not collide, because a number is read against the key that signed it. A
-number is spent even when the record fails to write, so a gap in one sender's numbers is
-visible to a reader. To resume a case after a restart, pass `startSequence`
-(`start_sequence` in Python).
+number is spent even when the record fails to write, so a gap can open in one
+sender's numbers. No check in either kernel reports that gap: pairing compares
+a record's sequence against its counterpart's, and never against the numbers
+around it, so a missing number is not something a reader is told about. To
+resume a case after a restart, pass `startSequence` (`start_sequence` in
+Python).
 
 ## Hand the case over
 
@@ -222,6 +235,7 @@ the case named, and the reader verifies the two packs together. From 0.15.0,
 the pack holds, including the hand-off sides it holds:
 
 ```bash
+export SANNING_SIGNING_SEED=<your-organization's-signing-seed>
 npx @sanning/anchor bundle \
   --agent assessor --from 2026-09-21 --to 2026-09-21 \
   --case case-5d1e9a \
@@ -230,15 +244,35 @@ npx @sanning/anchor bundle \
 
 `--case` selects on each record's own case, so pass `caseId` (`case_id` in
 Python) on every record in the case, not only the hand-offs. The hand-off helper
-sets it on the two hand-off records for you. With `SANNING_SIGNING_SEED` set,
-the command signs the declaration with the agent's key and refuses a window
-holding a record that names no case, rather than guessing. See
+sets it on the two hand-off records for you.
+
+**Set `SANNING_SIGNING_SEED` before you hand a case over.** A hand-over needs a
+declaration (the pack's own signed statement of what it holds), and a
+declaration needs a real, customer-controlled key. Without
+`SANNING_SIGNING_SEED`, `bundle` seals the pack with a one-time assembly key
+it mints and throws away, and no declaration is built; a case reader then
+cannot tell your pack from an arbitrary container and cannot recognize it as
+the other party's side of anything. With `SANNING_SIGNING_SEED` set, the
+command signs the wrapper and the declaration with whatever seed the
+environment names, and refuses a window holding a record that names no case
+rather than guessing. **It signs with the seed you set, not with the key your
+records are signed with; the two are never compared.** `bundle` does not check
+that the seed belongs to the organization whose records it is bundling, so
+point it at a signing seed your own organization controls. See
 [Command line](/reference/cli#bundle) for every flag.
 
 To check both packs as one case, drop them together on the
 [verify page](/verify/browser), or read them yourself as
 [What a verdict means](/verify/what-a-verdict-means#a-verdict-over-a-case)
 shows.
+
+**More than one message in one direction reads `failed`.** If your
+case holds two or more messages sent the same way (agent A to agent B more
+than once, fan-in, fan-out), pairing grades every record on the other side
+that could be its counterpart and reports the worst of them, so an honest
+exchange reads `failed` with `counterpart_ambiguous` rather than `verified`.
+[What a hand-off record does not prove](/concepts/limits#more-than-one-message-in-one-direction)
+says what to expect and how to recognize it.
 
 ## What to read next
 

@@ -1,24 +1,34 @@
 ---
 title: "What a hand-off record does not prove"
-description: "Integrity, not accuracy; attribution, not independence; a record, not a control; and the wait for independent time"
+description: "Integrity, not accuracy; attribution, not independence; a record, not a control; ambiguity and unclaimed records; and the wait for independent time"
 ---
 
 A verified hand-off is a narrow statement: the message the second agent
 recorded is the message the first agent recorded, and each side was signed by
-the key it names. This page states four things that statement does not reach.
-Say them to whoever relies on your evidence, before they read more into it.
+the key it names. This page states what that statement does not reach. Say it
+to whoever relies on your evidence, before they read more into it.
 
 ## Integrity, not accuracy
 
 A record proves what was recorded, not that it was true.
 
 If an assessing agent recommends approval and a reviewing agent receives that
-recommendation, a verified pair shows the reviewer acted on exactly the
-recommendation the assessor produced. It says nothing about whether the
-recommendation was right, whether the data behind it was correct, or whether
-the model was fit for the task. Those are conclusions for the people reviewing
-the work. Sanning is content-blind: it holds commitments, never the content,
-so it cannot vouch for the content either.
+recommendation, a verified pair shows the reviewer recorded exactly the
+bytes the assessor sent. It does not show the reviewer acted on them, or
+accepted them.
+
+Pairing grades whether the two sides commit to the same message, and never
+what the receiver did with it. `outcome` on a `handoff.received` record says
+what the receiving agent claims it did (`accepted`, `rejected` or `failed`),
+and pairing does not read that field: a receipt carrying `outcome: "rejected"`
+pairs exactly as `verified` / `verified` as one carrying `"accepted"`. A
+verified pair over a rejected receipt still says only that the reviewer's
+record matches the assessor's; it says nothing about whether the reviewer
+acted on the recommendation, whether the recommendation was right, whether the
+data behind it was correct, or whether the model was fit for the task. Those
+are conclusions for the people reviewing the work. Sanning is content-blind: it
+holds commitments, never the content, so it cannot vouch for the content
+either.
 
 ## Attribution, not independence between organizations
 
@@ -39,10 +49,44 @@ Sanning records what agents did, and lets anyone check the record later. It
 does not approve, block or enforce what an agent may do, and a verified record
 of a decision is not evidence that the decision was permitted.
 
-The one refusal in the hand-off calls is about integrity, not policy: `receive`
-does not hand your agent a message that differs from the one the sender
-committed to. Whether an agent is allowed to send a message, or to act on one,
-is decided by your own systems.
+`receive` refuses when a record does not verify, or when the message that
+arrived is not the one the sender committed to: see
+[What receive checks, and what it refuses](/guides/handoff#what-receive-checks-and-what-it-refuses)
+for the full list. Every one of those is an integrity check, not a policy one.
+Whether an agent is allowed to send a message, or to act on one, is decided by
+your own systems, never by `receive`.
+
+## More than one message in one direction
+
+Pairing looks for a signed counterpart by key and by record type. It does not
+look at case, at sequence, or at which message a receipt names to narrow that
+search. When the other side holds more than one record that could be a
+counterpart, two messages in the same direction, fan-in, fan-out, or the same
+pair of records appearing again in another case, `@sanning/proof` 0.11.0
+grades every one of those candidates and reports the worst.
+
+An honest exchange of several messages in one direction lands there. Each
+`handoff.sent` record now has more than one candidate `handoff.received`
+record signed by the same key, and each `handoff.received` record has more
+than one candidate `handoff.sent` record; every one of them reads `failed` on
+`message_hash` and `sequence`, with the finding `counterpart_ambiguous`, and
+the case reads `mixed`.
+
+You can tell this apart from a genuine tamper by reading the candidates
+themselves: one of them reads `verified`, and the rest are the exchange's
+other honest messages, not a decoy planted beside a broken pair. A change to
+this reading is under review.
+
+## Declared records that are not hand-off sides
+
+A case pack may declare records beside its hand-off sides: a step record, an
+ordinary log line. When a pack declares a record and its own declaration
+claims it as none of its hand-offs, the case reader names that record rather
+than reading past it, so a case holding one does not read `verified`.
+
+The check cannot take the audited party's own word for which of its records
+are hand-off sides, so an unclaimed one is always named rather than assumed
+innocent.
 
 ## The wait for independent time
 

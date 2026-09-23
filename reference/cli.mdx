@@ -61,6 +61,12 @@ them, and neither passes by agreeing with the other.
 **Authentication** comes from `SANNING_API_KEY` in the environment. There is no flag for
 it. The key needs `anchor:read`.
 
+**`--case` needs `SANNING_SIGNING_SEED` too.** Selecting a case builds a declaration, the
+pack's own signed statement of what it holds, and a declaration needs a real key. Without
+`SANNING_SIGNING_SEED` set, `bundle` seals the pack with a one-time key it mints and
+discards, and no declaration is built. See
+[Hand the case over](/guides/handoff#hand-the-case-over).
+
 **`--agent` is checked twice.** The records route the command reads from filters by this
 name on the server, and the command also refuses if a record it gets back names a
 different agent. A misspelled `--agent` surfaces as a 404 from the records route rather

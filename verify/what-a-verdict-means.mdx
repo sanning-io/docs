@@ -119,16 +119,26 @@ shows:
 |---|---|---|
 | Something is proven wrong | The two sides of a hand-off commit to different messages | `failed` |
 | Something is not in a readable form | A hand-off record is missing a field its type requires | `malformed` |
-| The reader could not tell | One side of a hand-off is not in any pack you dropped | `incomplete` |
+| The reader could not tell | No pack signed by the key one side of a hand-off names is in what you dropped | `incomplete` |
 | Something was not there to read | A pack does not say what it holds | `partial` |
+
+Two more land in the "reader could not tell" group: more than one record on the
+other side could be a hand-off's counterpart (fan-in, fan-out, or several
+messages one way), and a pack declares a record that is neither of its
+hand-off sides. [What a hand-off record does not prove](/concepts/limits)
+says what each looks like and why the reader cannot resolve either on its own.
 
 One kind carries a pack's own verdict instead: a pack whose signature holds and
 which does not verify on its own passes its verdict to the case, so a case never
 reads better than its weakest pack.
 
-**A missing side is an exception, never a failure.** The other party may not
-have handed its pack over, and absence is not tampering. The verify page prints
-each exception in the kernel's own words, with a plain explanation beside it.
+**A missing side is an exception, never a failure.** No pack signed by the
+counterparty's key was in what you dropped; that is not proof the counterparty
+recorded nothing, and it is not tampering. The verify page prints each
+exception in the kernel's own words. A plain-language explanation beside each
+one is a separate piece of work on the verify page itself, not on this page or
+on `@sanning/proof`; whether it has shipped by the time you read this is the
+verify page's own release, not this page's.
 
 To read a case without the page, pass the packs to `readCase` (`read_case` in
 Python). There is no command-line verb for a case in `@sanning/proof` 0.11.0.
