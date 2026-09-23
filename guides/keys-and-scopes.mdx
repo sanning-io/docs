@@ -125,11 +125,14 @@ because enrollment is limited per API key, so this is the answer to
 <CodeGroup>
 
 ```ts TypeScript
-import { enroll } from "@sanning/anchor";
+import { DEFAULT_BASE_URL, enroll } from "@sanning/anchor";
+
+const apiKey = process.env.SANNING_API_KEY;
+if (!apiKey) throw new Error("set SANNING_API_KEY");
 
 await enroll({
-  baseUrl,
-  apiKey: process.env.SANNING_API_KEY,
+  baseUrl: DEFAULT_BASE_URL,
+  apiKey,
   agentId: "claims-triage",
   signer,
 });
@@ -156,7 +159,7 @@ Then build the anchorer with `autoEnroll: false` in TypeScript, or
 never changes, and it cannot contain spaces. A display name lives on the
 console roster, accepts any text, and a rename shows up straight away.
 
-They default to agreeing. Pass `displayName` on the control plane config in
+They default to agreeing. Pass `displayName` to `createAnchorer` in
 TypeScript, or `display_name` on the anchorer in Python, when you want a
 human-readable label. Renaming an agent then never reaches back and rewrites
 what a past record was signed saying.

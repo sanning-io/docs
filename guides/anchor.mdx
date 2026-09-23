@@ -166,7 +166,7 @@ producing evidence, so it works on the first boot and fails on the second with
 <Warning>
   The two languages disagree on hex case. TypeScript's `fromSeedHex` accepts
   64 lowercase hex characters and throws `Ed25519 seed must be 64 lowercase
-  hex chars` on anything else. Python's `bytes.fromhex` accepts uppercase.
+  hex chars` on anything else. Python's `from_seed_hex` accepts uppercase.
   The same seed, stored uppercase, works in Python and fails in TypeScript.
   Write seeds in lowercase and both languages read them.
 </Warning>

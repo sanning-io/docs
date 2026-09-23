@@ -87,9 +87,10 @@ These resolve on their own. Retry rather than debugging.
     The command refuses rather than quietly dropping them, because a pack that silently
     omits records an auditor asked for is worse than no pack.
   </Accordion>
-  <Accordion title="404 from the records route">
+  <Accordion title="the control plane does not recognize this agent">
     The plane's records route filters by `--agent` on the server, so a name that does not
-    match an agent on your roster 404s there before `bundle` reads anything back.
+    match an agent on your roster stops there before `bundle` reads anything back. The
+    command prints `bundle: no stamped records for agent "…"` with this reason, and exits 1.
 
     Check the spelling against the console's **Agents** page. `--agent` takes the name you
     anchored under, not a display name you renamed it to later.

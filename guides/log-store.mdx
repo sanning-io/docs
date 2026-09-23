@@ -51,11 +51,17 @@ import {
   LocalEd25519Signer,
 } from "@sanning/anchor";
 
+const seedHex = process.env.SANNING_SIGNING_SEED;
+const apiKey = process.env.SANNING_API_KEY;
+if (!seedHex || !apiKey) {
+  throw new Error("set SANNING_SIGNING_SEED and SANNING_API_KEY");
+}
+
 const anchorer = createAnchorer({
   environment: "dev",
-  signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED),
+  signer: LocalEd25519Signer.fromSeedHex(seedHex),
   subject: { type: "agent", agent_id: "claims-triage" },
-  apiKey: process.env.SANNING_API_KEY,
+  apiKey,
   logStore: new FsLogStore("./logstore"),
 });
 ```

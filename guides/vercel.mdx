@@ -26,13 +26,19 @@ import { anchorMiddleware } from "@sanning/anchor-vercel";
 import { generateText, wrapLanguageModel } from "ai";
 import { openai } from "@ai-sdk/openai"; // your model provider
 
+const seedHex = process.env.SANNING_SIGNING_SEED;
+const apiKey = process.env.SANNING_API_KEY;
+if (!seedHex || !apiKey) {
+  throw new Error("set SANNING_SIGNING_SEED and SANNING_API_KEY");
+}
+
 const anchorer = createAnchorer({
   // Writes to a permanent public record. Use "dev" until you mean it.
   environment: "production",
-  signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED),
+  signer: LocalEd25519Signer.fromSeedHex(seedHex),
   subject: { type: "agent", agent_id: "claims-triage" },
   // Any key from the console can anchor, which is everything this needs.
-  apiKey: process.env.SANNING_API_KEY,
+  apiKey,
   logStore: new FsLogStore("./logstore"),
 });
 
@@ -110,7 +116,8 @@ committed.
 ## Event vocabulary
 
 `vercel_ai.generate_start`, `_end` and `_error`, plus `vercel_ai.stream_start`,
-`_end` and `_error`: one event type per anchored operation, exported as
+`_end` and `_error`: one event type per anchored operation, plus
+`vercel_ai.run_closed`, the closing record. All seven are exported as
 `EVENT_TYPES`.
 
 Each operation gets exactly one terminal event, `_end` on success and `_error`

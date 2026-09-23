@@ -22,9 +22,6 @@ before an envelope is built.
 
 ## Set it explicitly
 
-The two SDKs differ on the default, and the difference is worth knowing before
-you copy a snippet between them.
-
 Neither SDK has a default. `environment` is required in both, from
 `@sanning/anchor` and `sanning-anchor` 0.15.0, so a service cannot inherit the
 wrong one by omission. In TypeScript, an anchorer built with no signer and no

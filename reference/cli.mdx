@@ -71,8 +71,9 @@ a window holding more than one case, and an `s3://` log store. See
 
 **`--agent` is checked twice.** The records route the command reads from filters by this
 name on the server, and the command also refuses if a record it gets back names a
-different agent. A misspelled `--agent` surfaces as a 404 from the records route rather
-than an empty or mismatched pack.
+different agent. A misspelled `--agent` prints `bundle: no stamped records for agent
+"…" … (the control plane does not recognize this agent)` and exits 1, rather than
+building an empty or mismatched pack.
 
 **It verifies its own output before writing.** If the assembled pack does not verify,
 nothing is written and the command exits non-zero. A pack that only fails at the auditor
