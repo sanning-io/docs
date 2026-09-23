@@ -133,7 +133,8 @@ attachment to send beside them (`attachment`). The attachment is plain JSON
 that holds the signed record, which the receiver checks on arrival.
 
 A case id is at most 128 characters of letters, digits, `_`, `.`, `:` and `-`.
-`createHandoff` refuses anything else, such as a space or a customer's name.
+`createHandoff` refuses anything else, such as a space. It cannot tell an
+opaque id from a customer's name, so keeping it opaque is up to you.
 
 ## Receive it
 
