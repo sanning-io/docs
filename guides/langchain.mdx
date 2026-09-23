@@ -37,21 +37,27 @@ is whatever you already invoke.
 
 ```ts TypeScript
 import {
-  createEnvelopeAnchorer,
+  createAnchorer,
   FsLogStore,
   LocalEd25519Signer,
 } from "@sanning/anchor";
-import { envelopeAnchorCallbacks } from "@sanning/anchor-langchain";
+import { anchorCallbacks } from "@sanning/anchor-langchain";
 
-const anchorer = createEnvelopeAnchorer({
+const seedHex = process.env.SANNING_SIGNING_SEED;
+const apiKey = process.env.SANNING_API_KEY;
+if (!seedHex || !apiKey) {
+  throw new Error("set SANNING_SIGNING_SEED and SANNING_API_KEY");
+}
+
+const anchorer = createAnchorer({
   environment: "dev",
-  signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED),
+  signer: LocalEd25519Signer.fromSeedHex(seedHex),
   subject: { type: "agent", agent_id: "claims-triage" },
-  controlPlane: { apiKey: process.env.SANNING_API_KEY },
+  apiKey,
   logStore: new FsLogStore("./logstore"),
 });
 
-const evidence = envelopeAnchorCallbacks(anchorer);
+const evidence = anchorCallbacks(anchorer);
 
 await agent.invoke({ input: question }, { callbacks: [evidence] });
 
@@ -63,12 +69,11 @@ await anchorer.close();
 ```python Python
 import os
 
-from nacl.signing import SigningKey
-from sanning_anchor import Anchorer, AnchorCallbackHandler, FsLogStore
+from sanning_anchor import Anchorer, AnchorCallbackHandler, FsLogStore, LocalEd25519Signer
 
 anchorer = Anchorer(
     environment="dev",
-    signing_key=SigningKey(bytes.fromhex(os.environ["SANNING_SIGNING_SEED"])),
+    signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
     subject={"type": "agent", "agent_id": "claims-triage"},
     api_key=os.environ["SANNING_API_KEY"],
     log_store=FsLogStore("./logstore"),
@@ -87,8 +92,8 @@ anchorer.close()
 </CodeGroup>
 
 <Note>
-  In TypeScript the entry point is `envelopeAnchorCallbacks`, which returns an
-  `EnvelopeAnchorCallbackHandler`.
+  In TypeScript the entry point is `anchorCallbacks`, which returns an
+  `AnchorCallbackHandler`.
 </Note>
 
 ## What a step commits
@@ -109,10 +114,12 @@ The event vocabulary is exported as `EVENT_TYPES` in both languages:
   `langchain.llm_end`, `langchain.llm_error`.
 - Tool calls: `langchain.tool_start`, `langchain.tool_end`,
   `langchain.tool_error`.
-- Retrieval: `langchain.retriever_start`, `langchain.retriever_end`.
+- Retrieval: `langchain.retriever_start`, `langchain.retriever_end`,
+  `langchain.retriever_error`.
 - The agent's own decisions: `langchain.agent_action`,
   `langchain.agent_finish`.
 - Files: `langchain.artifact`, `langchain.artifact_unreadable`.
+- The run's end: `langchain.run_closed`, the closing record.
 
 Each record also carries a closed list of promoted fields in named metadata,
 so a reader can select one run, or one model, without opening the body:

@@ -87,24 +87,22 @@ retiring key so it can counter-sign the challenge:
 <CodeGroup>
 
 ```ts TypeScript
-const anchorer = createEnvelopeAnchorer({
+const anchorer = createAnchorer({
   environment: "dev",
   signer: LocalEd25519Signer.fromSeedHex(newSeedHex),
   subject: { type: "agent", agent_id: "claims-triage" },
-  controlPlane: {
-    apiKey: process.env.SANNING_API_KEY,
-    previousSigner: LocalEd25519Signer.fromSeedHex(retiringSeedHex),
-  },
+  apiKey: process.env.SANNING_API_KEY,
+  previousSigner: LocalEd25519Signer.fromSeedHex(retiringSeedHex),
 });
 ```
 
 ```python Python
 anchorer = Anchorer(
     environment="dev",
-    signing_key=SigningKey(new_seed),
+    signer=LocalEd25519Signer.from_seed_hex(new_seed_hex),
     subject={"type": "agent", "agent_id": "claims-triage"},
     api_key=os.environ["SANNING_API_KEY"],
-    previous_signing_key=SigningKey(retiring_seed),
+    previous_signer=LocalEd25519Signer.from_seed_hex(retiring_seed_hex),
 )
 ```
 
@@ -127,30 +125,33 @@ because enrollment is limited per API key, so this is the answer to
 <CodeGroup>
 
 ```ts TypeScript
-import { ensureRegistered } from "@sanning/anchor";
+import { DEFAULT_BASE_URL, enroll } from "@sanning/anchor";
 
-await ensureRegistered({
-  baseUrl,
-  apiKey: process.env.SANNING_API_KEY,
+const apiKey = process.env.SANNING_API_KEY;
+if (!apiKey) throw new Error("set SANNING_API_KEY");
+
+await enroll({
+  baseUrl: DEFAULT_BASE_URL,
+  apiKey,
   agentId: "claims-triage",
   signer,
 });
 ```
 
 ```python Python
-from sanning_anchor import ensure_registered
+from sanning_anchor import enroll
 
-ensure_registered(
+enroll(
     api_key=os.environ["SANNING_API_KEY"],
     agent_id="claims-triage",
-    signing_key=signing_key,
+    signer=signer,
 )
 ```
 
 </CodeGroup>
 
-Then build the anchorer with `controlPlane.autoRegister: false` in TypeScript,
-or `auto_register=False` in Python.
+Then build the anchorer with `autoEnroll: false` in TypeScript, or
+`auto_enroll=False` in Python.
 
 ## Two names travel, and they are not the same name
 
@@ -158,7 +159,7 @@ or `auto_register=False` in Python.
 never changes, and it cannot contain spaces. A display name lives on the
 console roster, accepts any text, and a rename shows up straight away.
 
-They default to agreeing. Pass `displayName` on the control plane config in
+They default to agreeing. Pass `displayName` to `createAnchorer` in
 TypeScript, or `display_name` on the anchorer in Python, when you want a
 human-readable label. Renaming an agent then never reaches back and rewrites
 what a past record was signed saying.
