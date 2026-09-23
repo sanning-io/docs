@@ -21,22 +21,22 @@ npm install @sanning/anchor-vercel @sanning/anchor ai
 ## Wrap the model
 
 ```ts
-import { createEnvelopeAnchorer, FsLogStore, LocalEd25519Signer } from "@sanning/anchor";
-import { envelopeAnchorMiddleware } from "@sanning/anchor-vercel";
+import { createAnchorer, FsLogStore, LocalEd25519Signer } from "@sanning/anchor";
+import { anchorMiddleware } from "@sanning/anchor-vercel";
 import { generateText, wrapLanguageModel } from "ai";
 import { openai } from "@ai-sdk/openai"; // your model provider
 
-const anchorer = createEnvelopeAnchorer({
+const anchorer = createAnchorer({
   // Writes to a permanent public record. Use "dev" until you mean it.
   environment: "production",
   signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED),
   subject: { type: "agent", agent_id: "claims-triage" },
   // Any key from the console can anchor, which is everything this needs.
-  controlPlane: { apiKey: process.env.SANNING_API_KEY },
+  apiKey: process.env.SANNING_API_KEY,
   logStore: new FsLogStore("./logstore"),
 });
 
-const evidence = envelopeAnchorMiddleware(anchorer);
+const evidence = anchorMiddleware(anchorer);
 const model = wrapLanguageModel({ model: openai("gpt-4o"), middleware: evidence });
 
 await generateText({ model, prompt: question });
@@ -55,7 +55,7 @@ receipt and no transaction id. Sanning witnesses envelopes on an interval, and
 the proof travels in the pack you build at hand-over.
 
 Enrollment is automatic before the first anchor, so there is no enrollment
-step to write. Production refuses auto-generated secrets: `createEnvelopeAnchorer`
+step to write. Production refuses auto-generated secrets: `createAnchorer`
 throws unless you pass a signer and a subject. Dev records are permanently
 marked `environment: "dev"` inside the signed bytes, so a dev record can never
 be presented as production evidence.
@@ -89,7 +89,7 @@ The same key names the record chain the anchorer keeps: each record's
 `previous_hash` is the previous record's hash, set before the envelope is sent.
 An event that never arrived leaves a pointer that dangles and a hole in
 `run.seq`, both visible offline. Pass `chain: false` to
-`envelopeAnchorMiddleware` to turn the record chain off; `run.seq` is still
+`anchorMiddleware` to turn the record chain off; `run.seq` is still
 committed.
 
 <Warning>
@@ -149,7 +149,7 @@ hashed.
 `onEvent` lets you watch what is committed. It cannot change it:
 
 ```ts
-const evidence = envelopeAnchorMiddleware(anchorer, {
+const evidence = anchorMiddleware(anchorer, {
   onEvent: (e) => metrics.count(e.type), // observe; cannot alter
 });
 ```

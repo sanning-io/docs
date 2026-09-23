@@ -46,16 +46,16 @@ directory and is the development destination.
 
 ```ts TypeScript
 import {
-  createEnvelopeAnchorer,
+  createAnchorer,
   FsLogStore,
   LocalEd25519Signer,
 } from "@sanning/anchor";
 
-const anchorer = createEnvelopeAnchorer({
+const anchorer = createAnchorer({
   environment: "dev",
   signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED),
   subject: { type: "agent", agent_id: "claims-triage" },
-  controlPlane: { apiKey: process.env.SANNING_API_KEY },
+  apiKey: process.env.SANNING_API_KEY,
   logStore: new FsLogStore("./logstore"),
 });
 ```
@@ -63,12 +63,11 @@ const anchorer = createEnvelopeAnchorer({
 ```python Python
 import os
 
-from nacl.signing import SigningKey
-from sanning_anchor import Anchorer, FsLogStore
+from sanning_anchor import Anchorer, FsLogStore, LocalEd25519Signer
 
 anchorer = Anchorer(
     environment="dev",
-    signing_key=SigningKey(bytes.fromhex(os.environ["SANNING_SIGNING_SEED"])),
+    signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
     subject={"type": "agent", "agent_id": "claims-triage"},
     api_key=os.environ["SANNING_API_KEY"],
     log_store=FsLogStore("./logstore"),
@@ -149,9 +148,10 @@ bundle: no stamped records for agent "claims-triage" in 2026-06-01 → 2026-06-3
 how many records in the window are anchored and waiting for a stamp. Those
 records exist, they are signed, and they are retained. Read the second line
 before treating the first as a failure. Both languages print that pair, and
-the command exits `1`.
+the command exits `3` (undetermined): run it again after the interval seals.
+When nothing in the window matches at all, it exits `1`.
 
-The partial case exits `1` too, and for a different reason:
+The partial case exits `3` too, and for a different reason:
 
 ```
 bundle: 2 record(s) in 2026-06-01 → 2026-06-30 are anchored and retained but
@@ -194,7 +194,7 @@ pip install "sanning-anchor[s3]"
 <CodeGroup>
 
 ```ts TypeScript
-import { createEnvelopeAnchorer, ObjectLogStore } from "@sanning/anchor";
+import { createAnchorer, ObjectLogStore } from "@sanning/anchor";
 import { S3ObjectStore } from "@sanning/anchor-s3";
 import { S3Client } from "@aws-sdk/client-s3";
 

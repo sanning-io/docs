@@ -25,22 +25,20 @@ before an envelope is built.
 The two SDKs differ on the default, and the difference is worth knowing before
 you copy a snippet between them.
 
-- **TypeScript defaults to `dev`.** An anchorer built with no signer and no
-  subject also generates an identity for you and says so, loudly, on the way
-  past.
-- **Python has no default.** `environment` is a required argument, so a Python
-  service cannot inherit the wrong one by omission.
-
-Write the value in both languages rather than relying on either behavior.
+Neither SDK has a default. `environment` is required in both, from
+`@sanning/anchor` and `sanning-anchor` 0.15.0, so a service cannot inherit the
+wrong one by omission. In TypeScript, an anchorer built with no signer and no
+subject in `dev` generates an identity for you and says so, loudly, on the way
+past.
 
 <CodeGroup>
 
 ```ts TypeScript
-const anchorer = createEnvelopeAnchorer({
+const anchorer = createAnchorer({
   environment: "production",
   signer: LocalEd25519Signer.fromSeedHex(seedHex),
   subject: { type: "agent", agent_id: "claims-triage" },
-  controlPlane: { apiKey },
+  apiKey,
   logStore: new FsLogStore("./logstore"),
 });
 ```
@@ -48,7 +46,7 @@ const anchorer = createEnvelopeAnchorer({
 ```python Python
 anchorer = Anchorer(
     environment="production",
-    signing_key=SigningKey(seed),
+    signer=LocalEd25519Signer.from_seed_hex(seed_hex),
     subject={"type": "agent", "agent_id": "claims-triage"},
     api_key=api_key,
     log_store=FsLogStore("./logstore"),
@@ -72,7 +70,7 @@ miss:
 - **Production refuses an auto-generated identity.** In TypeScript, building an
   anchorer for production without an explicit signer and subject raises
   `ProductionConfigError` at construction, so a dev-mode identity cannot reach
-  it by accident. Python cannot reach that state at all: `signing_key` and
+  it by accident. Python cannot reach that state at all: `signer` and
   `subject` are required arguments.
 - **The environment is inside the signature.** Nothing downstream can relabel
   a dev record as a production one. The value travels with the evidence.

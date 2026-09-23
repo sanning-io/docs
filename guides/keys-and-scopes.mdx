@@ -87,24 +87,22 @@ retiring key so it can counter-sign the challenge:
 <CodeGroup>
 
 ```ts TypeScript
-const anchorer = createEnvelopeAnchorer({
+const anchorer = createAnchorer({
   environment: "dev",
   signer: LocalEd25519Signer.fromSeedHex(newSeedHex),
   subject: { type: "agent", agent_id: "claims-triage" },
-  controlPlane: {
-    apiKey: process.env.SANNING_API_KEY,
-    previousSigner: LocalEd25519Signer.fromSeedHex(retiringSeedHex),
-  },
+  apiKey: process.env.SANNING_API_KEY,
+  previousSigner: LocalEd25519Signer.fromSeedHex(retiringSeedHex),
 });
 ```
 
 ```python Python
 anchorer = Anchorer(
     environment="dev",
-    signing_key=SigningKey(new_seed),
+    signer=LocalEd25519Signer.from_seed_hex(new_seed_hex),
     subject={"type": "agent", "agent_id": "claims-triage"},
     api_key=os.environ["SANNING_API_KEY"],
-    previous_signing_key=SigningKey(retiring_seed),
+    previous_signer=LocalEd25519Signer.from_seed_hex(retiring_seed_hex),
 )
 ```
 
@@ -127,9 +125,9 @@ because enrollment is limited per API key, so this is the answer to
 <CodeGroup>
 
 ```ts TypeScript
-import { ensureRegistered } from "@sanning/anchor";
+import { enroll } from "@sanning/anchor";
 
-await ensureRegistered({
+await enroll({
   baseUrl,
   apiKey: process.env.SANNING_API_KEY,
   agentId: "claims-triage",
@@ -138,19 +136,19 @@ await ensureRegistered({
 ```
 
 ```python Python
-from sanning_anchor import ensure_registered
+from sanning_anchor import enroll
 
-ensure_registered(
+enroll(
     api_key=os.environ["SANNING_API_KEY"],
     agent_id="claims-triage",
-    signing_key=signing_key,
+    signer=signer,
 )
 ```
 
 </CodeGroup>
 
-Then build the anchorer with `controlPlane.autoRegister: false` in TypeScript,
-or `auto_register=False` in Python.
+Then build the anchorer with `autoEnroll: false` in TypeScript, or
+`auto_enroll=False` in Python.
 
 ## Two names travel, and they are not the same name
 

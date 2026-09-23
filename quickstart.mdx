@@ -50,16 +50,15 @@ the content you anchor. Both stay on your machine.
 
 ```python
 import os
-from nacl.signing import SigningKey
-from sanning_anchor import Anchorer, FsLogStore
+from sanning_anchor import Anchorer, FsLogStore, LocalEd25519Signer
 
 # Persist this seed. A fresh key every run makes a new agent every run.
-seed = bytes.fromhex(os.environ["SANNING_SIGNING_SEED"])
+seed_hex = os.environ["SANNING_SIGNING_SEED"]
 
 anchorer = Anchorer(
     api_key=os.environ["SANNING_API_KEY"],
     subject={"type": "agent", "agent_id": "claims-triage"},
-    signing_key=SigningKey(seed),
+    signer=LocalEd25519Signer.from_seed_hex(seed_hex),
     environment="production",
     # Your store, on your disk. The SDK writes here before it anchors, and a
     # store failure means no anchor. You need this directory later to hand
@@ -101,7 +100,7 @@ produces.
 ```python
 from sanning_anchor import AnchorCallbackHandler
 
-with AnchorCallbackHandler(anchorer, raise_on_gap=True) as handler:
+with AnchorCallbackHandler(anchorer, raise_on_gaps=True) as handler:
     agent.invoke(inputs, config={"callbacks": [handler]})
 ```
 
@@ -112,7 +111,7 @@ Two things decide whether this is correct, so they sit here rather than in a
 guide:
 
 - **Use the `with` block.** Leaving it out anchors what it can and walks past
-  what it cannot, and you find out when an auditor asks. `raise_on_gap=True`
+  what it cannot, and you find out when an auditor asks. `raise_on_gaps=True`
   stops the agent on a hole in the trail instead.
 - **The whole step is committed**, prompts, outputs, tool input and output. It
   is hashed locally and stays with you.

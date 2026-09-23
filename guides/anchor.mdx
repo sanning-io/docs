@@ -39,7 +39,7 @@ point where the agent does something you want on the record.
 
 ```ts TypeScript
 import {
-  createEnvelopeAnchorer,
+  createAnchorer,
   FsLogStore,
   LocalEd25519Signer,
 } from "@sanning/anchor";
@@ -53,12 +53,12 @@ if (!apiKey || !seedHex) {
   throw new Error("set SANNING_API_KEY and SANNING_SIGNING_SEED");
 }
 
-const anchorer = createEnvelopeAnchorer({
+const anchorer = createAnchorer({
   environment: "dev",
   // Your agent's identity. The seed stays on your machine.
   signer: LocalEd25519Signer.fromSeedHex(seedHex),
   subject: { type: "agent", agent_id: "claims-triage" },
-  controlPlane: { apiKey },
+  apiKey,
   // Keeps the bytes the commitment is over. See the log store guide.
   logStore: new FsLogStore("./logstore"),
 });
@@ -66,9 +66,9 @@ const anchorer = createEnvelopeAnchorer({
 const decision = { claim: "CLM-4417", outcome: "refer", confidence: 0.62 };
 
 const result = await anchorer.anchor({
-  type: "claims.decision",
+  eventType: "claims.decision",
   // Hashed in this process. These bytes are never sent to Sanning.
-  data: JSON.stringify(decision),
+  content: JSON.stringify(decision),
   metadata: { queue: "queue-3" },
 });
 
@@ -82,13 +82,12 @@ await anchorer.close();
 import json
 import os
 
-from nacl.signing import SigningKey
-from sanning_anchor import Anchorer, FsLogStore
+from sanning_anchor import Anchorer, FsLogStore, LocalEd25519Signer
 
 anchorer = Anchorer(
     environment="dev",
     # Your agent's identity. The seed stays on your machine.
-    signing_key=SigningKey(bytes.fromhex(os.environ["SANNING_SIGNING_SEED"])),
+    signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
     subject={"type": "agent", "agent_id": "claims-triage"},
     api_key=os.environ["SANNING_API_KEY"],
     # Keeps the bytes the commitment is over. See the log store guide.
