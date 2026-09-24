@@ -23,17 +23,22 @@ opening the body:
 "artifact": {
   "name": "claims-week-37.csv",
   "byte_length": 29,
-  "sha256": "7e8f4f7c798129ab899b39a7af5e5262b2cc7037f3a966b94a893cf2790ebe4a",
   "path": "out/claims-week-37.csv"
 }
 ```
 
-`path` and `content_type` join `name`, `byte_length` and `sha256` when the
-tool supplied them.
+`path` and `content_type` join `name` and `byte_length` when the tool
+supplied them. The hash lives on the record itself, in `event.content_hash`,
+not in this metadata.
 
-**The file's bytes are never stored.** Not in the log store, not in your
-bucket, not anywhere. The record names the file and commits its hash, and you
-keep the file where you keep your work.
+<Note>
+  **From 0.16.0, the record commits to the file's own bytes** (proof#92).
+  `event.content_hash` is the file's SHA-256, and the bytes go to your log
+  store the same way any other content does: never sent to Sanning, which
+  receives the signed envelope only. A record written before this release
+  commits to a descriptor instead, and does not match the file when it is
+  handed in beside a pack; see [Verify at the command line](/verify/cli).
+</Note>
 
 ## Return the file from your tool
 
@@ -76,7 +81,7 @@ record per file, and the file records sit inside the tool's own run.
 ## Check a file against its record
 
 Whoever holds the file runs one command and compares the result to
-`metadata.artifact.sha256` in the record. No Sanning code takes part in that
+`event.content_hash` in the record. No Sanning code takes part in that
 step:
 
 ```bash

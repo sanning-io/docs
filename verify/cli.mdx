@@ -53,6 +53,20 @@ are still checked, and the output says so on its own lines.
 This command reads one pack. To read several parties' packs as one case, see
 [Hand over and verify a case](/guides/handoff-case#read-the-case-at-the-command-line).
 
+<Note>
+  **From 0.14.0, `--files` matches a file beside the pack to the record that commits to
+  it.** Each offered file is hashed and checked against `event.content_hash`, or a file
+  part's `content_hash` inside a hand-off message. A file is never matched by name, and
+  `case` takes the same flag. See [Command line](/reference/cli#verify).
+</Note>
+
+<Note>
+  **From 0.14.0, parsing is stricter.** A repeated key anywhere in the JSON reads
+  `malformed`, exit 2. `event_id`, `payload_hash`, `payload_ref`, `subject`, and every
+  time field a verdict carries, are checked against their exact wire shapes rather than
+  accepted as any string. Nothing on the public record is affected.
+</Note>
+
 ## Two errors you might hit first
 
 Both exit 2, before any check runs.
@@ -116,6 +130,12 @@ ours.
   witness of any other kind, or an `arweave` witness whose id is not exactly 43
   characters, is reported as not checked rather than skipped silently, and the
   run answers `partial` and exits `3`.
+</Note>
+
+<Note>
+  **From 0.16.0, a pack can carry `witness-cache.json` beside `bundle.json`.** It names
+  a witnessed time the pack's own builder already looked up. This offline check prints
+  it labelled not checked; pass `--gateways` to check it yourself.
 </Note>
 
 <Note>

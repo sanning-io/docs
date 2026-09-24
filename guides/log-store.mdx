@@ -31,11 +31,19 @@ logstore/
   sanning-logstore.json
   content/
   records/
+  envelopes/
   events/
 ```
 
 Anyone holding that directory can resolve an event's bytes with no connector
 and no call to Sanning.
+
+<Note>
+  **From 0.16.0, the store also keeps each record's signed envelope**, next
+  to the record itself under `envelopes/<payload_hash>` (proof#57). A store
+  written before this release has no `envelopes/` directory and reads exactly
+  as before; the layout marker stays `sanning.logstore/v1`.
+</Note>
 
 ## Configure a store
 
