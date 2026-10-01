@@ -172,11 +172,11 @@ client class), and `otel.trace_id` / `otel.span_id` when a real OpenTelemetry
 span exists. Model and tool facts sit under `metadata.gen_ai` and carry the
 names the
 [OpenTelemetry GenAI semantic conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/)
-give them, pinned to v1.44.0: `gen_ai.request.model`, `gen_ai.response.model`
+give them, pinned to v1.41.0: `gen_ai.request.model`, `gen_ai.response.model`
 (the model the **provider** reports answered, where it reports one),
 `gen_ai.response.id`, `gen_ai.response.finish_reasons`, `gen_ai.provider.name`,
 `gen_ai.tool.name` and `gen_ai.tool.call.id`. Each record also states the
-version in `otel.schema_url` (`https://opentelemetry.io/schemas/1.44.0`).
+version in `otel.schema_url` (`https://opentelemetry.io/schemas/1.41.0`).
 
 These fields are what the integration reported, not proof of what served the
 request. `gen_ai.provider.name` is the provider as the client reports it, such
