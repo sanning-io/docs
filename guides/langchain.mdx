@@ -123,10 +123,25 @@ The event vocabulary is exported as `EVENT_TYPES` in both languages:
 
 Each record also carries a closed list of promoted fields in named metadata,
 so a reader can select one run, or one model, without opening the body:
-`run.run_id`, `run.parent_run_id`, `run.root_run_id`, `run.seq`,
-`run.prev_event_id`, `run.tool_call_id`, `model.id`, `model.id_returned`,
-`model.provider`, and the OpenTelemetry `trace_id` and `span_id` when a real
-span exists. A field that is unknown is absent rather than empty.
+the run linkage (`run.run_id`, `run.parent_run_id`, `run.root_run_id`,
+`run.seq`, `run.prev_event_id`), the step name (`run.name`), the framework
+client class (`run.client`), and the OpenTelemetry `otel.trace_id` and
+`otel.span_id` when a real span exists. Model and tool facts sit under
+`metadata.gen_ai` and carry the names the
+[OpenTelemetry GenAI semantic conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/)
+give them, pinned to v1.44.0: `gen_ai.request.model`, `gen_ai.response.model`,
+`gen_ai.response.id`, `gen_ai.response.finish_reasons`, `gen_ai.provider.name`,
+`gen_ai.tool.name` and `gen_ai.tool.call.id`. Each record also states the
+version in `otel.schema_url`
+(`https://opentelemetry.io/schemas/1.44.0`).
+
+These fields are what the integration reported, not proof of what served the
+request. `gen_ai.provider.name` is the provider as the client reports it, such
+as `openai`, `anthropic` or `aws.bedrock`, and is absent when unknown. Step and
+tool names are signed by default; set the adapter's option to omit them when a
+name could reveal more than you want a reader of the record to see.
+
+A field that is unknown is absent rather than empty.
 
 ## The run tree makes a missing step visible
 
