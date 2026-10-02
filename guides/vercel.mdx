@@ -192,10 +192,12 @@ This seam sees no step or tool names, so `run.name`, `gen_ai.tool.name` and
 `gen_ai.tool.call.id` never appear here.
 
 These fields are what the integration reported, not proof of what served the
-request. `gen_ai.provider.name` is mapped from the AI SDK's provider id, such
-as `openai` or `anthropic`, and is absent when unknown. The middleware cannot
-see a provider's base URL, so `createOpenAI` pointed at OpenRouter records
-`openai`; use OpenRouter's own AI SDK provider to record `openrouter`.
+request. `gen_ai.provider.name` is the service that served the call, taken
+from the endpoint the wrapped model's own config exposes, never from the AI
+SDK provider id alone. So `createOpenAI({ baseURL: "https://openrouter.ai/api/v1" })`
+records `openrouter`. The field is absent when the model exposes no endpoint,
+or when the endpoint's host is one the adapter does not know, such as a
+gateway or a proxy.
 
 A field that is unknown is absent, never empty, with the two exceptions above
 that carry an explicit `null`. Whether a chain key was your own or the

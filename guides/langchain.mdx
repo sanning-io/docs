@@ -149,7 +149,10 @@ so a reader can select one run, or one model, without opening the body:
 These fields are what the integration reported, not proof of what served the
 request. `gen_ai.provider.name` is the service the call went to, such as
 `openai`, `anthropic`, `aws.bedrock` or `openrouter`, and is absent when
-unknown. Step and tool names are signed by default; set `recordNames: false`
+unknown. In Python it comes from the endpoint the client resolved. In
+TypeScript it comes only from an endpoint set in the client's own
+configuration: an endpoint set by an environment variable, or the client's
+default, records no provider. Step and tool names are signed by default; set `recordNames: false`
 to omit `run.name` and `gen_ai.tool.name` when a name could reveal more than
 you want a reader of the record to see.
 
