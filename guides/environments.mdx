@@ -71,9 +71,12 @@ miss:
   `subject` are required arguments.
 - **The environment is inside the signature.** Nothing downstream can relabel
   a dev record as a production one. The value travels with the evidence.
-- **Retention stops being optional in practice.** Anchoring in production with
-  no log store warns that the bytes this commitment names are not being
-  retained, and the anchor front can refuse the envelope.
+- **Retention stops being optional.** The plane refuses a production envelope
+  that names no log store (400 `no-log-store`). A production record whose
+  locator is neither the `payloadRef` you pass on the call nor the answer from
+  your log store's `locatorFor` raises `ProductionConfigError` before it is
+  signed, so nothing is sent and the chain does not move. Building the anchorer
+  does not throw for this. See [the log store](/guides/log-store).
 
 ## Move an agent to production
 

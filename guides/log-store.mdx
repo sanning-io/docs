@@ -90,9 +90,31 @@ anchorer = Anchorer(
 
 </CodeGroup>
 
-Anchoring in production with no store configured is a warning, not a silent
-success. Both SDKs say the same thing: the bytes this commitment names are not
-being retained, and the anchor front can refuse the envelope.
+The plane refuses a production envelope that names no log store (400
+`no-log-store`). Both SDKs check this for every production record, before it is
+signed. The record's locator is the `payloadRef` (TypeScript) or `payload_ref`
+(Python) you pass on the call if you pass one, and otherwise the answer from the
+store's `locatorFor` (TypeScript) or `locator_for` (Python). `ObjectLogStore`
+and `FsLogStore` have that method. `CallbackLogStore` takes a locator function
+as its second argument (`locator=` in Python).
+
+A production record with no locator from either place throws
+`ProductionConfigError`: the anchorer has no store and the call passes no
+`payloadRef`, the store
+has no locator method and the call has no `payloadRef`, or the method returns
+nothing (an empty or blank string, a non-string) or throws. The message names
+which one. Nothing is signed or sent, the chain does not move and no gap is
+recorded, so the next record you anchor links to the last one that was
+accepted. Building the anchorer never throws for this, because the SDK cannot
+know whether your calls will carry a `payloadRef`. A `payloadRef` that is not a
+valid URI, including an empty string, throws `InvalidRefError` in `dev` and
+`production` alike. `dev` is otherwise unaffected: a locator method that
+returns nothing (`null`, `undefined` or `None`) anchors with no `payload_ref`,
+and one that throws throws its own error.
+
+A `payloadRef` you pass is your own assertion: the SDK signs it as given and
+cannot vouch that it points at bytes you kept. With no store configured, a
+production call that carries one succeeds and logs a warning saying so.
 
 If you drain the bytes yourself instead, keep them keyed by event id. They are
 what an auditor's check runs against.
