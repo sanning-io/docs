@@ -90,9 +90,19 @@ anchorer = Anchorer(
 
 </CodeGroup>
 
-Anchoring in production with no store configured is a warning, not a silent
-success. Both SDKs say the same thing: the bytes this commitment names are not
-being retained, and the anchor front can refuse the envelope.
+The plane refuses a production envelope that names no log store (400
+`no-log-store`). The locator in `payload_ref` comes only from the store's
+`locatorFor` (TypeScript) or `locator_for` (Python), so both SDKs refuse to
+build a production anchorer whose store has no such method: construction throws
+`ProductionConfigError` before any envelope is signed. `ObjectLogStore` and
+`FsLogStore` have it. `CallbackLogStore` takes a locator function as its second
+argument (`locator=` in Python), and without one it is refused in production.
+If a store has the method but returns no locator for a record, that record
+throws instead of being sent. `dev` is unaffected.
+
+Anchoring in production with no store configured at all is a warning, not a
+silent success: the bytes this commitment names are not being retained, and the
+plane refuses the envelope.
 
 If you drain the bytes yourself instead, keep them keyed by event id. They are
 what an auditor's check runs against.
