@@ -99,7 +99,8 @@ and `FsLogStore` have that method. `CallbackLogStore` takes a locator function
 as its second argument (`locator=` in Python).
 
 A production record with no locator from either place throws
-`ProductionConfigError`: the call names no store and no `payloadRef`, the store
+`ProductionConfigError`: the anchorer has no store and the call passes no
+`payloadRef`, the store
 has no locator method and the call has no `payloadRef`, or the method returns
 nothing (an empty or blank string, a non-string) or throws. The message names
 which one. Nothing is signed or sent, the chain does not move and no gap is
@@ -107,7 +108,9 @@ recorded, so the next record you anchor links to the last one that was
 accepted. Building the anchorer never throws for this, because the SDK cannot
 know whether your calls will carry a `payloadRef`. A `payloadRef` that is not a
 valid URI, including an empty string, throws `InvalidRefError` in `dev` and
-`production` alike. `dev` is otherwise unaffected.
+`production` alike. `dev` is otherwise unaffected: a locator method that
+returns nothing (`null`, `undefined` or `None`) anchors with no `payload_ref`,
+and one that throws throws its own error.
 
 A `payloadRef` you pass is your own assertion: the SDK signs it as given and
 cannot vouch that it points at bytes you kept. With no store configured, a
