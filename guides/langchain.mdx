@@ -186,6 +186,10 @@ cannot tell "nothing else happened" from "something was removed".
 A step that cannot be anchored still burns its slot in the chain, so the
 survivors cannot close ranks over it. An auditor sees the hole.
 
+A gap is reported as undelivered, never as a bad record. A timeout says
+nothing about whether the control plane accepted the envelope, so retain each
+gap's record bytes: after a failure they are the only copy.
+
 <CodeGroup>
 
 ```ts TypeScript
@@ -268,10 +272,6 @@ An auditor holding the policy runs `sha256sum` and compares the result with
 the record's `event.content_hash`. The file's bytes go to your log store and
 never to Sanning. The path must sit inside the artifact read root; see
 [File records](/guides/file-records).
-
-A gap is reported as undelivered, never as a bad record. A timeout says
-nothing about whether the control plane accepted the envelope, so retain each
-gap's record bytes: after a failure they are the only copy.
 
 Provenance never takes the agent down. A payload that cannot be serialized is
 reported through a warning and skipped, and the run continues.

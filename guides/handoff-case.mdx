@@ -81,9 +81,11 @@ the outcome when you close it:
 <CodeGroup>
 
 ```ts TypeScript
+import { IncompleteTrailError, type ChainGap } from "@sanning/anchor";
 import { anchorCallbacks } from "@sanning/anchor-langchain";
 
 const evidence = anchorCallbacks(anchorer, { caseId: "case-5d1e9a" });
+let gaps: readonly ChainGap[] = [];
 try {
   await agent.invoke(input, { callbacks: [evidence] });
   await evidence.close({ outcome: "completed" });
@@ -92,15 +94,19 @@ try {
   throw err;
 } finally {
   // `evidence.close()` does not close the anchorer. Close it when the process
-  // is done with it, after every handler that uses it.
-  await anchorer.close();
+  // is done with it, after every handler that uses it. `raiseOnGaps: false`
+  // keeps this call from replacing the agent's own error.
+  gaps = await anchorer.close({ raiseOnGaps: false });
 }
+// Reached only when the run succeeded.
+if (gaps.length > 0) throw new IncompleteTrailError([...gaps]);
 ```
 
 ```python Python
-from sanning_anchor import AnchorCallbackHandler
+from sanning_anchor import AnchorCallbackHandler, IncompleteTrailError
 
 handler = AnchorCallbackHandler(anchorer, case_id="case-5d1e9a")
+gaps = []
 try:
     agent.invoke(inputs, config={"callbacks": [handler]})
     handler.close(outcome="completed")
@@ -108,8 +114,12 @@ except Exception as err:
     handler.close(outcome="failed", reason=str(err))
     raise
 finally:
-    # handler.close() does not close the anchorer.
-    anchorer.close()
+    # handler.close() does not close the anchorer. raise_on_gaps=False keeps
+    # this call from replacing the agent's own exception.
+    gaps = anchorer.close(raise_on_gaps=False)
+# Reached only when the run succeeded.
+if gaps:
+    raise IncompleteTrailError(gaps)
 ```
 
 </CodeGroup>

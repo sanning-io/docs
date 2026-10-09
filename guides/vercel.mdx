@@ -121,8 +121,8 @@ committed.
 
 `vercel_ai.generate_start`, `_end` and `_error`, plus `vercel_ai.stream_start`,
 `_end` and `_error`: one event type per anchored operation, plus
-`vercel_ai.run_closed`, the closing record. All seven are exported as
-`EVENT_TYPES`.
+`vercel_ai.run_closed`, the closing record, and `vercel_ai.artifact`, a file a
+tool read or wrote. All eight are exported as `EVENT_TYPES`.
 
 Each operation gets exactly one terminal event, `_end` on success and `_error`
 on failure. For streams, a provider failure arrives in-band as an `error` part
@@ -226,7 +226,8 @@ evidence.isComplete; // false if anything is missing
   retained, and after a failure they are the only copy of something that may
   already be committed.
 - `unbuilt` are events that never reached the anchorer, such as a payload
-  that fails to serialize. They have no record and no bytes to retain.
+  that fails to serialize or a `recordFile()` call made during or after
+  `close()`. They have no record and no bytes to retain.
 
 A middleware answers for its own records. `gaps`, `isComplete`,
 `assertComplete()` and `close()` count only the records that middleware wrote.
@@ -259,7 +260,7 @@ const readPolicy = tool({
   inputSchema: z.object({}),
   execute: async (_input, { toolCallId }) => {
     const bytes = await readFile("./policies/underwriting-v3.md");
-    // Hashed here; the bytes are never sent. Use the chainKey of the call below.
+    // Copied now, hashed locally; the bytes are never sent. Use the chainKey of the call below.
     evidence.recordFile({ content: bytes, name: "underwriting-v3.md", toolCallId, chainKey: "req-42" });
     return bytes.toString("utf8");
   },
@@ -282,6 +283,19 @@ it, so a pack that leaves it out shows a hole. Leave `chainKey` out when your
 calls use the session fallback. Record the file through the middleware, not
 with `anchorer.anchor()` beside it: a record anchored on its own sits outside
 the chain and the closing count, so a pack without it shows nothing missing.
+
+`recordFile()` copies the bytes when you call it, so the record commits to the
+file as it was then and the tool can reuse or zero its buffer afterwards. It
+also takes these optional fields:
+
+- `role`: `"input"` for a file the tool read, `"output"` for one it wrote.
+  Absent unless you set it.
+- `source`: where an input file came from, in your own words.
+- `destination`: where an output file went, in your own words.
+
+All three land unchanged on the record's `metadata.artifact`. A `recordFile()`
+call during or after `close()` cannot join the chain: it lands on `unbuilt`,
+and `isComplete` is `false`.
 
 An auditor holding the policy runs `sha256sum` and compares the result with the
 record's `event.content_hash`. With a `logStore`, the file's bytes go there and
