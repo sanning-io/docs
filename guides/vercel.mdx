@@ -47,8 +47,12 @@ const model = wrapLanguageModel({ model: openai("gpt-4o"), middleware: evidence 
 
 await generateText({ model, prompt: question });
 
-// End of request, run or process: settle every event and look at the holes.
+// End of request or run: settle every event and look at the holes.
 const { steps, gaps, unbuilt } = await evidence.close();
+
+// End of process. `evidence.close()` does not close the anchorer, because one
+// anchorer can serve a middleware per request.
+await anchorer.close();
 ```
 
 **Prompts, settings and outputs are hashed in this process.** The signed
@@ -224,6 +228,12 @@ evidence.isComplete; // false if anything is missing
 - `unbuilt` are events that never reached the anchorer, such as a payload
   that fails to serialize. They have no record and no bytes to retain.
 
+A middleware answers for its own records. `gaps`, `isComplete`,
+`assertComplete()` and `close()` count only the records that middleware wrote.
+`close()` never closes the anchorer: call `await anchorer.close()` when the
+process is done with it, which is where a buffered record still pending is
+reported. `anchorer.gaps` covers every hole on the anchorer.
+
 `close()` does not throw by default, because it runs in a `finally` block and
 a throw there would replace the request's real error. Pass
 `{ raiseOnGaps: true }` to make an incomplete trail an error, or call
@@ -233,6 +243,49 @@ Provenance never crashes the call: a failure to anchor is reported through a
 warning and recorded in `unbuilt`, and the model call still runs and returns.
 Errors from the model are anchored as `_error` events and re-thrown to your
 code unchanged.
+
+## Show which policy a step applied
+
+The middleware sees model calls, not tool executions: a tool the model asks for
+runs in your code, outside the middleware. To show which policy file a step
+read, have the tool hand the file to `recordFile()` from its `execute`, naming
+the tool call it ran under. The record commits to the file's bytes.
+
+```ts
+const evidence = anchorMiddleware(anchorer, { caseId: "case-4b19de" });
+
+const readPolicy = tool({
+  description: "Read the underwriting policy in force.",
+  inputSchema: z.object({}),
+  execute: async (_input, { toolCallId }) => {
+    const bytes = await readFile("./policies/underwriting-v3.md");
+    // Hashed here; the bytes are never sent. Use the chainKey of the call below.
+    evidence.recordFile({ content: bytes, name: "underwriting-v3.md", toolCallId, chainKey: "req-42" });
+    return bytes.toString("utf8");
+  },
+});
+
+await generateText({
+  model: wrapLanguageModel({ model: baseModel, middleware: evidence }),
+  tools: { readPolicy },
+  stopWhen: stepCountIs(5),
+  prompt: "Assess application 4b19de.",
+  providerOptions: { sanning: { chainKey: "req-42" } },
+});
+await evidence.close();
+await anchorer.close();
+```
+
+`recordFile()` writes one `vercel_ai.artifact` record on the same chain key as
+the model calls around it. The chain key's `vercel_ai.run_closed` record counts
+it, so a pack that leaves it out shows a hole. Leave `chainKey` out when your
+calls use the session fallback. Record the file through the middleware, not
+with `anchorer.anchor()` beside it: a record anchored on its own sits outside
+the chain and the closing count, so a pack without it shows nothing missing.
+
+An auditor holding the policy runs `sha256sum` and compares the result with the
+record's `event.content_hash`. With a `logStore`, the file's bytes go there and
+never to Sanning.
 
 ## What to read next
 

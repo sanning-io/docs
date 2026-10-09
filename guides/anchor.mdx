@@ -201,6 +201,11 @@ anchorer.close()       # raises IncompleteTrailError if any remain
 
 </CodeGroup>
 
+`anchorer.gaps` covers every record on the anchorer. A LangChain handler or a
+Vercel middleware reports and raises only on the
+records it handed over, and none of them closes the anchorer, so you call
+`close` here yourself.
+
 Retain the `eventBytes` on every gap before anything else. After a failed
 delivery they are the only copy of something the control plane may already
 hold.

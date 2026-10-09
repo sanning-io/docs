@@ -90,6 +90,10 @@ try {
 } catch (err) {
   await evidence.close({ outcome: "failed", reason: String(err) });
   throw err;
+} finally {
+  // `evidence.close()` does not close the anchorer. Close it when the process
+  // is done with it, after every handler that uses it.
+  await anchorer.close();
 }
 ```
 
@@ -103,6 +107,9 @@ try:
 except Exception as err:
     handler.close(outcome="failed", reason=str(err))
     raise
+finally:
+    # handler.close() does not close the anchorer.
+    anchorer.close()
 ```
 
 </CodeGroup>
