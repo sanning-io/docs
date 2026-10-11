@@ -283,9 +283,18 @@ npx @sanning/proof case case-5d1e9a.zip          # a case file, read directly
 `case` reads a folder holding one pack, a folder holding several packs, or a
 case file named `<name>.zip`, unzipped as it reads it. It does not open a
 `.zip` that is not a case file: given one, it exits 2 and asks you to unzip it
-first and pass the folder. Pass `--json` for the full reading as data, and
+first and pass the folder. Pass `--json` for the full reading as data (from 0.17.0, packs are named by
+`index`, exceptions by `pack_index` and `record_index`, and `records` lists every
+record with a `status`; see [What a verdict means](/verify/what-a-verdict-means)), and
 `--gateways <url,url>` to also look up each pack's witnesses on the public
 record; the lookup is reported on its own line and never moves the verdict.
+
+**From 0.17.0, `case` also matches the files outside every pack, with no
+flag.** Run `npx @sanning/proof case audit-file.zip` and the command hashes each
+regular file in the download that is not part of a pack, then lists it as
+vouched for by a record in a named pack, as matching no record, or as skipped.
+This is information only: the verdict and exit code never move, and file names
+are never compared. See [Command line](/reference/cli#case) for the size limits.
 
 The following table lists the exit codes every verb of `@sanning/proof` and
 `sanning-proof` uses, `verify`, `export` and `case` alike:
