@@ -28,6 +28,14 @@ VERIFIED  verified offline (no gateway re-fetch requested)
 Leave out `--logs` when the pack has no `logs/` directory. A pack of hand-off
 records has none, and `--logs` naming a directory that does not exist exits 2.
 
+**From 0.17.0, a `--logs` folder is read by one rule.** The command reads each
+regular file named `<event_id>.json` as that record's disclosed content. It never
+follows a link, never enters a subfolder, and names every other entry in a `note:`
+line without reading it. It exits 2 for a name that is not valid UTF-8, for more than
+50,000 entries, and for more than 1 GiB of `<event_id>.json` files. Both
+`@sanning/proof` and `sanning-proof` apply the same rule, so one folder no longer reads
+differently in the two.
+
 ## Exit codes
 
 This is the one table every verb of `@sanning/proof` and `sanning-proof`
@@ -61,6 +69,27 @@ This command reads one pack. To read several parties' packs as one case, see
 </Note>
 
 <Note>
+  **From 0.17.0, `--files` accepts a folder.** The folder stands for the regular files
+  inside it, found recursively with hidden files included, and each is matched by
+  SHA-256 as a named file is. Links are never followed. A pipe is not read, and a file that cannot be read is
+  attempted and then named as skipped (`unreadable`); the report names each in a
+  `skipped` list with the reason. A folder
+  nested more than 32 levels deep, holding more than 50,000 names, or holding a name
+  that is not valid UTF-8 exits 2. Files found inside folders share 1 GiB per run, and
+  one that would pass it is skipped as `too_large`. A file you name is read at any size.
+  You can mix files and folders, and the verdict and exit code never move.
+</Note>
+
+<Note>
+  **From 0.17.0, a reading fails closed on a tree size it cannot trust.** An anchor-trace
+  event whose `inclusion.leaf_count` differs from the `leaf_count` its signed checkpoint
+  carries reads `failed`, and so does a checkpoint record with no integer `leaf_count`.
+  A stamp inclusion whose stated count is a boolean reads `failed` in both kernels.
+  Integers on the anchor-trace, stamp, and agent-proof paths are read by value, so `3.0`
+  is 3 and an honest bundle written with `3.0` verifies.
+</Note>
+
+<Note>
   **From 0.14.0, parsing is stricter.** A repeated key anywhere in the JSON reads
   `malformed`, exit 2. `event_id`, `payload_hash`, `payload_ref`, `subject`, and every
   time field a verdict carries, are checked against their exact wire shapes rather than
@@ -85,7 +114,8 @@ Extract the zip and point at `bundle.json` inside it.
 cannot read pack/: EISDIR: illegal operation on a directory, read
 ```
 
-Name the file, not the folder that holds it.
+Name `bundle.json`, not the folder that holds it. Only `--logs` and `--files` take a
+folder.
 
 ## Check the tamper-evidence yourself
 

@@ -111,9 +111,9 @@ npx @sanning/proof verify bundle.json --logs logs/
 | Argument | Meaning |
 |---|---|
 | `bundle.json` | The bundle file, extracted from the pack |
-| `--logs` | The folder of disclosed files, if the pack carries them |
+| `--logs` | The folder of disclosed files, if the pack carries them. From 0.17.0, only regular files named `<event_id>.json` are read; links are never followed, subfolders are never entered, and every other entry is named. Exit 2 for a non-UTF-8 name, more than 50,000 entries, or more than 1 GiB of `<event_id>.json` files |
 | `--gateways` | Comma-separated gateway URLs. Re-fetches each witness and byte-compares it |
-| `--files` | From 0.14.0. Files beside the pack to match against the records that commit to their bytes: SHA-256 over each file, checked against `event.content_hash` or a hand-off file part's `content_hash`. Never matched by name |
+| `--files` | From 0.14.0. Files beside the pack to match against the records that commit to their bytes: SHA-256 over each file, checked against `event.content_hash` or a hand-off file part's `content_hash`. Never matched by name. From 0.17.0 a path can be a folder: the regular files inside it are matched, recursively and hidden files included, and a link, a pipe, or an unreadable file is named in the `skipped` list (`files.skipped` in `--json`) |
 | `--json` | Print the verdict, the causes and the exit code as JSON |
 
 `verify`, `export` and `case` share one exit table:
@@ -159,8 +159,20 @@ npx @sanning/proof case case-5d1e9a.zip
 comma-separated list and re-fetches each pack's witnesses, reported on their
 own line; the lookup never moves the verdict. `--files`, from 0.14.0, works
 the same way `verify` uses it: files handed in beside the case are matched
-against every party's records, never by name. See
+against every party's records, never by name, and a path can be a folder from
+0.17.0. See
 [Hand over and verify a case](/guides/handoff-case#read-the-case-at-the-command-line).
+
+**From 0.17.0, `case` also matches the files that sit outside every pack, with no
+flag.** Each regular file in the `.zip` or in the folder `unzip` makes of it is hashed
+with SHA-256 and listed as vouched for by a record in a named pack, as matching no
+record, or as skipped (a link, a pipe, a refused zip entry, or an unreadable file). The
+section is information only: the verdict and exit code never move. The loose files
+share 1 GiB, and a file past it is skipped as `too_large`. A `.zip` larger than
+1.25 GiB on disk exits 2 before it is read. If a file the case index lists passes
+its 1 GiB, the comparison reports `case_index_file_too_large`; if `contents.json`
+would pass the run's whole-read budget, or cannot be read, the index reads as
+`case_index_unreadable` and the verdict still prints.
 
 ## Getting help
 
