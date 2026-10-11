@@ -239,14 +239,15 @@ for note in reading.notes:
 **From 0.17.0, the reading names every pack, record, exception and note by
 position, not by `ref`.** Two packs can carry one `ref`, and one pack can carry an
 `event_id` twice, so a `ref` is a label for a person and never a join. The
-following table lists the fields a consumer joins on. The TypeScript names are
-camelCase (`packIndex`); `sanning-proof case --json` and the Python `read_case`
-use `pack_index`.
+following table lists the fields a consumer joins on. Only the TypeScript `readCase`
+result is camelCase (`packIndex`); `case --json` from either command (`npx
+@sanning/proof` or the Python `sanning-proof`) and the Python `read_case` use
+`pack_index`.
 
 | Part of the reading | Names its pack by | Names its record by |
 |---|---|---|
 | `packs` | `index`, the pack's position in the order you passed the packs, 0 first | Not applicable |
-| `exceptions` | `pack_index` | `record_index`, the record's position in its pack, where the exception is about one record |
+| `exceptions` | `pack_index`, present wherever the exception names a pack (optional in both kernels) | `record_index`, the record's position in its pack, where the exception is about one record |
 | `notes` | `pack_index` | Not applicable |
 | `records` | `pack_index` | `record_index` |
 

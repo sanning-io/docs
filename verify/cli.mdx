@@ -71,8 +71,9 @@ This command reads one pack. To read several parties' packs as one case, see
 <Note>
   **From 0.17.0, `--files` accepts a folder.** The folder stands for the regular files
   inside it, found recursively with hidden files included, and each is matched by
-  SHA-256 as a named file is. A link, a pipe, or a file that cannot be read is never
-  followed or read; the report names it in a `skipped` list with the reason. A folder
+  SHA-256 as a named file is. Links are never followed. A pipe is not read, and a file that cannot be read is
+  attempted and then named as skipped (`unreadable`); the report names each in a
+  `skipped` list with the reason. A folder
   nested more than 32 levels deep, holding more than 50,000 names, or holding a name
   that is not valid UTF-8 exits 2. Files found inside folders share 1 GiB per run, and
   one that would pass it is skipped as `too_large`. A file you name is read at any size.
