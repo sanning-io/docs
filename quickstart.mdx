@@ -102,6 +102,9 @@ from sanning_anchor import AnchorCallbackHandler
 
 with AnchorCallbackHandler(anchorer, raise_on_gaps=True) as handler:
     agent.invoke(inputs, config={"callbacks": [handler]})
+
+# The handler never closes the anchorer: do it when the process is done.
+anchorer.close()
 ```
 
 Everything after this point is identical: the same log store, the same wait for

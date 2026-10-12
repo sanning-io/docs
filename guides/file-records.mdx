@@ -113,6 +113,12 @@ configured list. A bare string is treated as a path only when a file exists
 there, so an ordinary tool returning ordinary text records nothing and says
 nothing.
 
+## Show which policy a step applied
+
+A tool that reads a policy file and returns it as its artifact gets a record
+that commits to the file's bytes, on that tool's step. For the example, see
+[Trace a LangChain agent](/guides/langchain#show-which-policy-a-step-applied).
+
 ## The read root
 
 Reading is scoped to one folder, and the folder limits reading rather than

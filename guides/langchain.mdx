@@ -186,6 +186,10 @@ cannot tell "nothing else happened" from "something was removed".
 A step that cannot be anchored still burns its slot in the chain, so the
 survivors cannot close ranks over it. An auditor sees the hole.
 
+A gap is reported as undelivered, never as a bad record. A timeout says
+nothing about whether the control plane accepted the envelope, so retain each
+gap's record bytes: after a failure they are the only copy.
+
 <CodeGroup>
 
 ```ts TypeScript
@@ -206,9 +210,68 @@ trail an error. Python's `with` block asserts completeness on a clean exit and
 raises `IncompleteTrailError`, and a block that is already unwinding gets its
 gaps logged so the agent's own exception survives.
 
-A gap is reported as undelivered, never as a bad record. A timeout says
-nothing about whether the control plane accepted the envelope, so retain each
-gap's record bytes: after a failure they are the only copy.
+## Close the anchorer yourself
+
+A handler answers for its own records, and `close()` never closes the
+anchorer. `gaps`, `isComplete` and `close()` count only the records that
+handler handed over (`chain_gaps` does the same in Python), so one anchorer can
+serve a handler per request and one request's lost record never marks another
+request's trail incomplete. To see every hole on the anchorer, including
+records you anchored beside the handler, read `anchorer.gaps`. Call
+`await anchorer.close()` (`anchorer.close()` in Python) when the process is
+done with the anchorer, after every handler that uses it. That is where a
+buffered record still pending is reported.
+
+## Stop the agent when a record is lost
+
+Provenance does not take the agent down by default. With an anchorer built
+with `failClosed: true` (`fail_closed=True` in Python), the handler instead
+waits for each step's records and stops the agent when any record is lost,
+before the next step runs. A lost record is any record of the handler's that is
+not in the trail, including the record of a file a tool returned: one the plane
+refused, one the handler could not build, a chain-store failure, or a step
+whose callback threw before its record. A tool whose `tool_start` record is
+lost does not run.
+
+A stopped handler stays stopped. Every later step throws the same error, and a
+new run on it throws an error that says to construct a new handler. Construct
+one handler per run; [Hand over and verify a case](/guides/handoff-case) shows the pattern.
+
+## Show which policy a step applied
+
+To show which policy file a step read, have the tool that reads it return the
+file as its artifact. The handler then writes a `langchain.artifact` record on
+that tool's step, and the record commits to the file's own bytes. The trail
+shows the policy the step actually read, not one named when you configured the
+handler.
+
+<CodeGroup>
+
+```ts TypeScript
+const readPolicy = tool(
+  async () => ["Loaded underwriting policy v3.", { path: "./policies/underwriting-v3.md" }],
+  {
+    name: "read_underwriting_policy",
+    description: "Read the underwriting policy in force.",
+    schema: z.object({}),
+    responseFormat: "content_and_artifact",
+  },
+);
+```
+
+```python Python
+@tool(response_format="content_and_artifact")
+def read_underwriting_policy() -> tuple[str, dict]:
+    """Read the underwriting policy in force."""
+    return "Loaded underwriting policy v3.", {"path": "policies/underwriting-v3.md"}
+```
+
+</CodeGroup>
+
+An auditor holding the policy runs `sha256sum` and compares the result with
+the record's `event.content_hash`. The file's bytes go to your log store and
+never to Sanning. The path must sit inside the artifact read root; see
+[File records](/guides/file-records).
 
 Provenance never takes the agent down. A payload that cannot be serialized is
 reported through a warning and skipped, and the run continues.
