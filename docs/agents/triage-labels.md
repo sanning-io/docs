@@ -1,17 +1,25 @@
 # Triage Labels
 
-The skills speak in terms of five canonical triage roles. This file maps those roles to the actual label strings used in this repo's issue tracker.
+Matt Pocock's skills speak in five triage roles. This file says what each role is in Linear (team SAN). Linear's default statuses are Triage, Backlog, Todo, In Progress, In Review, Done, Canceled and Duplicate.
 
-| Label in mattpocock/skills | Label in our tracker | Meaning                                  |
-| -------------------------- | -------------------- | ---------------------------------------- |
-| `needs-triage`             | `needs-triage`       | Maintainer needs to evaluate this issue  |
-| `needs-info`               | `needs-info`         | Waiting on reporter for more information |
-| `ready-for-agent`          | `ready-for-agent`    | Fully specified, ready for an AFK agent  |
-| `ready-for-human`          | `ready-for-human`    | Requires human implementation            |
-| `wontfix`                  | `wontfix`            | Will not be actioned                     |
+| Role in the skills | In Linear |
+| ------------------ | --------- |
+| `needs-triage` | Triage status |
+| `needs-info` | Needs info label |
+| `ready-for-agent` | Todo, plus the Agent label (a founder sets it) |
+| `ready-for-human` | Todo, assigned to a person (a founder sets it) |
+| `wontfix` | Canceled, with a comment |
 
-When a skill mentions a role (e.g. "apply the AFK-ready triage label"), use the corresponding label string from this table.
+A role that maps to a status is set with `state`; a role that maps to a label is added with `addLabels`. Only a founder applies `ready-for-agent` or `ready-for-human`, because both move an issue to Todo: see "Rules for agents" in `issue-tracker.md`.
 
-Edit the right-hand column to match whatever vocabulary you actually use.
+## The other labels
 
-`decision` is not one of the five. It means a founder must decide, and it always sits beside one of the five: usually `ready-for-human`, which means a person must act.
+Use only these. Linear's own: **Bug**, **Feature**, **Improvement**. Ours, each for a job Linear has no default for:
+
+- **Agent**: ready for an agent to pick up. A founder sets it.
+- **Decision**: a call a named founder must make. Assigned to that founder, and linked as a blocker of the work that waits on it. Only its owner closes it.
+- **Design**: user-facing design work, or a design question that work waits on.
+- **Needs info**: waiting on the person who filed it.
+- **Wayfinder group** (`map`, `research`, `prototype`, `grilling`, `task`): the ticket types `/wayfinder` uses, only in a project being shaped.
+
+A workstream or a topic is a project, never a label.
