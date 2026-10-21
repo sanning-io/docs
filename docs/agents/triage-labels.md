@@ -1,25 +1,38 @@
 # Triage Labels
 
-Matt Pocock's skills speak in five triage roles. This file says what each role is in Linear (team SAN). Linear's default statuses are Triage, Backlog, Todo, In Progress, In Review, Done, Canceled and Duplicate.
+Matt Pocock's skills speak in five triage roles. Sanning uses them literally: each role is a Linear label (team SAN) with the same name, and there is no translation layer.
 
-| Role in the skills | In Linear |
-| ------------------ | --------- |
-| `needs-triage` | Triage status |
-| `needs-info` | Needs info label |
-| `ready-for-agent` | Todo, plus the Agent label (a founder sets it) |
-| `ready-for-human` | Todo, assigned to a person (a founder sets it) |
-| `wontfix` | Canceled, with a comment |
+## State roles (labels)
 
-A role that maps to a status is set with `state`; a role that maps to a label is added with `addLabels`. Only a founder applies `ready-for-agent` or `ready-for-human`, because both move an issue to Todo: see "Rules for agents" in `issue-tracker.md`.
+- `needs-triage`: a founder has not yet looked at it.
+- `needs-info`: waiting on the person who filed it.
+- `ready-for-agent`: fully specified, an agent can take it. Only a founder applies it.
+- `ready-for-human`: needs a person to do it. Only a founder applies it.
+- `wontfix`: will not be done.
+
+Add or remove a label with `addLabels` and `removeLabels` in `save_issue`.
+
+## Category (labels)
+
+`bug` and `enhancement`, Matt's two. Linear's Bug, Feature and Improvement labels are not used.
+
+## Statuses
+
+Linear's defaults only: Triage, Backlog, Todo, In Progress, In Review, Done, Canceled and Duplicate. A status says where an issue is in the workflow; a label carries its triage role. They combine like this:
+
+- An issue in Triage carries `needs-triage`.
+- `wontfix` goes with Canceled, and a comment says why.
+- `ready-for-agent` and `ready-for-human` go on an issue a founder has moved to Todo.
+
+Only a founder applies `ready-for-agent` or `ready-for-human`: see "Rules for agents" in `issue-tracker.md`.
 
 ## The other labels
 
-Use only these. Linear's own: **Bug**, **Feature**, **Improvement**. Ours, each for a job Linear has no default for:
+Ours, each for a job Matt's set has no equivalent for:
 
-- **Agent**: ready for an agent to pick up. A founder sets it.
 - **Decision**: a call a named founder must make. Assigned to that founder, and linked as a blocker of the work that waits on it. Only its owner closes it.
 - **Design**: user-facing design work, or a design question that work waits on.
-- **Needs info**: waiting on the person who filed it.
+- **`soc`** and **`smoke`**: kept as they are.
 - **Wayfinder group** (`map`, `research`, `prototype`, `grilling`, `task`): the ticket types `/wayfinder` uses, only in a project being shaped.
 
 A workstream or a topic is a project, never a label.
