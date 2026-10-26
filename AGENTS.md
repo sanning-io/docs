@@ -19,7 +19,7 @@ The brand is defined once, in [`sanning-io/sanning-design-system`](https://githu
 ## Terminology
 
 - The lifecycle is **anchor → read → verify**. The write path is "the anchor front" at `/anchor`; never "Turbo" on a customer-facing surface.
-- The signing party is the **agent**, not the producer. Packages publish under the Sanning npm org (`@sanning/*`) and as `sanning-*` on PyPI. Nothing is `@ar.io/*` or `ario.*` on a Sanning-authored surface.
+- The signing party is the **agent**, not the producer. Packages publish under the Sanning npm org (`@sanning/*`) and as `sanning-*` on PyPI.
 - The control plane is **not in the trust path**. Say so wherever issuance, roster, metering, or billing are described.
 - Company: Sanning Inc. GitHub org: `sanning-io`. Production console: `console.sanning.io`.
 
@@ -35,17 +35,3 @@ The brand is defined once, in [`sanning-io/sanning-design-system`](https://githu
 
 - Claims about versions, packages, and shipped behaviour are verified against the `sanning-io` org repos on GitHub and against npm / PyPI, never against a local working tree.
 - These docs describe what ships, not what is planned.
-
-## Agent skills
-
-### Issue tracker
-
-Issues and specs for this repo live as GitHub issues on this repo. See `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-The five default triage labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-Single-context: `CONTEXT.md` and `docs/adr/` at the repo root, created when a term or a decision first needs them. See `docs/agents/domain.md`.
