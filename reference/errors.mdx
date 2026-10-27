@@ -89,7 +89,7 @@ These resolve on their own. Retry rather than debugging.
   </Accordion>
   <Accordion title="the control plane does not recognize this agent">
     The plane's records route filters by `--agent` on the server, so a name that does not
-    match an agent on your roster stops there before `bundle` reads anything back. The
+    match one of your organization's agents stops there before `bundle` reads anything back. The
     command prints `bundle: no stamped records for agent "…"` with this reason, and exits 1.
 
     Check the spelling against the console's **Agents** page. `--agent` takes the name you
@@ -149,7 +149,7 @@ These resolve on their own. Retry rather than debugging.
 
     A key you create in the console is never bound to an agent, so this appears only on a
     key Sanning bound for you. Use an ordinary key from **Settings, API keys**, which
-    covers your whole fleet.
+    covers all of your agents.
   </Accordion>
   <Accordion title="AGENT_CHALLENGE_INVALID">
     The proof-of-possession challenge is missing, expired, already used, or was not
@@ -194,12 +194,73 @@ These resolve on their own. Retry rather than debugging.
     active, or the name has already been re-keyed. Rotate a live key through the SDK
     instead, which asks the outgoing key to counter-sign. Nothing was changed.
   </Accordion>
+  <Accordion title="no-log-store and local-log-store">
+    Live refuses an envelope that does not say where its bytes are kept. `no-log-store`
+    (400) means the envelope names no log store. `local-log-store` (400) means its locator
+    is a `file:` path, which is one machine's disk and not a retained store. The Sandbox
+    does not check either.
+
+    Configure a log store, and do not pass a `file:` `payloadRef`. For Live, keep the
+    store in S3-compatible storage. See
+    [Keep what you anchored](/guides/log-store) and [Go live](/guides/go-live).
+  </Accordion>
   <Accordion title="a store failure means no anchor">
     The SDK writes your bytes to your log store before anchoring, and a store failure
     stops the anchor. There is no best-effort mode on this path.
 
     Anchoring a commitment to bytes you cannot produce is the one state that cannot be
     repaired afterwards. See [Keep what you anchored](/guides/log-store).
+  </Accordion>
+</AccordionGroup>
+
+## Sandbox errors
+
+These appear when an API key reaches the wrong mode, or when you hit a Sandbox ceiling.
+They are separate from the three groups because the fix is about modes, not about the
+call. See [Sandbox and live](/concepts/sandbox-and-live).
+
+<AccordionGroup>
+  <Accordion title="SANDBOX_KEY_ON_LIVE (401)">
+    You sent a Sandbox API key to a Live plane. Live accepts only Live API keys, and the
+    message names the prefix it accepts. Nothing was read.
+
+    Use a Live API key, or check that your base URL is `https://api.sanning.io`.
+  </Accordion>
+  <Accordion title="LIVE_KEY_ON_SANDBOX (401)">
+    You sent a Live API key to a Sandbox. The Sandbox accepts only Sandbox API keys, and
+    the message names the prefix it accepts. Nothing was read.
+
+    Use a Sandbox API key. Create one under **Settings, API keys** after you
+    **Switch to sandbox** in the console.
+  </Accordion>
+  <Accordion title="ENVIRONMENT_MODE_MISMATCH (400)">
+    The record you signed names an environment the Sandbox does not accept. The Sandbox
+    accepts `dev` and nothing else, and it refuses `production` and a record with no
+    environment. Nothing was recorded.
+
+    With a Sandbox API key, leave out the `environment` argument and the SDK signs the
+    right value. If you sign with your own submitter, sign `dev`.
+  </Accordion>
+  <Accordion title="SANDBOX_LIMIT_REACHED (403 or 429)">
+    You reached a fixed Sandbox ceiling. `details.limit` names it and `details.value`
+    states its number. A 403 does not clear by waiting. A 429 carries `Retry-After`.
+
+    For a ceiling that a Reset frees, `details.reset` points at **Settings, Sandbox,
+    Reset the sandbox**. For `keys`, revoke an API key instead, because a Reset keeps
+    API keys. Every ceiling and its fix is in
+    [Rate limits and ceilings](/reference/rate-limits-and-ceilings).
+  </Accordion>
+  <Accordion title="EMAIL_NOT_VERIFIED (403)">
+    Live enters the Sandbox only for a member whose email address is verified.
+
+    Verify your email address, then select **Switch to sandbox** again.
+  </Accordion>
+  <Accordion title="SANDBOX_ENTRY_REFUSED (401)">
+    The Sandbox refused the credential Live issued for your entry, and no session was
+    issued. `details.reason` names the check that failed, such as `expired`, `replayed`
+    or `org-deleted`.
+
+    Select **Switch to sandbox** again from the Live console.
   </Accordion>
 </AccordionGroup>
 

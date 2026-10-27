@@ -1,0 +1,111 @@
+---
+title: "Sandbox and live"
+description: "Two modes on one host: what the API key decides, and what changes between them"
+---
+
+Sanning runs in two modes. The Sandbox is a rehearsal: records are signed for real, but
+stamps are simulated and never reach the public record. Live publishes stamps to the
+public record and produces evidence. You choose the mode with the API key you use, and
+you change nothing else.
+
+This page compares the two. To move an agent from one to the other, see
+[Go live](/guides/go-live).
+
+## One host, and the API key decides
+
+Both modes answer at the same two hosts. Use `https://api.sanning.io` for SDKs and
+scripts, and `https://console.sanning.io` for people. Both hosts serve the Sandbox and
+Live, and the SDKs work against either.
+
+The prefix of the API key routes each request to the Sandbox or to Live. A request that
+reaches the wrong plane is refused by name: a Live plane refuses a Sandbox API key with
+`SANDBOX_KEY_ON_LIVE`, and a Sandbox refuses a Live API key with `LIVE_KEY_ON_SANDBOX`.
+Neither refusal reads or writes your data. See [Errors](/reference/errors#sandbox-errors).
+
+## Compare the modes
+
+The following table lists what differs. A row that is not here is the same in both
+modes: the SDK calls, the record format, the log store, the pack and the verify commands.
+
+| | Sandbox | Live |
+|---|---|---|
+| Host | `api.sanning.io` and `console.sanning.io` | The same two hosts |
+| API key prefix | `sanning_test_` | `sanning_prod_` |
+| Signed `environment` | `"dev"`, set for you by the API key | `"production"`, set for you by the API key |
+| Records | Signed for real | Signed for real |
+| Stamp | Simulated. Never reaches the public record | Published to the public record |
+| How long a stamp takes | About a minute | Set by the witness interval. See [The witness](/concepts/witness) |
+| Retention | Deleted after 30 days | Permanent |
+| Ceilings | Fixed. See [Rate limits and ceilings](/reference/rate-limits-and-ceilings) | Set by your plan |
+| Reset | Deletes your Sandbox data on request | None. Records cannot be withdrawn |
+| Email | None sent | Unchanged |
+| Billing | Never billed | Billed by plan |
+| Verify page | Shows **Sandbox**, and says "Simulated stamp: sandbox, not evidence" | Shows the verdict |
+| Verify CLI | Prints `SANDBOX` and exits 5 | Exits 0 on a verified pack |
+
+The wire values in this table are the only place this documentation names them. Everywhere
+else it says Sandbox and Live.
+
+## What stays the same
+
+The records are real in both modes. An agent signs each record with its own signing key,
+the hash is computed on your machine, and the pack verifies with the same open kernel.
+Only the stamp is simulated in the Sandbox.
+
+That makes a Sandbox pack a faithful rehearsal of a Live one.
+
+## How you enter the Sandbox
+
+A Sandbox organization exists only by entry from a Live organization. Sign in on Live,
+open the account menu and select **Switch to sandbox**. Verify your email address first,
+or the entry is refused with `EMAIL_NOT_VERIFIED`.
+
+In the Sandbox, a strip runs across the top of the console with **Switch to live**.
+**Settings** has **API keys**, **Signing keys** and **Sandbox**. The **Sandbox** page holds
+**Reset the sandbox**.
+
+A Sandbox follows its Live organization: when Live archives or deletes the organization,
+the Sandbox does too.
+
+## Retention and reset
+
+Sandbox data older than 30 days is deleted daily. To clear it sooner, an owner or admin
+selects **Reset the sandbox** under **Settings, Sandbox** and types the organization's
+name to confirm. A Reset:
+
+- Deletes every record, stored envelope, stamp and pack report.
+- Keeps your API keys and signing keys, so your integration keeps working.
+- Marks every agent decommissioned, which frees the agent ceiling.
+
+A Reset runs once every 5 minutes per organization. Deleted records cannot be restored,
+and a Reset never touches Live.
+
+## A pack carries one mode
+
+The `bundle` command refuses to assemble a window that mixes Sandbox and Live evidence
+for one agent. A mixed pack would leave the reader to notice which is which, and the
+reader's whole task is deciding what the evidence supports. Give the Sandbox version of
+an agent its own `agent_id`, such as `claims-triage-dev`: Sandbox and Live identities are
+separate, as [How an agent enrolls](/guides/enrollment#sandbox-and-live-identities)
+explains.
+
+## Why a Sandbox pack is never evidence
+
+A simulated stamp is Sanning's own computation. It supplies no independent time, so no
+reader can check it against anything outside Sanning, and the proof says so: "simulated
+stamp: sandbox, not evidence". The signed `environment` is inside the signed bytes, so
+nobody can relabel a Sandbox record as a Live one without breaking its signature. The
+kernel reads that value offline and prints `SANDBOX` instead of `VERIFIED`. No flag turns
+exit code 5 into 0.
+
+Verification stays offline in both modes, and Sanning is never in the trust path in
+either.
+
+<CardGroup cols={2}>
+  <Card title="Go live" icon="rocket" href="/guides/go-live">
+    Switch the API key and produce evidence.
+  </Card>
+  <Card title="Test in CI" icon="flask-vial" href="/guides/test-in-ci">
+    Run the Sandbox from a pipeline and accept exit code 5.
+  </Card>
+</CardGroup>

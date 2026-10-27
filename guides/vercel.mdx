@@ -33,11 +33,10 @@ if (!seedHex || !apiKey) {
 }
 
 const anchorer = createAnchorer({
-  // Writes to a permanent public record. Use "dev" until you mean it.
-  environment: "production",
   signer: LocalEd25519Signer.fromSeedHex(seedHex),
   subject: { type: "agent", agent_id: "claims-triage" },
-  // Any key from the console can anchor, which is everything this needs.
+  // A Sandbox API key from the console. Any key can anchor, which is everything
+  // this needs.
   apiKey,
   logStore: new FsLogStore("./logstore"),
 });
@@ -65,10 +64,10 @@ receipt and no transaction id. Sanning witnesses envelopes on an interval, and
 the proof travels in the pack you build at hand-over.
 
 Enrollment is automatic before the first anchor, so there is no enrollment
-step to write. Production refuses auto-generated secrets: `createAnchorer`
-throws unless you pass a signer and a subject. Dev records are permanently
-marked `environment: "dev"` inside the signed bytes, so a dev record can never
-be presented as production evidence.
+step to write. A Live API key refuses auto-generated secrets: `createAnchorer`
+throws unless you pass a signer and a subject. Sandbox records are permanently
+marked `environment: "dev"` inside the signed bytes, so a Sandbox record can never
+be presented as Live evidence. See [Sandbox and live](/concepts/sandbox-and-live).
 
 ## Group calls into a chain
 

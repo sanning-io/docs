@@ -1,0 +1,106 @@
+---
+name: sanning
+description: Use Sanning when an AI agent must produce evidence of what it did that a third party can verify without trusting you or Sanning. Use it to anchor agent steps with the Sanning SDKs, build an evidence pack, or verify a pack someone handed you. Start in the sandbox with a sandbox API key.
+metadata:
+  docs: https://docs.sanning.io
+---
+
+# Sanning
+
+Sanning records what an AI agent does so a third party can check it later without trusting you or Sanning. The agent hashes each step locally and signs a commitment. Sanning stores the signed envelope, never the content, and seals the envelopes into a stamp on the public record. Verification runs offline, on the checker's machine, with an open-source kernel.
+
+The lifecycle is anchor, read, verify.
+
+## Start in the sandbox
+
+Every new integration starts in the sandbox. One host serves both modes, and the API key decides which one a request reaches.
+
+| | Sandbox | Live |
+|---|---|---|
+| API key prefix | `sanning_test_` | `sanning_prod_` |
+| Signed `environment` | `"dev"`, set by the SDK from the key | `"production"` |
+| Stamp | Simulated, never reaches the public record | Reaches the public record and stays there |
+| Records | Deleted after 30 days; Reset clears them | Permanent |
+| Offline verify | `SANDBOX`, exit code 5 | `VERIFIED`, exit code 0 |
+
+A person creates the API key in the console: sign in at `https://console.sanning.io`, open the account menu, choose **Switch to sandbox**, then **Settings, API keys, Create key**. You cannot create an organization or an API key through the API on your own; access starts with the Sanning team.
+
+Requests go to `https://api.sanning.io`. A live plane refuses a sandbox API key (`SANDBOX_KEY_ON_LIVE`), and a sandbox refuses a live one (`LIVE_KEY_ON_SANDBOX`). Every sandbox response carries the header `Sanning-Mode: sandbox`.
+
+## Set up
+
+1. Install the SDK: `npm install @sanning/anchor` (Node.js 22 or later) or `pip install sanning-anchor` (Python 3.11 or later).
+2. Make the agent's signing seed once and keep it: `openssl rand -hex 32`. Store it as `SANNING_SIGNING_SEED` in a secret store and load the same value on every start. A new seed on each start makes a new agent identity, and a second key for the same agent is refused as an unauthorized rotation.
+3. Set `SANNING_API_KEY` to the sandbox API key.
+
+Never commit the API key or the seed, and never send either to Sanning in content. Sanning never receives the seed.
+
+## Anchor a step
+
+```ts
+import { createAnchorer, FsLogStore, LocalEd25519Signer } from "@sanning/anchor";
+
+const anchorer = createAnchorer({
+  apiKey: process.env.SANNING_API_KEY!,
+  subject: { type: "agent", agent_id: "claims-triage" },
+  signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED!),
+  logStore: new FsLogStore("./logstore"),
+});
+await anchorer.anchor({ eventType: "agent.decision", content: "the decision your agent just made" });
+await anchorer.close(); // throws if any signed event was not delivered
+```
+
+```python
+import os
+from sanning_anchor import Anchorer, FsLogStore, LocalEd25519Signer
+
+anchorer = Anchorer(
+    api_key=os.environ["SANNING_API_KEY"],
+    subject={"type": "agent", "agent_id": "claims-triage"},
+    signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
+    log_store=FsLogStore("./logstore"),
+)
+anchorer.anchor(content=b"the decision your agent just made", event_type="agent.decision")
+anchorer.close()
+```
+
+- Pass no `environment`: the SDK signs it from the API key.
+- The SDK enrolls the signing key on the first anchor; the agent then appears on the console's **Agents** page.
+- The log store keeps the content on your side. The pack step reads it, so keep the directory.
+- For LangChain, use `AnchorCallbackHandler(anchorer, raise_on_gaps=True)` as a context manager; for the Vercel AI SDK, see the Vercel guide in Pages.
+
+## Build a pack and verify it
+
+A record can go into a pack once its stamp has sealed. In the sandbox that takes about a minute. Until then, `bundle` exits 3 and says the records are not yet stamped: wait and run it again.
+
+```bash
+npx @sanning/anchor bundle --agent claims-triage --from 2026-10-27 --to 2026-10-27 --logs ./logstore --out pack.zip
+unzip pack.zip -d pack && cd pack
+npx @sanning/proof verify bundle.json --logs logs/
+```
+
+The Python commands take the same flags: `sanning-anchor bundle ...` and `sanning-proof verify ...`. `bundle` reads `SANNING_API_KEY` from the environment.
+
+Verify exit codes: 0 verified, 1 a check failed (the output names the record), 2 the input could not be read, 3 undetermined, 4 mixed, 5 sandbox (every check passed, and the records are sandbox evidence). A person can also drop the pack on `https://verify.sanning.io`.
+
+## Go live
+
+Switch to a `sanning_prod_` API key. A live agent enrolls fresh: sandbox and live identities are separate. Live records are permanent once their stamp reaches the public record, so try everything in the sandbox first. Use durable storage for the log store, such as an S3-compatible bucket.
+
+## Rules
+
+- Content never leaves your side; only the signed commitment does. Do not put secrets or personal data in `agent_id` or `event_type`.
+- Keep one signing seed per agent, for the agent's life.
+- Treat exit code 5 as "sandbox", never as production evidence.
+- Sanning is not in the trust path: a pack verifies offline without Sanning.
+
+## Pages
+
+- Quickstart: https://docs.sanning.io/quickstart
+- Sandbox and live: https://docs.sanning.io/concepts/sandbox-and-live
+- Go live: https://docs.sanning.io/guides/go-live
+- LangChain: https://docs.sanning.io/guides/langchain
+- Vercel AI SDK: https://docs.sanning.io/guides/vercel
+- Errors: https://docs.sanning.io/reference/errors
+- CLI: https://docs.sanning.io/reference/cli
+- Every page as Markdown: https://docs.sanning.io/llms.txt

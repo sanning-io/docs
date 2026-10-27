@@ -3,16 +3,31 @@ title: "API keys and scopes"
 description: "The two things a key can do, and why enrollment is not a step you write"
 ---
 
-One API key belongs to your organization and covers your whole fleet. It
+One API key belongs to your organization and covers all of your agents. It
 authorizes the call. It never decides identity: that comes from each agent's
 own signing key, which Sanning never receives.
 
 This page is about the key.
 
+## The prefix decides the mode
+
+Each API key belongs to one mode, and its prefix says which. The mode follows the
+key, so the same code, the same host and the same SDK call serve both. The following
+table lists the prefixes.
+
+| Mode | API key prefix | Created in |
+|---|---|---|
+| Sandbox | `sanning_test_` | The Sandbox, under **Settings, API keys** |
+| Live | `sanning_prod_` | Live, under **Settings, API keys** |
+
+A Live plane refuses a Sandbox API key with `SANDBOX_KEY_ON_LIVE`, and a Sandbox refuses
+a Live API key with `LIVE_KEY_ON_SANDBOX`. A Sandbox holds at most 10 active API keys.
+See [Sandbox and live](/concepts/sandbox-and-live).
+
 ## Create a key
 
 Access to `console.sanning.io` starts with a conversation with the Sanning
-team, not a sign-up form. Once your organization exists on the roster, open
+team, not a sign-up form. Once your organization is set up, open
 **Settings, API keys** and select **Create key**. Only an owner or admin can
 create one. Name the key, and leave **Verify** unchecked unless this key will
 also ask Sanning for a verdict. Store it as `SANNING_API_KEY` in whatever your
@@ -61,7 +76,7 @@ revoking and re-keying an identity from the console.
 
 Enrollment is the plane's door policy, and it is not the trust path. Every
 signed record verifies offline against the open kernel whether or not the
-roster knows the key.
+key is enrolled.
 
 Two properties are load-bearing:
 
@@ -88,7 +103,6 @@ retiring key so it can counter-sign the challenge:
 
 ```ts TypeScript
 const anchorer = createAnchorer({
-  environment: "dev",
   signer: LocalEd25519Signer.fromSeedHex(newSeedHex),
   subject: { type: "agent", agent_id: "claims-triage" },
   apiKey: process.env.SANNING_API_KEY,
@@ -98,7 +112,6 @@ const anchorer = createAnchorer({
 
 ```python Python
 anchorer = Anchorer(
-    environment="dev",
     signer=LocalEd25519Signer.from_seed_hex(new_seed_hex),
     subject={"type": "agent", "agent_id": "claims-triage"},
     api_key=os.environ["SANNING_API_KEY"],
@@ -118,7 +131,7 @@ completes the re-key on its next boot. See
 ## Enroll at deploy time instead
 
 Where you would rather enroll out of band, turn the automatic call off and
-drive it yourself. A fleet that cold-starts together shares one rate limit,
+drive it yourself. Agents that cold-start together share one rate limit,
 because enrollment is limited per API key, so this is the answer to
 `EnrollmentThrottledError` as well.
 
@@ -157,7 +170,7 @@ Then build the anchorer with `autoEnroll: false` in TypeScript, or
 
 `subject.agent_id` is sealed inside every signed record. It is history, it
 never changes, and it cannot contain spaces. A display name lives on the
-console roster, accepts any text, and a rename shows up straight away.
+console's **Agents** page, accepts any text, and a rename shows up straight away.
 
 They default to agreeing. Pass `displayName` to `createAnchorer` in
 TypeScript, or `display_name` on the anchorer in Python, when you want a

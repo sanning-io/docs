@@ -16,9 +16,10 @@ record is received the moment you anchor it, and witnessed only once its interva
 and is published. The console's **Records** page states which of the two applies to each
 row; do not read "received" as "witnessed" for a record whose interval has not closed yet.
 
-The public record is **Arweave**. A stamp is an Arweave transaction, and your
-pack carries its transaction id, so your counterparty can fetch it from any
-Arweave gateway without asking Sanning.
+A stamp is a transaction on the public record, and your pack carries its
+transaction id, so your counterparty can fetch it from any gateway to that
+record without asking Sanning. The witness kind in the pack names it
+(`arweave`), and [Verify at the command line](/verify/cli) shows how to re-fetch it.
 
 ## How it works
 
@@ -82,6 +83,13 @@ these records existed by the time this interval closed, not the second each one
 was anchored. **Ordering is not affected by any of this**: each record commits
 to the one before it, so a deletion leaves a hole and a reorder breaks the
 chain, whatever the interval width.
+
+## In the Sandbox
+
+The Sandbox stamps records with a simulated witness. A stamp seals within about a minute,
+and it is never published to the public record. The pack is built the same way and
+verifies offline, and the kernel reports it as Sandbox, with exit code 5, not as
+verified. See [Sandbox and live](/concepts/sandbox-and-live).
 
 ## What is published, and what is not
 

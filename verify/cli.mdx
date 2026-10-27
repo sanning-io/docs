@@ -97,6 +97,20 @@ This command reads one pack. To read several parties' packs as one case, see
   accepted as any string. Nothing on the public record is affected.
 </Note>
 
+## A Sandbox pack
+
+A pack built in the Sandbox passes its checks and prints `SANDBOX` in place of
+`VERIFIED`. It exits **5**:
+
+```
+SANDBOX  verified offline (no gateway re-fetch requested)
+  Sandbox evidence (environment dev): not production evidence
+```
+
+The exit code stays 5 with `--gateways`, because a Sandbox stamp is simulated and no
+gateway can look it up. A failure is still 1. See
+[What a verdict means](/verify/what-a-verdict-means#what-a-sandbox-verdict-means).
+
 ## Two errors you might hit first
 
 Both exit 2, before any check runs.
@@ -144,7 +158,7 @@ The verdict above is offline. It names a witness without contacting it. To check
 witness holds those bytes, pass a gateway:
 
 ```bash
-npx @sanning/proof verify bundle.json --logs logs/ https://turbo-gateway.com
+npx @sanning/proof verify bundle.json --logs logs/ --gateways https://turbo-gateway.com
 ```
 
 That turns a claim you read into one you checked. See

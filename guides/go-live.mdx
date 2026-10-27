@@ -1,0 +1,159 @@
+---
+title: "Go live"
+description: "Switch an agent from the Sandbox to Live, and check the first pack"
+---
+
+This page moves an agent that works in the Sandbox to Live. You change four things: the
+API key, the signing seed, the log store and the secrets your service loads. Your code
+changes little.
+
+Read what becomes permanent before you start. Live is the only mode that produces
+evidence.
+
+## What becomes permanent
+
+Live records cannot be withdrawn. When you run an agent against Live:
+
+- Each stamp is published to the public record, and stays there.
+- A `payloadRef` you pass on a call is signed as given and published with the record.
+  Keep a bucket path, a tenant ID or a person's name out of it.
+- A `case_id` is committed permanently and indexed, so keep it opaque.
+
+See [The witness](/concepts/witness) for exactly what a stamp publishes.
+
+## Prerequisites
+
+Before you begin, you must have:
+
+- An agent that anchors and builds a verifying pack in the Sandbox. See the
+  [Quickstart](/quickstart).
+- An owner or admin role in your organization on `console.sanning.io`.
+- S3-compatible storage for your log store, so the bytes outlive the process.
+
+## Switch to Live
+
+1. Open `console.sanning.io`. If a strip across the top says Sandbox, select
+   **Switch to live**.
+2. Open **Settings, API keys** and select **Create key**.
+3. Name the key and leave **Verify** unchecked.
+4. Copy the key. A Live API key starts with `sanning_prod_`, and the console shows it
+   once.
+5. Replace `SANNING_API_KEY` in your service's secrets with the new key.
+
+That one change is what makes the SDK sign `environment: "production"`. Live refuses a
+Sandbox API key with `SANDBOX_KEY_ON_LIVE`, so a leftover Sandbox key fails loudly
+instead of writing to the wrong place.
+
+## Enroll the Live agent fresh
+
+Your Sandbox agent and your Live agent are separate identities. The Sandbox does not
+carry its agents or signing keys across, so the Live agent enrolls from scratch.
+
+1. Generate a new signing seed. Use the same commands as in the
+   [Quickstart](/quickstart#make-a-signing-seed).
+2. Store it in your secret store as `SANNING_SIGNING_SEED`, replacing the Sandbox seed.
+3. Run your agent. On the first anchor, the SDK enrolls the new signing key, and the
+   agent appears on the **Agents** page in Live.
+
+Do not reuse the Sandbox seed. A Sandbox seed lives in test pipelines and developer
+machines, so treat every holder of it as unable to speak for your Live agent. For the
+enrollment lifecycle, see [How an agent enrolls](/guides/enrollment).
+
+## Keep your records in a store that outlives the process
+
+Live refuses an envelope that does not say where its bytes are kept:
+
+- `no-log-store` (400): the envelope names no log store.
+- `local-log-store` (400): a `payloadRef` you passed is a `file:` locator, which is one
+  machine's disk and not a retained store.
+
+A configured `FsLogStore` passes both checks, because the SDK signs an opaque locator for
+it. It still keeps the bytes on one machine's disk, and a commitment to bytes you can no
+longer produce cannot be checked. For Live, point the anchorer at S3-compatible storage.
+[Keep what you anchored](/guides/log-store) shows the store, and
+[Set up the bucket](/guides/bucket) shows the credentials.
+
+## Remove any explicit environment
+
+The quickstart sets no `environment`, and neither does your Live service. A Live API
+key makes the SDK sign `"production"`. If your code passes `environment: "dev"`, the SDK
+accepts it with a Live API key and signs a Sandbox record that no reader can count as
+evidence. Delete the argument.
+
+## Check the first Live pack
+
+1. Run the agent so that it anchors at least one record.
+2. Wait for the interval containing the record to seal and publish. A Live stamp takes
+   minutes, not seconds. [The witness](/concepts/witness) explains how long.
+3. Build a pack for a short window:
+
+   <CodeGroup>
+
+   ```bash Python
+   sanning-anchor bundle \
+     --agent claims-triage \
+     --from 2026-10-27 \
+     --to 2026-10-27 \
+     --logs s3://BUCKET \
+     --out pack.zip
+   ```
+
+   ```bash TypeScript
+   npx @sanning/anchor bundle \
+     --agent claims-triage \
+     --from 2026-10-27 \
+     --to 2026-10-27 \
+     --logs s3://BUCKET \
+     --out pack.zip
+   ```
+
+   </CodeGroup>
+
+4. Verify the pack with a gateway, so the check reaches the public record:
+
+   <CodeGroup>
+
+   ```bash Python
+   unzip pack.zip -d pack
+   cd pack
+   sanning-proof verify bundle.json --logs logs/ --gateways GATEWAY_URL
+   ```
+
+   ```bash TypeScript
+   unzip pack.zip -d pack
+   cd pack
+   npx @sanning/proof verify bundle.json --logs logs/ --gateways GATEWAY_URL
+   ```
+
+   </CodeGroup>
+
+Replace the following:
+
+- `claims-triage` with your agent's name.
+- The dates with the day you anchored.
+- `BUCKET` with the bucket that holds your log store. Reading it needs three S3
+  variables in your shell, and `SANNING_SIGNING_SEED` must not be set, because `bundle`
+  refuses an `s3://` log store when it is. See
+  [Keep what you anchored](/guides/log-store#build-a-pack-straight-from-the-bucket).
+- `GATEWAY_URL` with a gateway you choose. See
+  [Verify at the command line](/verify/cli#confirm-the-witness-on-the-public-record).
+
+A Live pack prints `VERIFIED` and exits 0. If it prints `SANDBOX` and exits 5, some
+record in it was signed as Sandbox: check that the service is using the Live API key and
+passes no `environment`. A pack carries one mode, so `bundle` refuses a window that
+mixes the two.
+
+## Roll back
+
+If a Live service misbehaves, switch the secrets back to the Sandbox API key and seed.
+Records already written to Live stay. The Sandbox stays as you left it, until its
+30-day retention or a Reset.
+
+<CardGroup cols={2}>
+  <Card title="Sandbox and live" icon="flask" href="/concepts/sandbox-and-live">
+    What changes between the two modes.
+  </Card>
+  <Card title="Keep what you anchored" icon="database" href="/guides/log-store">
+    The store Live expects.
+  </Card>
+</CardGroup>

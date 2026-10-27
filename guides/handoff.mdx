@@ -294,7 +294,7 @@ same sequence still raises `HandoffReplayError`, never
 
 **Identity does not decide whether a record verifies.** `receive` does not look
 up who a key belongs to. `expectedSender` narrows who you accept before
-anything is written; it is not a roster check. `received.senderPublicKey`
+anything is written; it is not an enrollment check. `received.senderPublicKey`
 (`sender_public_key` in Python) gives you the key, and whether it is enrolled
 and not revoked is a question you answer on your own terms.
 
