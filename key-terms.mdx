@@ -1,0 +1,135 @@
+---
+title: "Key terms"
+description: "The words these docs use, defined once, in the order you meet them"
+---
+
+{/* Source: CONTEXT.md in sanning-io/knowledge-base. A term changes there first, then here. */}
+
+Each term below has one meaning across these docs, the console and the SDKs. They come
+in the order you meet them in the [Quickstart](/quickstart).
+
+## Before you anchor
+
+### Organization
+
+Your tenancy on Sanning. Your agents, API keys and records belong to it.
+
+### API key
+
+The credential that authorizes your calls to Sanning. What it can do is shown in the
+console as **Anchor**, and optionally **Verify**. See
+[API keys and scopes](/guides/keys-and-scopes).
+
+### Sandbox
+
+The mode for trying Sanning. Records are signed for real, but stamps are simulated,
+nothing reaches the public record, and nothing is billed. A Sandbox API key puts you
+in it. See [Sandbox and live](/concepts/sandbox-and-live).
+
+### Live
+
+The mode that holds your real evidence and publishes stamps to the public record. A Live
+API key puts you in it. See [Go live](/guides/go-live).
+
+### Agent
+
+The AI agent you build and run. It produces the events Sanning records evidence of.
+
+### Signing key
+
+The Ed25519 key an agent signs its records with. Sanning holds only its public half;
+the seed stays with you.
+
+### Seed
+
+The 32-byte secret a signing key is derived from, which you supply as
+`SANNING_SIGNING_SEED`. Keep it: a new seed is a new identity.
+
+### Enrollment
+
+Binding a signing key to an agent by proving you hold it. The SDK enrolls the key on the
+agent's first anchor. See [How an agent enrolls](/guides/enrollment).
+
+## Anchor
+
+### Event
+
+The data your agent produced, such as a decision or a tool call. It stays on your
+machine. Sanning never receives it.
+
+### Log store
+
+Your own folder or bucket holding the exact bytes of each event. Sanning never reads it.
+A pack draws the bytes you choose to disclose from it. See
+[Keep what you anchored](/guides/log-store).
+
+### Envelope
+
+The signed wrapper over the hash of an event. It is what Sanning receives. A
+minimum-disclosure envelope does not name the agent: your log store holds that.
+
+### Record
+
+One signed event: the envelope, and the event it commits to. The console's **Records**
+page lists the records Sanning received.
+
+### Anchor
+
+What the SDK does for each event: hash it locally, sign an envelope over the hash, and
+hand the envelope to Sanning. See [Anchor from your agent](/guides/anchor).
+
+## Witness
+
+### Interval
+
+The fixed period at the end of which Sanning seals your organization's records into one
+stamp. A record waits for the end of its interval before it can go into a pack.
+
+### Stamp
+
+The signed root of a Merkle tree over one organization's records for one interval. In
+Live, it is published to the public record. In the Sandbox, it is simulated.
+
+### Witness
+
+An independent confirmation of time. The public record witnesses a Live stamp. Sanning
+receiving a record is not a witness. See [The witness](/concepts/witness).
+
+### Received and witnessed
+
+**Received** means Sanning holds the record. **Witnessed** means a stamp covering it has
+reached the public record. A record is received when you anchor it, and witnessed after
+its interval closes.
+
+### Public record
+
+The public, permanent store where Live stamps are published. Anyone can fetch a stamp
+from it without asking Sanning.
+
+### Inclusion proof
+
+The Merkle path showing that one record is under a stamp's root. A pack carries one per
+record, and the kernel checks it offline.
+
+## Verify
+
+### Pack
+
+The zip you hand to an auditor or counterparty: `bundle.json`, and a `logs/` folder with
+the bytes you chose to disclose. See [Hand over a pack](/quickstart#hand-over-a-pack).
+
+### Kernel
+
+The open-source verifier anyone runs themselves, in TypeScript or Python, or in the
+browser at [verify.sanning.io](https://verify.sanning.io). It needs no account and no call
+to Sanning.
+
+### Verify
+
+Checking a pack: the signatures, the inclusion proofs and the disclosed bytes. Anyone
+holding the pack can do it alone. See [Verify at the command line](/verify/cli).
+
+### Verdict
+
+The answer the kernel gives, as a word and an exit code. A Sandbox pack reads `SANDBOX`
+with exit code 5, never `VERIFIED`. See [What a verdict means](/verify/what-a-verdict-means).
