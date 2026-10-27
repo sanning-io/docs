@@ -9,6 +9,21 @@ own signing key, which Sanning never receives.
 
 This page is about the key.
 
+## The prefix decides the mode
+
+Each API key belongs to one mode, and its prefix says which. The mode follows the
+key, so the same code, the same host and the same SDK call serve both. The following
+table lists the prefixes.
+
+| Mode | API key prefix | Created in |
+|---|---|---|
+| Sandbox | `sanning_test_` | The Sandbox, under **Settings, API keys** |
+| Live | `sanning_prod_` | Live, under **Settings, API keys** |
+
+A Live plane refuses a Sandbox API key with `SANDBOX_KEY_ON_LIVE`, and a Sandbox refuses
+a Live API key with `LIVE_KEY_ON_SANDBOX`. A Sandbox holds at most 10 active API keys.
+See [Sandbox and live](/concepts/sandbox-and-live).
+
 ## Create a key
 
 Access to `console.sanning.io` starts with a conversation with the Sanning
@@ -88,7 +103,6 @@ retiring key so it can counter-sign the challenge:
 
 ```ts TypeScript
 const anchorer = createAnchorer({
-  environment: "dev",
   signer: LocalEd25519Signer.fromSeedHex(newSeedHex),
   subject: { type: "agent", agent_id: "claims-triage" },
   apiKey: process.env.SANNING_API_KEY,
@@ -98,7 +112,6 @@ const anchorer = createAnchorer({
 
 ```python Python
 anchorer = Anchorer(
-    environment="dev",
     signer=LocalEd25519Signer.from_seed_hex(new_seed_hex),
     subject={"type": "agent", "agent_id": "claims-triage"},
     api_key=os.environ["SANNING_API_KEY"],

@@ -1,0 +1,45 @@
+---
+title: "Rate limits and ceilings"
+description: "The fixed limits of the Sandbox, and how Live limits are set"
+---
+
+Each mode limits how fast you can call and how much you can hold. The Sandbox has fixed
+numbers, the same for every organization. Live limits follow your plan.
+
+## Sandbox ceilings
+
+Every Sandbox organization gets these numbers, whatever plan it holds in Live. They are
+not settings: nobody can raise one for you.
+
+| `details.limit` | Ceiling | Status | What clears it |
+|---|---|---|---|
+| `rate` | 5 requests per second, and 300 per minute, per organization | 429 | Wait for `Retry-After` |
+| `keys` | 10 active API keys | 403 | Revoke a key. A Reset keeps API keys |
+| `agents` | 25 active agents | 403 | Reset the sandbox, which decommissions every agent |
+| `records` | 10,000 records held | 403 | Reset the sandbox |
+| `bytes` | 500 MB of stored envelopes held (500,000,000 bytes) | 403 | Reset the sandbox |
+| `reset` | One Reset every 5 minutes per organization | 429 | Wait for `Retry-After` |
+| `deployment` | 50 GB of stored envelopes across every Sandbox organization together (50,000,000,000 bytes) | 403 | Reset the sandbox, which frees your share |
+
+Every refusal is the error `SANDBOX_LIMIT_REACHED`. `details.limit` names the ceiling and
+`details.value` states its number. The 429 refusals carry a `Retry-After` header in
+seconds. The 403 refusals do not clear by waiting, so repeating the request cannot
+succeed until you free something.
+
+Where a Reset frees the ceiling, `details.reset` names the route and the console path:
+**Settings, Sandbox, Reset the sandbox**. See [Errors](/reference/errors#sandbox-errors).
+
+A resend of a record the organization already holds is never refused for `records`,
+`bytes` or `deployment`: it stores nothing new.
+
+The Sandbox has no monthly quota and no overage, and is never billed.
+
+## Live limits
+
+Live limits come from your plan: the request rate, the number of API keys and agents, and
+the monthly usage allowances. A request over the rate limit answers 429
+`RATE_LIMIT_EXCEEDED`. A request over a monthly allowance that your plan caps answers 429
+`QUOTA_EXCEEDED`. Ask the Sanning team for the numbers on your plan.
+
+Live has no purge and no Reset, so the `records`, `bytes` and `deployment` ceilings
+exist only in the Sandbox.

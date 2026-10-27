@@ -1,0 +1,76 @@
+---
+title: "Test in CI"
+description: "Run the Sandbox from a pipeline with one stored seed, and accept exit code 5"
+---
+
+This page puts a Sandbox anchor, a pack and a verify into a CI job. The job proves that
+your integration still anchors and that your records still verify, without writing to the
+public record.
+
+## Use a Sandbox API key and one stored seed
+
+Store two secrets in your CI system:
+
+- `SANNING_API_KEY`: a Sandbox API key. Create it under **Settings, API keys** in the
+  Sandbox. Do not put a Live API key in a test pipeline.
+- `SANNING_SIGNING_SEED`: a signing seed you generate once, with the commands in the
+  [Quickstart](/quickstart#make-a-signing-seed).
+
+Load the same seed on every run. A new seed under an existing `agent_id` is read as an
+unauthorized identity rotation, and a new `agent_id` on every run enrolls a new agent
+each time. The Sandbox holds at most 25 active agents, so a job that mints a new agent
+per run eventually fails with `SANDBOX_LIMIT_REACHED`. See
+[Rate limits and ceilings](/reference/rate-limits-and-ceilings).
+
+## Accept exit code 5
+
+A Sandbox pack verifies, and `verify` exits 5 for it. A CI job that requires exit code 0
+never passes, so assert 5 instead:
+
+```bash
+set +e
+sanning-proof verify bundle.json --logs logs/
+code=$?
+set -e
+
+if [ "$code" -ne 5 ]; then
+  echo "expected exit code 5 (Sandbox), got $code"
+  exit 1
+fi
+```
+
+The check is strict on purpose. Exit 0 from a Sandbox pack would mean the records were
+signed as Live, and exit 1 means a check failed. Both are failures here.
+
+## Wait for the stamp
+
+A Sandbox stamp seals within about a minute. Until it does, `bundle` exits 3 with
+`no stamped records`. Retry for a few minutes before you fail the job:
+
+```bash
+for attempt in $(seq 1 12); do
+  if sanning-anchor bundle \
+    --agent claims-triage \
+    --from "$(date -u +%F)" \
+    --to "$(date -u +%F)" \
+    --logs ./logstore \
+    --out pack.zip; then
+    break
+  fi
+  sleep 15
+done
+test -f pack.zip
+```
+
+The window names today in UTC. A job that runs across midnight UTC can miss records
+anchored before it, so anchor and bundle in one job.
+
+## Keep the Sandbox tidy
+
+Sandbox data older than 30 days is deleted daily, and you rarely need to clear it. If a
+suite fills the Sandbox, an owner or admin can reset it from **Settings, Sandbox**. A
+Reset keeps your API keys and signing keys, so the stored secrets keep working. See
+[Sandbox and live](/concepts/sandbox-and-live#retention-and-reset).
+
+The Sandbox allows 5 requests per second per organization. A parallel test run that
+exceeds it gets `SANDBOX_LIMIT_REACHED` with status 429 and a `Retry-After` header.

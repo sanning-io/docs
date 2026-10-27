@@ -21,6 +21,7 @@ The brand is defined once, in [`sanning-io/sanning-design-system`](https://githu
 - The lifecycle is **anchor → read → verify**. The write path is "the anchor front" at `/anchor`; never "Turbo" on a customer-facing surface.
 - The signing party is the **agent**, not the producer. Packages publish under the Sanning npm org (`@sanning/*`) and as `sanning-*` on PyPI.
 - The control plane is **not in the trust path**. Say so wherever issuance, roster, metering, or billing are described.
+- The two modes are **Sandbox** and **Live** in prose, and an **API key**, never a bare "key". The wire values (`sanning_test_`, `sanning_prod_`, `environment: "dev"` and `"production"`) appear in tables and reference, not in sentences. Every sample uses a Sandbox API key, except [Go live](guides/go-live.mdx) and the reference. Never name a chain: say "the public record".
 - Company: Sanning Inc. GitHub org: `sanning-io`. Production console: `console.sanning.io`.
 
 ## Style preferences

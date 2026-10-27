@@ -50,6 +50,7 @@
           "concepts/how-it-works",
           "concepts/trust-boundary",
           "concepts/witness",
+          "concepts/sandbox-and-live",
           "concepts/limits"
         ]
       },
@@ -66,7 +67,8 @@
           "guides/bucket",
           "guides/keys-and-scopes",
           "guides/enrollment",
-          "guides/environments"
+          "guides/go-live",
+          "guides/test-in-ci"
         ]
       },
       {
@@ -83,6 +85,7 @@
           "reference/cli",
           "reference/scopes",
           "reference/errors",
+          "reference/rate-limits-and-ceilings",
           "reference/wire-formats",
           "reference/a2a-mapping"
         ]
@@ -93,6 +96,10 @@
     {
       "source": "/guides/enrolment",
       "destination": "/guides/enrollment"
+    },
+    {
+      "source": "/guides/environments",
+      "destination": "/concepts/sandbox-and-live"
     }
   ],
   "contextual": {

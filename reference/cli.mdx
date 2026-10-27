@@ -75,6 +75,9 @@ different agent. A misspelled `--agent` prints `bundle: no stamped records for a
 "…" … (the control plane does not recognize this agent)` and exits 1, rather than
 building an empty or mismatched pack.
 
+**`bundle` refuses a window that mixes Sandbox and Live evidence** for one agent, because
+a pack carries one mode.
+
 **It verifies its own output before writing.** If the assembled pack does not verify,
 nothing is written and the command exits non-zero. A pack that only fails at the auditor
 is a pack shipped broken.
@@ -126,6 +129,9 @@ npx @sanning/proof verify bundle.json --logs logs/
 | 3 | Undetermined: the pack reads `incomplete` or `partial`, or a gateway re-fetch was asked for and something in it could not be checked |
 | 4 | Mixed: more than one outcome, none of them failed |
 | 5 | Sandbox: every check passed, but the pack holds a record signed `environment: "dev"`, which is sandbox evidence, not production evidence. A pack whose records are all `dev` also exits 5 when the only witness left unchecked is a simulated one |
+
+Exit 5 is the Sandbox: the pack verified, and its stamp is simulated. See
+[Sandbox and live](/concepts/sandbox-and-live).
 
 A pack whose declaration says a record's content is withheld on purpose reads
 `verified`; a pack with no declaration and an undisclosed record reads

@@ -65,6 +65,10 @@ That choice has consequences worth understanding before you build against it:
 - **An inclusion proof is small.** Your counterparty checks one record against a published
   root without holding anyone else's data.
 
+In the Sandbox, the stamp is simulated and never reaches the public record. Records are
+signed for real, so the rest of the path is identical. See
+[Sandbox and live](/concepts/sandbox-and-live).
+
 ## What you must keep
 
 Sanning holds commitments, so it cannot give your raw data back. You keep it.
@@ -76,7 +80,7 @@ one unrecoverable state in the system. See [Keep what you anchored](/guides/log-
 ## Where to go next
 
 <Card title="Quickstart" icon="rocket" href="/quickstart">
-  Anchor a record and verify it, in about ten minutes.
+  Anchor a record in the Sandbox and verify it, in about ten minutes.
 </Card>
 <Card title="What a verdict does not claim" icon="scale-balanced" href="/verify/what-a-verdict-means">
   The limits, stated plainly. Read this before you rely on one.

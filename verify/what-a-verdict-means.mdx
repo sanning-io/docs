@@ -81,6 +81,22 @@ that organization anchored in the same interval.
   one agent's own steps.
 </Note>
 
+## What a Sandbox verdict means
+
+A pack built in the Sandbox passes every check and still does not read `VERIFIED`. The
+kernel prints `SANDBOX`, adds the line "Sandbox evidence (environment dev): not production
+evidence", and exits 5. The browser page shows **Sandbox** in place of the verified
+verdict.
+
+The signatures, the inclusion proofs and the disclosed bytes all checked out, so the
+records are intact and attributed. What is missing is the witness: a Sandbox stamp is
+simulated, so it supplies no independent time and no public record holds it. Read a
+Sandbox pack as a rehearsal. Do not rely on it as evidence.
+
+The kernel reads the marker from the signed records in the pack, not from a field anyone
+can edit without a key, and no flag turns exit code 5 into 0. See
+[Sandbox and live](/concepts/sandbox-and-live).
+
 ## What a failure means
 
 If the kernel prints `FAILED`, it names the record that broke and why. The pack itself

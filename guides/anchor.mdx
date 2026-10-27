@@ -7,7 +7,8 @@ This page puts one anchor call inside an agent you already have. What comes
 back is a signed commitment to that step, which a third party can check later
 without Sanning and without you.
 
-You need an API key from the console. Every key can anchor, which covers
+You need a Sandbox API key from the console. The samples use one, so they write to the
+Sandbox and nothing reaches the public record. Every key can anchor, which covers
 enrolling the signing key, anchoring, and reading your records back at
 hand-over, so a key created for this needs nothing added to it.
 [API keys and scopes](/guides/keys-and-scopes) has the detail.
@@ -54,7 +55,6 @@ if (!apiKey || !seedHex) {
 }
 
 const anchorer = createAnchorer({
-  environment: "dev",
   // Your agent's identity. The seed stays on your machine.
   signer: LocalEd25519Signer.fromSeedHex(seedHex),
   subject: { type: "agent", agent_id: "claims-triage" },
@@ -85,7 +85,6 @@ import os
 from sanning_anchor import Anchorer, FsLogStore, LocalEd25519Signer
 
 anchorer = Anchorer(
-    environment="dev",
     # Your agent's identity. The seed stays on your machine.
     signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
     subject={"type": "agent", "agent_id": "claims-triage"},
@@ -115,12 +114,13 @@ Replace the following:
 
 - `SANNING_SIGNING_SEED` with 64 lowercase hex characters that your service
   keeps across restarts.
-- `SANNING_API_KEY` with the key from the console.
+- `SANNING_API_KEY` with the Sandbox API key from the console.
 - `claims-triage` with the name you want this evidence attributed to.
 
-Both samples use `environment: "dev"`. Production writes to a permanent public
-record, so it is a deliberate edit rather than a default you inherit:
-[Dev and production](/guides/environments) covers the move.
+Neither sample sets an environment. The Sandbox API key decides it, and the SDK signs
+the matching value. A Live API key writes to a permanent public record, so moving to Live
+is a deliberate edit of your secrets, not of this code: [Go live](/guides/go-live)
+covers the move.
 
 ## Enrollment is automatic
 
