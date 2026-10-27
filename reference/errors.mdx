@@ -89,7 +89,7 @@ These resolve on their own. Retry rather than debugging.
   </Accordion>
   <Accordion title="the control plane does not recognize this agent">
     The plane's records route filters by `--agent` on the server, so a name that does not
-    match an agent on your roster stops there before `bundle` reads anything back. The
+    match one of your organization's agents stops there before `bundle` reads anything back. The
     command prints `bundle: no stamped records for agent "…"` with this reason, and exits 1.
 
     Check the spelling against the console's **Agents** page. `--agent` takes the name you
@@ -149,7 +149,7 @@ These resolve on their own. Retry rather than debugging.
 
     A key you create in the console is never bound to an agent, so this appears only on a
     key Sanning bound for you. Use an ordinary key from **Settings, API keys**, which
-    covers your whole fleet.
+    covers all of your agents.
   </Accordion>
   <Accordion title="AGENT_CHALLENGE_INVALID">
     The proof-of-possession challenge is missing, expired, already used, or was not

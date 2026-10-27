@@ -16,9 +16,10 @@ record is received the moment you anchor it, and witnessed only once its interva
 and is published. The console's **Records** page states which of the two applies to each
 row; do not read "received" as "witnessed" for a record whose interval has not closed yet.
 
-The public record is **Arweave**. A stamp is an Arweave transaction, and your
-pack carries its transaction id, so your counterparty can fetch it from any
-Arweave gateway without asking Sanning.
+A stamp is a transaction on the public record, and your pack carries its
+transaction id, so your counterparty can fetch it from any gateway to that
+record without asking Sanning. The witness kind in the pack names it
+(`arweave`), and [Verify at the command line](/verify/cli) shows how to re-fetch it.
 
 ## How it works
 

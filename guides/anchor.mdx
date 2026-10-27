@@ -28,7 +28,7 @@ pip install sanning-anchor
 </CodeGroup>
 
 Both SDKs write the same bytes and take the same arguments under each
-language's naming. Pick one per service. A fleet that runs both still hands
+language's naming. Pick one per service. Agents that run on both still hand
 over one pack.
 
 ## Anchor one event
@@ -127,7 +127,7 @@ covers the move.
 Neither SDK needs a registration step, and its absence is not an omission. On
 the first `anchor` call, the SDK proves possession of your signing key to the
 control plane, and the agent appears on the console's **Agents** page under its
-own key. One organization key covers the whole fleet.
+own key. One organization API key covers all of your agents.
 
 Do not write an enrollment call. If you would rather enroll at deploy time,
 [API keys and scopes](/guides/keys-and-scopes) shows how to turn the automatic

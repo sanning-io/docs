@@ -13,7 +13,7 @@ You write no enrollment step. The first time your agent calls `anchor`, the
 SDK proves possession of its signing key to the control plane, and the agent
 appears on the console's **Agents** page under that key. Enrolling is part of
 what every key can do, so one organization API key covers every agent in your
-fleet.
+organization.
 
 Re-enrolling the same key on a later boot is a no-op, which is what makes it
 safe to run every time your service starts. See
@@ -64,7 +64,7 @@ agent anchored with it, not because someone added it.
 
 An owner or admin opens **Settings, Signing keys**, finds the active key, and
 selects **Revoke**. Revocation is scoped to your organization: it stops that
-key from anchoring anything further under your roster, and it cannot be
+key from anchoring anything further for your organization, and it cannot be
 undone by re-enrolling the same key, including by whoever holds it. Records
 the key signed before revocation are untouched and still verify.
 
