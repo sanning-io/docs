@@ -3,9 +3,9 @@ title: "Quickstart"
 description: "Anchor a step in the sandbox, hand over a pack, and verify it without Sanning"
 ---
 
-This takes you from an organization on `console.sanning.io` to an evidence pack a
-third party can check offline. Everything here runs in the Sanning sandbox: stamps are
-simulated, nothing reaches the public record, and nothing is billed. Budget about ten
+This takes you from an organization on `console.sanning.io` to an [evidence pack](/key-terms#pack) a
+third party can check offline. Everything here runs in the Sanning [sandbox](/key-terms#sandbox): [stamps](/key-terms#stamp) are
+simulated, nothing reaches the [public record](/key-terms#public-record), and nothing is billed. Budget about ten
 minutes. When you are ready for real evidence, [Go live](/guides/go-live).
 
 ## Prerequisites
@@ -28,7 +28,7 @@ Before you begin, you must have:
    [API keys and scopes](/guides/keys-and-scopes).
 5. Copy the key. The console shows it once.
 
-On a new Live account, the first step on the **Agents** page is **Start in the
+On a new [Live](/key-terms#live) account, the first step on the **Agents** page is **Start in the
 sandbox**. It does the same switch.
 
 A Sandbox API key makes your records Sandbox records. You set nothing else. See
@@ -36,8 +36,8 @@ A Sandbox API key makes your records Sandbox records. You set nothing else. See
 
 ## Make a signing seed
 
-Your agent signs its records with an Ed25519 key. Sanning never receives it. You
-generate its 32-byte seed once and keep it, because a new seed on the next run reads
+Your agent signs its records with an Ed25519 [signing key](/key-terms#signing-key). Sanning never receives it. You
+generate its 32-byte [seed](/key-terms#seed) once and keep it, because a new seed on the next run reads
 as an unauthorized identity rotation and fails.
 
 <CodeGroup>
@@ -159,7 +159,7 @@ Replace `claims-triage` with a name for this agent. Keep it stable: it is how th
 appears on the **Agents** page.
 
 The content is hashed locally. The hash is anchored; the bytes are not sent. The SDK
-enrolls your signing key with your organization before the first anchor, so the agent
+[enrolls](/key-terms#enrollment) your signing key with your organization before the first anchor, so the agent
 appears on the **Agents** page without a separate registration step.
 
 There is no `environment` argument. The Sandbox API key makes the SDK sign
@@ -181,8 +181,8 @@ with AnchorCallbackHandler(anchorer, raise_on_gaps=True) as handler:
 anchorer.close()
 ```
 
-Everything after this point is identical: the same log store, the same wait for
-the witness, the same pack.
+Everything after this point is identical: the same [log store](/key-terms#log-store), the same wait for
+the [witness](/key-terms#witness), the same pack.
 
 Two things decide whether this is correct, so they sit here rather than in a
 guide:
@@ -198,7 +198,7 @@ For the event vocabulary, the promoted fields and worked examples, see
 
 ## Wait for the stamp
 
-Sanning stamps your records on an interval, not one transaction per event. In the
+Sanning stamps your records on an [interval](/key-terms#interval), not one transaction per event. In the
 sandbox a stamp seals within about a minute, and the stamp is simulated: it never
 reaches the public record.
 
@@ -246,10 +246,10 @@ Replace the following:
   `records/`.
 
 `--logs` is required in practice. The command reads your record objects to work out
-which events belong to this agent, because a minimum-disclosure envelope does not carry
+which events belong to this agent, because a minimum-disclosure [envelope](/key-terms#envelope) does not carry
 that name.
 
-The command reads your records back from the index, fetches each inclusion proof and the
+The command reads your records back from the index, fetches each [inclusion proof](/key-terms#inclusion-proof) and the
 stamp that witnessed it, pulls the disclosed bytes from your own store, and verifies the
 result before writing anything. If the pack does not verify, nothing is written.
 
@@ -264,7 +264,7 @@ Give `pack.zip` to whoever asked. They have two ways to check it, and neither ne
 account.
 
 In a browser, they open [verify.sanning.io](https://verify.sanning.io) and drop the file
-on the page. The page runs the open kernel in their browser.
+on the page. The page runs the open [kernel](/key-terms#kernel) in their browser.
 
 At a command line:
 
