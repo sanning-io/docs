@@ -11,7 +11,7 @@ pass.
 
 - [`agent-events.md`](https://github.com/sanning-io/specs/blob/main/agent-events.md):
   the `sanning.agent/1` vocabulary. It defines the 17 types, the fields each carries, the
-  data modes and how a verifier reads a record.
+  how a verifier reads a record.
 - [Schemas](https://github.com/sanning-io/specs/tree/main/schemas): the JSON Schema for
   each type.
 - [`sanning-io/specs`](https://github.com/sanning-io/specs): the repository that holds
@@ -34,13 +34,13 @@ To check an integration, do the following:
 2. If you write a verifier, read every case with it and compare the output with
    `expected.json`.
 3. If you write an SDK or an adapter, sign the record in every case that is valid, refuse
-   every case that is not, and for each data-mode case send the fields in `sent.json`.
+   every case that is not, and for each case that has a `sent.json`, send the fields in it.
 4. Run `CI=true npm install` and `npm test` to run the reference reader over the suite.
 5. State the commit of `sanning-io/specs` that your implementation passed against.
 
 The suite cannot check what an adapter hashes, whether it scrubs only credentials, or
 whether it counts hand-off parts correctly, because it has no input a framework hands an
 adapter. Test those by reading the content object your adapter hashed against the rules
-in [Data modes](/concepts/data-modes).
+in [Hide, reveal and scrub fields](/concepts/hide-and-reveal-fields).
 
 For the types, see [Event types](/reference/event-types).

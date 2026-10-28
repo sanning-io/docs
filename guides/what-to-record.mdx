@@ -41,21 +41,19 @@ step's `agent.step.ended` record.
 
 ## What Sanning receives
 
-Sanning offers one [data mode](/concepts/data-modes), Private. Beside each signed
-envelope, Sanning receives the following:
+Beside each signed envelope, Sanning receives the following:
 
 - Record ids, times and outcomes.
 - The case id, the run ids, the chain key, the conversation id and the agent id, all in
   clear.
-- The `otel.*` ids and `context.data_mode`.
+- The `otel.*` ids.
 - On `agent.run_opened` and `agent.run_closed`, the closing record count, the closing
   outcome and the reason.
 - On `agent.tool_call.*`, the tool call id. On `agent.approval.*`, `agent.file` and
   `agent.handoff.*`, the link to the record each one answers.
 
-Sanning receives no content, no hash of content, no name and no count. It never receives
-the signing key. Standard and Full, which add names, counts and hashes, are not offered
-yet.
+Sanning receives no content, no hash of content, no name and no model details. It never
+receives the signing key.
 
 Because ids reach Sanning in clear, use an opaque id wherever an id could be personal
 data, such as a case id built from a customer's name. Sanning can clear stored ids on
@@ -68,4 +66,4 @@ request, and the signed evidence is untouched.
 - Keep names, paths, secrets and customer content out of every id.
 - Hide a clear field when its value could identify a customer. An adapter option such as
   `recordNames: false` hides `run.name` and `gen_ai.tool.name` in the record you hand to a
-  verifier. See [Data modes](/concepts/data-modes#hide-and-reveal-a-field).
+  verifier. See [Hide, reveal and scrub fields](/concepts/hide-and-reveal-fields#hide-and-reveal-a-field).

@@ -5,7 +5,7 @@
 ## Start here
 
 - [Event types](https://docs.sanning.io/reference/event-types.md): The 17 `agent.*` record types, what each commits to, and which fields are hidden or revealed
-- [What to record](https://docs.sanning.io/guides/what-to-record.md): The moment, the event, what is hashed, and what Sanning receives in each mode
+- [What to record](https://docs.sanning.io/guides/what-to-record.md): The moment, the event, what is hashed, and what Sanning receives
 - [Skill](https://docs.sanning.io/skill.md): How a coding agent integrates Sanning
 
 ## Getting started
@@ -20,13 +20,13 @@
 - [The witness](https://docs.sanning.io/concepts/witness.md): Why evidence is sealed on an interval, and what that means for you
 - [Sandbox and live](https://docs.sanning.io/concepts/sandbox-and-live.md): Two modes on one host: what the API key decides, and what changes between them
 - [What a hand-off record does not prove](https://docs.sanning.io/concepts/limits.md): Integrity, not accuracy; attribution, not independence; a record, not a control; ambiguity and unclaimed records; and the wait for independent time
-- [Data modes](https://docs.sanning.io/concepts/data-modes.md): What Sanning receives in Private, which ids it sees in clear, and how to hide or reveal a field
+- [Hide, reveal and scrub fields](https://docs.sanning.io/concepts/hide-and-reveal-fields.md): How to move a field between clear and hash-only, the credential scrub, and content conversions
 - [What a pack proves](https://docs.sanning.io/concepts/what-a-pack-proves.md): What a verified pack of agent records proves, and what it does not
 
 ## Guides
 
 - [Anchor from your agent](https://docs.sanning.io/guides/anchor.md): Commit a step your agent takes, in TypeScript or Python
-- [What to record](https://docs.sanning.io/guides/what-to-record.md): The moment, the event, what is hashed, what goes in the pack, and what Sanning receives in each mode
+- [What to record](https://docs.sanning.io/guides/what-to-record.md): The moment, the event, what is hashed, what goes in the pack, and what Sanning receives
 - [Trace a LangChain agent](https://docs.sanning.io/guides/langchain.md): One callback handler anchors every step of a run, in either language
 - [Trace a Vercel AI SDK call](https://docs.sanning.io/guides/vercel.md): One language-model middleware turns every generate and stream into a signed record
 - [Record a file a tool produces](https://docs.sanning.io/guides/file-records.md): Name, size and hash for every file, and the check an auditor runs

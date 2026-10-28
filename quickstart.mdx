@@ -162,10 +162,9 @@ await anchorer.close();
 Replace `claims-triage` with a name for this agent. Keep it stable: it is how the agent
 appears on the **Agents** page.
 
-The content is hashed locally. Sanning receives a signed envelope, never the bytes. In
-the Private [data mode](/concepts/data-modes) it receives ids, times and outcomes, and
-it receives no hash of the content either. The ids, including the case id, reach Sanning
-in clear. The SDK
+The content is hashed locally. Sanning receives a signed envelope, never the bytes. It
+receives ids, times and outcomes, and no hash of the content either. The ids, including
+the case id, reach Sanning in clear. The SDK
 enrolls your signing key with your organization before the first anchor, so the agent
 appears on the **Agents** page without a separate registration step.
 
@@ -199,8 +198,8 @@ guide:
   what it cannot, and you find out when an auditor asks. `raise_on_gaps=True`
   stops the agent on a hole in the trail instead.
 - **The whole step is committed**, prompts, outputs, tool input and output. It
-  is hashed locally and stays with you. `data_mode` decides what Sanning receives:
-  see [What to record](/guides/what-to-record).
+  is hashed locally and stays with you. For what Sanning receives, see
+  [What to record](/guides/what-to-record).
 
 For the event types, see [Event types](/reference/event-types). For worked examples, see
 [Trace a LangChain agent](/guides/langchain).
@@ -322,7 +321,7 @@ the pack is a rehearsal and not evidence.
 
 <CardGroup cols={2}>
   <Card title="What to record" icon="list" href="/guides/what-to-record">
-    Which event records which moment, and what Sanning receives in each data mode.
+    Which event records which moment, and what Sanning receives.
   </Card>
   <Card title="Go live" icon="rocket" href="/guides/go-live">
     Switch to a Live API key and produce evidence that reaches the public record.

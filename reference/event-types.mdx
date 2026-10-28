@@ -96,7 +96,7 @@ the hidable fields, which are the clear fields you can withhold.
 | `agent.error` | `exception.message` | |
 
 `agent.run_closed` and the two hand-off types have neither. For the controls that move a
-field across the line, see [Data modes](/concepts/data-modes).
+field across the line, see [Hide, reveal and scrub fields](/concepts/hide-and-reveal-fields).
 
 ## Fields every record carries
 
@@ -104,7 +104,6 @@ These fields appear on every `agent.*` record.
 
 | Field | Meaning |
 |---|---|
-| `context.data_mode` | `private`, `standard` or `full`: what Sanning receives. Only `private` is offered. One invocation has one mode. |
 | `run.run_id` | The operation this record belongs to. A start and its end carry the same value. |
 | `run.parent_run_id` | The operation this one runs inside, or `null` at the root. |
 | `run.root_run_id` | The invocation. Every record of one invocation carries one value. |

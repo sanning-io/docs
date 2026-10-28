@@ -15,7 +15,7 @@ The lifecycle is anchor, read, verify.
 
 Read the event types page before you write any record: https://docs.sanning.io/reference/event-types. It is the single place for names. Every record has one of 17 `agent.*` types, for example `agent.run_opened`, `agent.model_call.started`, `agent.tool_call.ended`, `agent.decision` and `agent.file`. A name outside the set is `malformed`. An adapter writes the right type for each moment; the table of moments, events and what Sanning receives is at https://docs.sanning.io/guides/what-to-record.
 
-Each record states a data mode in `context.data_mode`. Sanning offers one mode, `private`: ids, times and outcomes only, with no content and no content hash. `standard` and `full` are defined and not offered yet. Sanning receives the case id, run ids, chain key, conversation id and agent id in clear; use an opaque id when a case id would be personal data. The SDK refuses to sign a record that breaks the schema. To check an integration, run the conformance suite in `sanning-io/specs`: https://docs.sanning.io/reference/specs-and-conformance.
+Sanning receives ids, times and outcomes only, with no content, no content hash, no names and no model details. Sanning receives the case id, run ids, chain key, conversation id and agent id in clear; use an opaque id when a case id would be personal data. The SDK refuses to sign a record that breaks the schema. To check an integration, run the conformance suite in `sanning-io/specs`: https://docs.sanning.io/reference/specs-and-conformance.
 
 ## Start in the sandbox
 
@@ -106,7 +106,7 @@ Switch to a `sanning_prod_` API key. A live agent enrolls fresh: sandbox and liv
 
 - Event types: https://docs.sanning.io/reference/event-types
 - What to record: https://docs.sanning.io/guides/what-to-record
-- Data modes: https://docs.sanning.io/concepts/data-modes
+- Hide, reveal and scrub fields: https://docs.sanning.io/concepts/hide-and-reveal-fields
 - What a pack proves: https://docs.sanning.io/concepts/what-a-pack-proves
 - Specs and conformance: https://docs.sanning.io/reference/specs-and-conformance
 - Glossary: https://docs.sanning.io/reference/glossary

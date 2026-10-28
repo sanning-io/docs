@@ -17,9 +17,8 @@ names such as `event_id` and `eventType` keep their spelling.
 | Case | A set of records, named by `context.case_id`, that belong to one piece of work across agents. |
 | Closing record | The `agent.run_closed` record. It lists the records of its invocation and states how the invocation ended. |
 | Content | The bytes a record commits to. The agent keeps them in its log store. Sanning does not receive them. |
-| Content-blind | Sanning receives no content and no hash of content. True in Private, the one mode Sanning offers. |
+| Content-blind | Sanning receives no content and no hash of content. |
 | Control plane | The Sanning service for issuance, enrollment, metering and billing. It is not in the trust path. |
-| Data mode | `private`, `standard` or `full`: what Sanning receives beside each record. Only Private is offered. See [Data modes](/concepts/data-modes). |
 | Envelope | The signed wrapper around a record. It carries the signature and the hash the signature covers. |
 | Event type | The name of a record's kind, such as `agent.tool_call.started`. See [Event types](/reference/event-types). |
 | Hand-off | A message from one agent to another. Each side signs its own record: `agent.handoff.sent` and `agent.handoff.received`. |
