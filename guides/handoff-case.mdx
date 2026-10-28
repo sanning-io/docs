@@ -39,7 +39,8 @@ other record that belongs to the case needs it passed by hand:
 
 ```ts TypeScript
 await anchorer.anchor({
-  eventType: "app.step",
+  // Anchorer-call sample: the coordinator replaces this once the adapters ship.
+  eventType: "agent.step.ended",
   content: JSON.stringify(step),
   caseId: "case-5d1e9a",
 });
@@ -47,7 +48,8 @@ await anchorer.anchor({
 
 ```python Python
 anchorer.anchor(
-    event_type="app.step",
+    # Anchorer-call sample: the coordinator replaces this once the adapters ship.
+    event_type="agent.step.ended",
     content=json.dumps(step).encode(),
     case_id="case-5d1e9a",
 )
@@ -124,7 +126,7 @@ if gaps:
 
 </CodeGroup>
 
-The adapter writes one closing record per root run, `langchain.run_closed`,
+The adapter writes one closing record per root run, `agent.run_closed`,
 with `closing.outcome.observed` from the run's own end and
 `closing.outcome.stated` from your `close()`. The Vercel middleware takes the
 same `caseId` and `close({ outcome, reason })`; it cannot see how a run ended, so
@@ -139,7 +141,8 @@ the same `closing` field the adapters write:
 import { promotedClosing } from "@sanning/anchor";
 
 await anchorer.anchor({
-  eventType: "app.run_closed",
+  // Anchorer-call sample: the coordinator replaces this once the adapters ship.
+  eventType: "agent.run_closed",
   content: JSON.stringify({ closed: "case-5d1e9a" }),
   caseId: "case-5d1e9a",
   metadata: promotedClosing(
@@ -154,7 +157,8 @@ await anchorer.anchor({
 from sanning_anchor import promoted_closing
 
 anchorer.anchor(
-    event_type="app.run_closed",
+    # Anchorer-call sample: the coordinator replaces this once the adapters ship.
+    event_type="agent.run_closed",
     content=json.dumps({"closed": "case-5d1e9a"}).encode(),
     case_id="case-5d1e9a",
     metadata=promoted_closing(

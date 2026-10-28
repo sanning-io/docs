@@ -7,29 +7,9 @@ This page puts one anchor call inside an agent you already have. What comes
 back is a signed commitment to that step, which a third party can check later
 without Sanning and without you.
 
-You need a Sandbox API key from the console. The samples use one, so they write to the
-Sandbox and nothing reaches the public record. Every key can anchor, which covers
-enrolling the signing key, anchoring, and reading your records back at
-hand-over, so a key created for this needs nothing added to it.
-[API keys and scopes](/guides/keys-and-scopes) has the detail.
-
-## Install the SDK
-
-<CodeGroup>
-
-```bash TypeScript
-npm install @sanning/anchor
-```
-
-```bash Python
-pip install sanning-anchor
-```
-
-</CodeGroup>
-
-Both SDKs write the same bytes and take the same arguments under each
-language's naming. Pick one per service. Agents that run on both still hand
-over one pack.
+Before you start, finish the [Quickstart](/quickstart) steps that create a Sandbox API
+key, make a signing seed and install the SDK. This page does not repeat them. It covers
+the call itself and what to know before you wire it into a service.
 
 ## Anchor one event
 
@@ -63,13 +43,13 @@ const anchorer = createAnchorer({
   logStore: new FsLogStore("./logstore"),
 });
 
-const decision = { claim: "CLM-4417", outcome: "refer", confidence: 0.62 };
+const decision = { name: "claim_referred", value: { claim: "CLM-4417" } };
 
+// Anchorer-call sample: the coordinator replaces this once the adapters ship.
 const result = await anchorer.anchor({
-  eventType: "claims.decision",
+  eventType: "agent.decision",
   // Hashed in this process. These bytes are never sent to Sanning.
   content: JSON.stringify(decision),
-  metadata: { queue: "queue-3" },
 });
 
 console.log(result.eventId);
@@ -93,13 +73,13 @@ anchorer = Anchorer(
     log_store=FsLogStore("./logstore"),
 )
 
-decision = {"claim": "CLM-4417", "outcome": "refer", "confidence": 0.62}
+decision = {"name": "claim_referred", "value": {"claim": "CLM-4417"}}
 
+# Anchorer-call sample: the coordinator replaces this once the adapters ship.
 result = anchorer.anchor(
-    event_type="claims.decision",
+    event_type="agent.decision",
     # Hashed in this process. These bytes are never sent to Sanning.
     content=json.dumps(decision).encode(),
-    metadata={"queue": "queue-3"},
 )
 
 print(result.event_id)
@@ -171,15 +151,16 @@ producing evidence, so it works on the first boot and fails on the second with
   Write seeds in lowercase and both languages read them.
 </Warning>
 
-## Event types carry a namespace
+## Event types are a closed set
 
-`claims.decision` has two segments, and that is a requirement rather than a
-convention. Single-segment names are reserved by the event profile, so an
-event type of `decision` is refused before anything is signed. TypeScript
-throws and Python raises `InvalidRecordError`, both at the call rather than on
-the wire.
+An event type is one of the 17 `agent.*` names on [Event types](/reference/event-types).
+A name outside the set, such as `claims.decision`, is not a Sanning record type, and a
+verifier reads it as `malformed`. The SDK also refuses to sign a record that breaks the
+schema, at the call rather than on the wire.
 
-Name the first segment after your system and the second after what happened.
+Use `agent.decision` for a business outcome you state yourself. For a record that
+describes what the agent did, such as a model call or a tool call, use an adapter, which
+writes the right type for each moment. See [What to record](/guides/what-to-record).
 
 ## Close the anchorer before the process exits
 

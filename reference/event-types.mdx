@@ -1,0 +1,128 @@
+---
+title: "Event types"
+description: "The 17 agent.* record types, what each one commits to, and which fields are hidden or revealed"
+---
+
+This page is the single place for event names. Every record an agent writes has one of
+the 17 `agent.*` types in the following tables, and no other `agent.*` name exists. A
+verifier reads a name it does not know as `malformed`. Names compare exactly:
+`AGENT.TOOL_CALL.STARTED` is not in the set.
+
+The vocabulary is `sanning.agent/1`. The normative text is
+[`agent-events.md`](https://github.com/sanning-io/specs/blob/main/agent-events.md) in
+`sanning-io/specs`, and this page follows its sections 3, 5, 6 and 9.3. For which
+moment writes which type, see [What to record](/guides/what-to-record).
+
+## The 17 types
+
+An operation (a step, a model call, a tool call, a retrieval) is two records: a
+`started` record before it runs and an `ended` record after. An approval is a
+`requested` record and a `resolved` record, and a hand-off is a `sent` record and a
+`received` record.
+
+| Kind | Types | Written when |
+|---|---|---|
+| Run | `agent.run_opened`, `agent.run_closed` | An invocation starts, and the adapter closes it. |
+| Step | `agent.step.started`, `agent.step.ended` | A framework step starts and ends: a graph node, a chain, the invocation's root. |
+| Model call | `agent.model_call.started`, `agent.model_call.ended` | Before the request, and after the response or the failure. |
+| Tool call | `agent.tool_call.started`, `agent.tool_call.ended` | Before the tool runs, and when it returns or fails. |
+| Retrieval | `agent.retrieval.started`, `agent.retrieval.ended` | Before the query, and after the documents return. |
+| Approval | `agent.approval.requested`, `agent.approval.resolved` | An action waits for a human, a policy or a model, and the answer arrives. |
+| Hand-off | `agent.handoff.sent`, `agent.handoff.received` | One agent sends a message to another, and the other receives it. |
+| Decision | `agent.decision` | The agent states a business outcome. |
+| File | `agent.file` | A tool produces or reads a file. One record per file. |
+| Error | `agent.error` | An error outside any operation, such as a callback that failed. |
+
+An error inside an operation is not an `agent.error`. It is that operation's `ended`
+record with `outcome.status` set to `failed`.
+
+Seven record types sit outside this vocabulary: `event`, `checkpoint`, `declaration`,
+`runner.run_opened`, `runner.run_closed`, `runner.egress` and `runner.relay`. The names
+used before the vocabulary, such as `langchain.tool_start` or `handoff.sent`, and any
+name a builder invents, are not in the set.
+
+## What each type commits to
+
+Every type except the two hand-off types carries `event.content_hash`: the SHA-256 of the
+JCS (RFC 8785) bytes of a content object. Where a framework step produces the record,
+the content object is what the framework handed the adapter, never rewritten. Where no
+step produces it, the content object is a fixed object whose members are always present,
+with `null` where the adapter has no value.
+
+| Type | Content hash commits to |
+|---|---|
+| `agent.run_opened` | The fixed object `{"authority": {"expires_at", "principal", "scope"}, "input"}`. |
+| `agent.run_closed` | The empty object `{}`. |
+| `agent.step.started`, `agent.step.ended` | The step's inputs on started. Its outputs or error on ended. |
+| `agent.model_call.started`, `agent.model_call.ended` | The request on started. The response, streamed output included, or the error on ended. |
+| `agent.tool_call.started`, `agent.tool_call.ended` | The arguments on started. The result or error on ended. |
+| `agent.retrieval.started`, `agent.retrieval.ended` | The query on started. The documents on ended. |
+| `agent.approval.requested` | The action under review, as the framework handed it over. |
+| `agent.approval.resolved` | The fixed object `{"edited_action", "notes", "response", "reviewer"}`. |
+| `agent.handoff.sent`, `agent.handoff.received` | No content hash. `event.message_hash` commits to the JCS bytes of the message, as sent or as held. |
+| `agent.decision` | The fixed object `{"name", "value"}`, as you handed them to the SDK. |
+| `agent.file` | The file's own bytes, so `sha256sum` of the file is `event.content_hash`. A file that could not be read commits to `{}`. |
+| `agent.error` | The fixed object `{"message", "type"}`. |
+
+The invocation's output is the content of its root step's `agent.step.ended` record.
+`agent.run_opened` commits the input, and the root step commits the output.
+
+## Clear fields, hash-only fields and ids
+
+A record has three kinds of field:
+
+- **Clear fields** the record shows: names, counts, outcomes, model and token numbers.
+- **Hash-only fields** the record commits to through `event.content_hash` and does not
+  show.
+- **Ids**, which are always clear and are never hashed.
+
+The following table lists the hash-only fields, which are the ones you can reveal, and
+the hidable fields, which are the clear fields you can withhold.
+
+| Type | Hash-only fields | Hidable fields |
+|---|---|---|
+| `agent.run_opened` | `authority.principal` | `run.name` |
+| `agent.step.started`, `agent.step.ended` | | `run.name` |
+| `agent.model_call.started` | `gen_ai.input.messages`, `gen_ai.system_instructions` | `run.name`, `gen_ai.prompt.name` |
+| `agent.model_call.ended` | `gen_ai.output.messages` | `run.name` |
+| `agent.tool_call.started` | `gen_ai.tool.call.arguments` | `run.name`, `gen_ai.tool.name` |
+| `agent.tool_call.ended` | `gen_ai.tool.call.result` | `run.name`, `gen_ai.tool.name` |
+| `agent.retrieval.started` | `gen_ai.retrieval.query.text` | `run.name` |
+| `agent.retrieval.ended` | `gen_ai.retrieval.documents` | `run.name` |
+| `agent.approval.requested` | `approval.action` | |
+| `agent.approval.resolved` | `approval.reviewer`, `approval.notes`, `approval.edited_action` | |
+| `agent.decision` | `decision.value` | |
+| `agent.file` | | `artifact.name`, `artifact.path`, `artifact.source`, `artifact.destination` |
+| `agent.error` | `exception.message` | |
+
+`agent.run_closed` and the two hand-off types have neither. For the controls that move a
+field across the line, see [Data modes](/concepts/data-modes).
+
+## Fields every record carries
+
+These fields appear on every `agent.*` record.
+
+| Field | Meaning |
+|---|---|
+| `context.data_mode` | `private`, `standard` or `full`: what Sanning receives. One invocation has one mode. |
+| `run.run_id` | The operation this record belongs to. A start and its end carry the same value. |
+| `run.parent_run_id` | The operation this one runs inside, or `null` at the root. |
+| `run.root_run_id` | The invocation. Every record of one invocation carries one value. |
+| `run.seq` | The record's position in the invocation's chain, starting at `0`. |
+| `run.prev_event_id` | The previous record's `event_id`, or `null` on the first record. |
+| `otel.scope.name`, `otel.scope.version` | The published package and version that wrote the record. |
+| `extras.event_schema` | The vocabulary version, `sanning.agent/1`. |
+
+Every `ended` record also carries `outcome.status` (`completed`, `failed` or
+`interrupted`) and `run.started_event_id`, the `event_id` of the record that began the
+operation. An end names its start by that `event_id`, so a verifier pairs the two even
+when a framework reuses a run id.
+
+Every object in a record is closed. A member the vocabulary does not name reads
+`malformed`, so an extra field is added to the vocabulary and never carried beside it.
+
+## Check an integration
+
+The [conformance suite](/reference/specs-and-conformance) is the way to check that your
+integration writes valid records. The SDK also refuses to sign a record that breaks the
+schema, and the adapter reports a record it could not write instead of dropping it.

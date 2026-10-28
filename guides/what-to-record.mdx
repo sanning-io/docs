@@ -1,0 +1,73 @@
+---
+title: "What to record"
+description: "The moment, the event, what is hashed, what goes in the pack, and what Sanning receives in each mode"
+---
+
+This page maps each moment in an agent's run to the event that records it. The event
+names are the ones on [Event types](/reference/event-types). The adapters write these
+records for you. Use the table to decide what your agent records, and to check what
+leaves your process.
+
+## What the pack holds
+
+Every pack carries, for each record, the signed envelope with its inclusion proof and
+the stamp that witnessed it. The record's clear fields and the content bytes the record
+commits to travel in the pack's `logs/` folder only when you disclose them from your own
+log store. In the following tables, the pack column names the content that you can
+disclose.
+
+## Moment to event
+
+The following table lists each moment, the event, what its content hash commits to, and
+the content you can put in the pack.
+
+| Moment | Event | What is hashed | In the pack, if you disclose it |
+|---|---|---|---|
+| An invocation starts | `agent.run_opened` | The input, and who authorised the run | The input and authority |
+| A framework step starts or ends | `agent.step.started`, `agent.step.ended` | The step's inputs, then its outputs | The step content |
+| The agent calls a model | `agent.model_call.started`, `agent.model_call.ended` | The request, then the response | The prompt and the response |
+| The agent calls a tool | `agent.tool_call.started`, `agent.tool_call.ended` | The arguments, then the result | The arguments and the result |
+| The agent searches | `agent.retrieval.started`, `agent.retrieval.ended` | The query, then the documents | The query and the documents |
+| An action waits for a decision | `agent.approval.requested`, `agent.approval.resolved` | The action under review, then the answer, reviewer and notes | The action and the answer |
+| One agent sends a message to another | `agent.handoff.sent`, `agent.handoff.received` | The message, as `event.message_hash` | The message |
+| The agent states an outcome | `agent.decision` | The decision name and value | The value |
+| A tool produces or reads a file | `agent.file` | The file's own bytes | The file |
+| Something fails outside an operation | `agent.error` | The error type and message | The message |
+| The invocation ends | `agent.run_closed` | The empty object `{}` | Nothing |
+
+An error inside an operation is that operation's `ended` record with
+`outcome.status` set to `failed`. The invocation's output is the content of its root
+step's `agent.step.ended` record.
+
+## What Sanning receives, by mode
+
+The data mode decides what Sanning receives beside each envelope. See
+[Data modes](/concepts/data-modes). The following table lists what each event adds in
+each mode. A mode receives its own column and every column before it.
+
+| Event | Private | Standard adds | Full adds |
+|---|---|---|---|
+| Every event | Ids, times, the outcome, the `otel.*` ids and `context.data_mode` | | Content hash and length, `event.ref`, revealed fields, the content |
+| `agent.run_opened`, `agent.run_closed` | Closing record count, closing outcome and reason | Run name, authority scope and expiry | |
+| `agent.step.*` | | Step name, source type, whether it is plumbing | |
+| `agent.model_call.*` | | Model, provider, request settings, finish reasons, token counts | |
+| `agent.tool_call.*` | The tool call id | Tool name | |
+| `agent.retrieval.*` | | Document count | |
+| `agent.approval.*` | The link to the action under review | Actor, verdict, policy hash | |
+| `agent.handoff.*` | The link to the sent record | Part counts, content type, counterparty key, sequence, protocol | Message hashes |
+| `agent.decision` | | Decision name | |
+| `agent.file` | The link to the tool call | File name, content type, role, reason | Size, path, source, destination |
+| `agent.error` | | Error type | |
+
+Sanning never receives the signing key, and it never receives content in Private or
+Standard. In Full it receives the content and stores it encrypted at rest.
+
+## Choose what to record
+
+- Record every moment the adapter reports. A step the framework never reports has no
+  record, and the adapter's `capture.not_captured` list names the types it cannot write.
+- Start in Standard. It sends names and counts, and it keeps hashes, lengths and paths
+  with you.
+- Choose Private when a name could identify a customer. Private sends ids, times and
+  outcomes only.
+- Hide a clear field when its value could identify a customer, in any mode. An adapter option such as `recordNames: false` hides `run.name` and `gen_ai.tool.name`. See [Data modes](/concepts/data-modes#hide-and-reveal-a-field).

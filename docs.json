@@ -51,13 +51,16 @@
           "concepts/trust-boundary",
           "concepts/witness",
           "concepts/sandbox-and-live",
-          "concepts/limits"
+          "concepts/limits",
+          "concepts/data-modes",
+          "concepts/what-a-pack-proves"
         ]
       },
       {
         "group": "Guides",
         "pages": [
           "guides/anchor",
+          "guides/what-to-record",
           "guides/langchain",
           "guides/vercel",
           "guides/file-records",
@@ -82,6 +85,9 @@
       {
         "group": "Reference",
         "pages": [
+          "reference/event-types",
+          "reference/specs-and-conformance",
+          "reference/glossary",
           "reference/cli",
           "reference/scopes",
           "reference/errors",

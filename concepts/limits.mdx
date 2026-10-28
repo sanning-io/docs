@@ -18,7 +18,7 @@ bytes the assessor sent. It does not show the reviewer acted on them, or
 accepted them.
 
 Pairing grades whether the two sides commit to the same message, and never
-what the receiver did with it. `outcome` on a `handoff.received` record says
+what the receiver did with it. `outcome` on an `agent.handoff.received` record says
 what the receiving agent claims it did (`accepted`, `rejected` or `failed`),
 and pairing does not read that field: a received record carrying
 `outcome: "rejected"` pairs exactly as `verified` / `verified` as one carrying

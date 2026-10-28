@@ -1,0 +1,96 @@
+---
+title: "Data modes"
+description: "What Sanning receives in Private, Standard and Full, and how to hide or reveal a field"
+---
+
+The data mode decides one thing: what Sanning receives beside each signed record. The
+signed record and the evidence pack are the same in every mode, and a verifier reads
+every mode the same way. Each record states its mode in `context.data_mode`, inside the
+signature.
+
+One invocation has one mode. A verifier that holds two records of one invocation,
+signed by one key, in two modes shows the finding `data_mode_mixed`.
+
+## The three modes
+
+A mode receives its own row and every row before it in the following table.
+
+| Mode | Sanning receives | Content-blind |
+|---|---|---|
+| Private | The signed envelope, record ids, times and outcomes. Every field is a fixed format: an id, a hash of a record, a timestamp, an integer or a closed list of words. | Yes |
+| Standard (the default) | Private, plus names and counts: step, tool and decision names, model and token counts, approval verdicts, hand-off counts, error types. Never a content length, a file path or a hash of content. | Yes |
+| Full | Standard, plus every hash and length of content, file paths, every revealed field, and the content itself, which Sanning stores encrypted at rest. | No |
+
+Sanning is content-blind in Private and Standard. In Full, Sanning receives your
+content, so the claim no longer holds. Choose Full only when you want Sanning to hold the
+content for you.
+
+Standard withholds hashes and lengths of content for a reason. A hash of a short value
+can be confirmed by guessing the value, and a length can tell two values apart:
+`{"name":"credit_approved","value":true}` is 39 bytes, and the same with `false` is 40.
+It withholds file paths because a path routinely names a customer. Standard does send
+token counts and the retrieval document count, which are sizes too.
+
+Ids are never hashed. An id is 1 to 128 characters of `A-Z a-z 0-9 _ . : -`, and it must
+not be a name, a path or customer content.
+
+## Set the mode
+
+You set the mode on the adapter and on the record-builder call. Both write it into
+`context.data_mode`. The anchorer has no mode setting, and the signed record is the
+source for what Sanning receives: the SDK cuts what it sends to the mode the record
+states.
+
+```python
+from sanning_anchor import AnchorCallbackHandler
+
+# Adapter sample: the coordinator replaces this once the adapters ship.
+with AnchorCallbackHandler(anchorer, data_mode="standard") as handler:
+    agent.invoke(inputs, config={"callbacks": [handler]})
+```
+
+## Hide and reveal a field
+
+Two controls move one field across the line between clear and hash-only. Each is listed
+inside the signed record, so a verifier can tell a withheld field from a missing one.
+The fields a type can reveal or hide are listed in
+[Event types](/reference/event-types#clear-fields-hash-only-fields-and-ids).
+
+- **Reveal** a hash-only field to carry it in clear, for example tool arguments for an
+  auditor. The field appears under its own name and its path is listed in
+  `context.revealed`. A revealed field in a record that is not Full does not reach
+  Sanning.
+- **Hide** a clear field to withhold it, for example a tool name. The field is absent,
+  and `context.hidden` maps its path to the SHA-256 of the JCS bytes of its value. The
+  agent can disclose the value later, and a verifier confirms it against that hash.
+
+A hidden field keeps the hash of its value. Anyone who guesses a short value, such as a
+tool name, can confirm the guess. Ids are never hidden.
+
+## Credential scrubbing
+
+An adapter can scrub the content object before it hashes it. The scrub walks the object
+at every depth, and wherever a member's key contains `api_key`, `access_token`,
+`authorization`, `bearer`, `secret`, `password` or `credential` (ASCII letters, any
+case, with `_` or `-` optional in the first two), it replaces that member's whole value
+with the string `"[scrubbed]"`. It matches keys only, never values, and renames nothing.
+
+An adapter that scrubs writes `context.content_scrubbed: true`, whether or not it
+replaced anything, because the hash then commits to the object after the scrub. A
+verifier shows that fact. Hand-off messages and files are never scrubbed.
+
+## Conversions and dates
+
+The content object is what the framework handed the adapter. Where a value has no JSON
+form, the adapter uses the framework's own JSON form of it. Where the framework has
+none, these are the only conversions:
+
+- An error is `{"message", "type"}`, with its class name as `type`.
+- A date and time is an RFC 3339 UTC string with a four-digit year. A date and time with
+  no UTC offset names no instant, and the adapter refuses it by name.
+- A calendar date with no time is `YYYY-MM-DD`.
+- Bytes are a base64 string.
+- A number that is not finite is the string JavaScript prints for it.
+
+Leaving out a member, renaming one or re-serializing the JSON changes the hash, so a
+verifier holding the object can no longer confirm it.

@@ -104,20 +104,19 @@ Only the hash reaches Sanning. Prompts, outputs and tool input and output are
 hashed in your process, and the bytes go to the log store you configured or
 stay in `eventBytes` for you to drain.
 
-The event vocabulary is exported as `EVENT_TYPES` in both languages:
+Each callback writes one of the `agent.*` types on [Event types](/reference/event-types):
 
-- Chain steps: `langchain.chain_start`, `langchain.chain_end`,
-  `langchain.chain_error`.
-- Model calls: `langchain.chat_model_start`, `langchain.llm_start`,
-  `langchain.llm_end`, `langchain.llm_error`.
-- Tool calls: `langchain.tool_start`, `langchain.tool_end`,
-  `langchain.tool_error`.
-- Retrieval: `langchain.retriever_start`, `langchain.retriever_end`,
-  `langchain.retriever_error`.
-- The agent's own decisions: `langchain.agent_action`,
-  `langchain.agent_finish`.
-- Files: `langchain.artifact`, `langchain.artifact_unreadable`.
-- The run's end: `langchain.run_closed`, the closing record.
+- Chain steps: `agent.step.started`, `agent.step.ended`.
+- Model calls: `agent.model_call.started`, `agent.model_call.ended`.
+- Tool calls: `agent.tool_call.started`, `agent.tool_call.ended`.
+- Retrieval: `agent.retrieval.started`, `agent.retrieval.ended`.
+- Files: `agent.file`, with `outcome.status` set to `failed` and an `artifact.reason`
+  where the file could not be read.
+- Errors outside a step: `agent.error`.
+- The run's start and end: `agent.run_opened` and `agent.run_closed`, the closing record.
+
+A step that fails is its `ended` record with `outcome.status` set to `failed`, not a
+separate type.
 
 Each record also carries a closed list of promoted fields in named metadata,
 so a reader can select one run, or one model, without opening the body:
@@ -238,7 +237,7 @@ one handler per run; [Hand over and verify a case](/guides/handoff-case) shows t
 ## Show which policy a step applied
 
 To show which policy file a step read, have the tool that reads it return the
-file as its artifact. The handler then writes a `langchain.artifact` record on
+file as its artifact. The handler then writes an `agent.file` record on
 that tool's step, and the record commits to the file's own bytes. The trail
 shows the policy the step actually read, not one named when you configured the
 handler.

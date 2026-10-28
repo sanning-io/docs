@@ -23,8 +23,9 @@ Before you begin, you must have:
 2. Open the account menu and select **Switch to sandbox**. A strip across the top
    of the console says you are in the sandbox.
 3. Open **Settings, API keys** and select **Create key**.
-4. Name the key and leave **Verify** unchecked. Every key can already anchor, which
-   covers everything an agent runtime does. See
+4. Name the key and leave **Verify** unchecked. Every key carries the three anchor
+   scopes (`agent:enroll`, `anchor:write` and `anchor:read`), which cover enrolling the
+   agent, anchoring and building a pack. You do not select scopes one at a time. See
    [API keys and scopes](/guides/keys-and-scopes).
 5. Copy the key. The console shows it once.
 
@@ -96,7 +97,8 @@ pip install "sanning-anchor[langchain]"
 ## Anchor a step
 
 The agent signs each step with the seed and hashes the content locally. Sanning
-never receives the seed or the content.
+never receives the seed or the content. The event type is one of the 17 on
+[Event types](/reference/event-types); `agent.decision` records an outcome you state.
 
 <CodeGroup>
 
@@ -113,8 +115,9 @@ anchorer = Anchorer(
     log_store=FsLogStore("./logstore"),
 )
 
+# Anchorer-call sample: the coordinator replaces this once the adapters ship.
 result = anchorer.anchor(
-    content=b"the decision your agent just made",
+    content={"name": "claim_referred", "value": {"claim": "CLM-4417"}},
     event_type="agent.decision",
 )
 print(result.event_id)
@@ -144,8 +147,9 @@ const anchorer = createAnchorer({
   logStore: new FsLogStore("./logstore"),
 });
 
+// Anchorer-call sample: the coordinator replaces this once the adapters ship.
 const result = await anchorer.anchor({
-  content: "the decision your agent just made",
+  content: { name: "claim_referred", value: { claim: "CLM-4417" } },
   eventType: "agent.decision",
 });
 console.log(result.eventId);
@@ -158,7 +162,9 @@ await anchorer.close();
 Replace `claims-triage` with a name for this agent. Keep it stable: it is how the agent
 appears on the **Agents** page.
 
-The content is hashed locally. The hash is anchored; the bytes are not sent. The SDK
+The content is hashed locally. Sanning receives a signed envelope, never the bytes. In
+the default Standard [data mode](/concepts/data-modes) it receives names and counts,
+and it receives no hash of the content either. The SDK
 enrolls your signing key with your organization before the first anchor, so the agent
 appears on the **Agents** page without a separate registration step.
 
@@ -174,7 +180,10 @@ produces.
 ```python
 from sanning_anchor import AnchorCallbackHandler
 
-with AnchorCallbackHandler(anchorer, raise_on_gaps=True) as handler:
+# Adapter sample: the coordinator replaces this once the adapters ship.
+with AnchorCallbackHandler(
+    anchorer, raise_on_gaps=True, data_mode="standard"
+) as handler:
     agent.invoke(inputs, config={"callbacks": [handler]})
 
 # The handler never closes the anchorer: do it when the process is done.
@@ -191,9 +200,10 @@ guide:
   what it cannot, and you find out when an auditor asks. `raise_on_gaps=True`
   stops the agent on a hole in the trail instead.
 - **The whole step is committed**, prompts, outputs, tool input and output. It
-  is hashed locally and stays with you.
+  is hashed locally and stays with you. `data_mode` decides what Sanning receives:
+  see [What to record](/guides/what-to-record).
 
-For the event vocabulary, the promoted fields and worked examples, see
+For the event types, see [Event types](/reference/event-types). For worked examples, see
 [Trace a LangChain agent](/guides/langchain).
 
 ## Wait for the stamp
@@ -312,6 +322,9 @@ the pack with an open-source kernel and no call to Sanning. The stamp was simula
 the pack is a rehearsal and not evidence.
 
 <CardGroup cols={2}>
+  <Card title="What to record" icon="list" href="/guides/what-to-record">
+    Which event records which moment, and what Sanning receives in each data mode.
+  </Card>
   <Card title="Go live" icon="rocket" href="/guides/go-live">
     Switch to a Live API key and produce evidence that reaches the public record.
   </Card>
