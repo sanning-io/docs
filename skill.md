@@ -7,15 +7,15 @@ metadata:
 
 # Sanning
 
-Sanning records what an AI agent does so a third party can check it later without trusting you or Sanning. The agent hashes each step locally and signs a commitment. Sanning stores the signed envelope, never the content (in Private and Standard data modes), and seals the envelopes into a stamp on the public record. Verification runs offline, on the checker's machine, with an open-source kernel.
+Sanning records what an AI agent does so a third party can check it later without trusting you or Sanning. The agent hashes each step locally and signs a commitment. Sanning stores the signed envelope, never the content, and seals the envelopes into a stamp on the public record. Verification runs offline, on the checker's machine, with an open-source kernel.
 
 The lifecycle is anchor, read, verify.
 
 ## Event types
 
-Read the event types page before you write any record: https://docs.sanning.io/reference/event-types. It is the single place for names. Every record has one of 17 `agent.*` types, for example `agent.run_opened`, `agent.model_call.started`, `agent.tool_call.ended`, `agent.decision` and `agent.file`. A name outside the set, such as `claims.decision` or `langchain.tool_start`, is `malformed`. An adapter writes the right type for each moment; the table of moments, events and what Sanning receives is at https://docs.sanning.io/guides/what-to-record.
+Read the event types page before you write any record: https://docs.sanning.io/reference/event-types. It is the single place for names. Every record has one of 17 `agent.*` types, for example `agent.run_opened`, `agent.model_call.started`, `agent.tool_call.ended`, `agent.decision` and `agent.file`. A name outside the set is `malformed`. An adapter writes the right type for each moment; the table of moments, events and what Sanning receives is at https://docs.sanning.io/guides/what-to-record.
 
-Each record states a data mode in `context.data_mode`: `private` (ids, times and outcomes only), `standard` (the default: plus names and counts, never content length, file paths or content hashes) or `full` (everything, with the content stored by Sanning encrypted at rest). Sanning is content-blind in Private and Standard only. The SDK refuses to sign a record that breaks the schema. To check an integration, run the conformance suite in `sanning-io/specs`: https://docs.sanning.io/reference/specs-and-conformance.
+Each record states a data mode in `context.data_mode`. Sanning offers one mode, `private`: ids, times and outcomes only, with no content and no content hash. `standard` and `full` are defined and not offered yet. Sanning receives the case id, run ids, chain key, conversation id and agent id in clear; use an opaque id when a case id would be personal data. The SDK refuses to sign a record that breaks the schema. To check an integration, run the conformance suite in `sanning-io/specs`: https://docs.sanning.io/reference/specs-and-conformance.
 
 ## Start in the sandbox
 
@@ -75,7 +75,7 @@ anchorer.close()
 - Pass no `environment`: the SDK signs it from the API key.
 - The SDK enrolls the signing key on the first anchor; the agent then appears on the console's **Agents** page.
 - The log store keeps the content on your side. The pack step reads it, so keep the directory.
-- For LangChain, use `AnchorCallbackHandler(anchorer, raise_on_gaps=True, data_mode="standard")` as a context manager (adapter sample: the coordinator replaces it once the adapters ship); for the Vercel AI SDK, see the Vercel guide in Pages.
+- For LangChain, use `AnchorCallbackHandler(anchorer, raise_on_gaps=True)` as a context manager (adapter sample: the coordinator replaces it once the adapters ship); for the Vercel AI SDK, see the Vercel guide in Pages.
 
 ## Build a pack and verify it
 
@@ -97,7 +97,7 @@ Switch to a `sanning_prod_` API key. A live agent enrolls fresh: sandbox and liv
 
 ## Rules
 
-- Content never leaves your side in Private and Standard; only the signed record does. Ids are never hashed, so keep secrets and personal data out of `agent_id` and every id.
+- Content never leaves your side; only the signed record does. Ids are never hashed and reach Sanning in clear, so keep secrets and personal data out of `agent_id` and every id.
 - Keep one signing seed per agent, for the agent's life.
 - Treat exit code 5 as "sandbox", never as production evidence.
 - Sanning is not in the trust path: a pack verifies offline without Sanning.

@@ -1,6 +1,6 @@
 ---
 title: "What to record"
-description: "The moment, the event, what is hashed, what goes in the pack, and what Sanning receives in each mode"
+description: "The moment, the event, what is hashed, what goes in the pack, and what Sanning receives"
 ---
 
 This page maps each moment in an agent's run to the event that records it. The event
@@ -39,35 +39,33 @@ An error inside an operation is that operation's `ended` record with
 `outcome.status` set to `failed`. The invocation's output is the content of its root
 step's `agent.step.ended` record.
 
-## What Sanning receives, by mode
+## What Sanning receives
 
-The data mode decides what Sanning receives beside each envelope. See
-[Data modes](/concepts/data-modes). The following table lists what each event adds in
-each mode. A mode receives its own column and every column before it.
+Sanning offers one [data mode](/concepts/data-modes), Private. Beside each signed
+envelope, Sanning receives the following:
 
-| Event | Private | Standard adds | Full adds |
-|---|---|---|---|
-| Every event | Ids, times, the outcome, the `otel.*` ids and `context.data_mode` | | Content hash and length, `event.ref`, revealed fields, the content |
-| `agent.run_opened`, `agent.run_closed` | Closing record count, closing outcome and reason | Run name, authority scope and expiry | |
-| `agent.step.*` | | Step name, source type, whether it is plumbing | |
-| `agent.model_call.*` | | Model, provider, request settings, finish reasons, token counts | |
-| `agent.tool_call.*` | The tool call id | Tool name | |
-| `agent.retrieval.*` | | Document count | |
-| `agent.approval.*` | The link to the action under review | Actor, verdict, policy hash | |
-| `agent.handoff.*` | The link to the sent record | Part counts, content type, counterparty key, sequence, protocol | Message hashes |
-| `agent.decision` | | Decision name | |
-| `agent.file` | The link to the tool call | File name, content type, role, reason | Size, path, source, destination |
-| `agent.error` | | Error type | |
+- Record ids, times and outcomes.
+- The case id, the run ids, the chain key, the conversation id and the agent id, all in
+  clear.
+- The `otel.*` ids and `context.data_mode`.
+- On `agent.run_opened` and `agent.run_closed`, the closing record count, the closing
+  outcome and the reason.
+- On `agent.tool_call.*`, the tool call id. On `agent.approval.*`, `agent.file` and
+  `agent.handoff.*`, the link to the record each one answers.
 
-Sanning never receives the signing key, and it never receives content in Private or
-Standard. In Full it receives the content and stores it encrypted at rest.
+Sanning receives no content, no hash of content, no name and no count. It never receives
+the signing key. Standard and Full, which add names, counts and hashes, are not offered
+yet.
+
+Because ids reach Sanning in clear, use an opaque id wherever an id could be personal
+data, such as a case id built from a customer's name. Sanning can clear stored ids on
+request, and the signed evidence is untouched.
 
 ## Choose what to record
 
 - Record every moment the adapter reports. A step the framework never reports has no
   record, and the adapter's `capture.not_captured` list names the types it cannot write.
-- Start in Standard. It sends names and counts, and it keeps hashes, lengths and paths
-  with you.
-- Choose Private when a name could identify a customer. Private sends ids, times and
-  outcomes only.
-- Hide a clear field when its value could identify a customer, in any mode. An adapter option such as `recordNames: false` hides `run.name` and `gen_ai.tool.name`. See [Data modes](/concepts/data-modes#hide-and-reveal-a-field).
+- Keep names, paths, secrets and customer content out of every id.
+- Hide a clear field when its value could identify a customer. An adapter option such as
+  `recordNames: false` hides `run.name` and `gen_ai.tool.name` in the record you hand to a
+  verifier. See [Data modes](/concepts/data-modes#hide-and-reveal-a-field).

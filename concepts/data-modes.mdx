@@ -1,53 +1,58 @@
 ---
 title: "Data modes"
-description: "What Sanning receives in Private, Standard and Full, and how to hide or reveal a field"
+description: "What Sanning receives in Private, which ids it sees in clear, and how to hide or reveal a field"
 ---
 
-The data mode decides one thing: what Sanning receives beside each signed record. The
-signed record and the evidence pack are the same in every mode, and a verifier reads
-every mode the same way. Each record states its mode in `context.data_mode`, inside the
-signature.
+The data mode decides what Sanning receives beside each signed record. Sanning offers
+one mode: Private. The signed record and the evidence pack work the same way in every
+mode, and a verifier reads every mode the same way. Each record states its mode in
+`context.data_mode`, inside the signature.
 
 One invocation has one mode. A verifier that holds two records of one invocation,
 signed by one key, in two modes shows the finding `data_mode_mixed`.
 
 ## The three modes
 
-A mode receives its own row and every row before it in the following table.
+The following table lists the three modes the vocabulary defines. Only Private is
+offered.
 
-| Mode | Sanning receives | Content-blind |
+| Mode | Sanning receives | Offered |
 |---|---|---|
 | Private | The signed envelope, record ids, times and outcomes. Every field is a fixed format: an id, a hash of a record, a timestamp, an integer or a closed list of words. | Yes |
-| Standard (the default) | Private, plus names and counts: step, tool and decision names, model and token counts, approval verdicts, hand-off counts, error types. Never a content length, a file path or a hash of content. | Yes |
-| Full | Standard, plus every hash and length of content, file paths, every revealed field, and the content itself, which Sanning stores encrypted at rest. | No |
+| Standard | Private, plus names and counts. | Not offered yet |
+| Full | Standard, plus hashes and lengths of content, file paths, and the content itself. | Not offered yet |
 
-Sanning is content-blind in Private and Standard. In Full, Sanning receives your
-content, so the claim no longer holds. Choose Full only when you want Sanning to hold the
-content for you.
+The vocabulary defines Standard and Full, and Sanning has switched them off. Use
+Private.
 
-Standard withholds hashes and lengths of content for a reason. A hash of a short value
-can be confirmed by guessing the value, and a length can tell two values apart:
-`{"name":"credit_approved","value":true}` is 39 bytes, and the same with `false` is 40.
-It withholds file paths because a path routinely names a customer. Standard does send
-token counts and the retrieval document count, which are sizes too.
+## What Sanning receives in Private
 
-Ids are never hashed. An id is 1 to 128 characters of `A-Z a-z 0-9 _ . : -`, and it must
-not be a name, a path or customer content.
+Sanning receives no content and no hash of content. Sanning is content-blind in
+Private, and it is never in the trust path: a verifier checks a pack offline with no call
+to Sanning.
+
+Sanning does receive ids in clear. These are the ids Sanning receives:
+
+- the case id, `context.case_id`
+- the run ids, in `run.run_id`, `run.parent_run_id` and `run.root_run_id`
+- the chain key
+- the conversation id
+- the agent id
+
+An id is 1 to 128 characters of `A-Z a-z 0-9 _ . : -`. Ids are never hashed, so
+treat each one as public to Sanning. Keep a name, a path, a secret and customer content
+out of every id.
+
+When a case id would be personal data, use an opaque id instead, such as a random
+string, and keep the link between that string and the person in your own systems. If
+Sanning already stores an id you want gone, ask Sanning to clear it. Clearing stored ids
+leaves the signed evidence untouched.
 
 ## Set the mode
 
-You set the mode on the adapter and on the record-builder call. Both write it into
-`context.data_mode`. The anchorer has no mode setting, and the signed record is the
-source for what Sanning receives: the SDK cuts what it sends to the mode the record
+The adapter and the record-builder write `context.data_mode` for you, as `private`. The anchorer has no mode setting, and the signed record is
+the source for what Sanning receives: the SDK cuts what it sends to the mode the record
 states.
-
-```python
-from sanning_anchor import AnchorCallbackHandler
-
-# Adapter sample: the coordinator replaces this once the adapters ship.
-with AnchorCallbackHandler(anchorer, data_mode="standard") as handler:
-    agent.invoke(inputs, config={"callbacks": [handler]})
-```
 
 ## Hide and reveal a field
 
@@ -58,14 +63,14 @@ The fields a type can reveal or hide are listed in
 
 - **Reveal** a hash-only field to carry it in clear, for example tool arguments for an
   auditor. The field appears under its own name and its path is listed in
-  `context.revealed`. A revealed field in a record that is not Full does not reach
-  Sanning.
+  `context.revealed`. Revealing a field changes the record you keep and hand to a
+  verifier. In Private, Sanning does not receive it.
 - **Hide** a clear field to withhold it, for example a tool name. The field is absent,
   and `context.hidden` maps its path to the SHA-256 of the JCS bytes of its value. The
   agent can disclose the value later, and a verifier confirms it against that hash.
 
-A hidden field keeps the hash of its value. Anyone who guesses a short value, such as a
-tool name, can confirm the guess. Ids are never hidden.
+A hidden field keeps the hash of its value. Anyone who holds a hidden field's hash and
+guesses a short value, such as a tool name, can confirm the guess. Ids are never hidden.
 
 ## Credential scrubbing
 

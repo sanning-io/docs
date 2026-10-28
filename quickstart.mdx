@@ -163,8 +163,9 @@ Replace `claims-triage` with a name for this agent. Keep it stable: it is how th
 appears on the **Agents** page.
 
 The content is hashed locally. Sanning receives a signed envelope, never the bytes. In
-the default Standard [data mode](/concepts/data-modes) it receives names and counts,
-and it receives no hash of the content either. The SDK
+the Private [data mode](/concepts/data-modes) it receives ids, times and outcomes, and
+it receives no hash of the content either. The ids, including the case id, reach Sanning
+in clear. The SDK
 enrolls your signing key with your organization before the first anchor, so the agent
 appears on the **Agents** page without a separate registration step.
 
@@ -181,9 +182,7 @@ produces.
 from sanning_anchor import AnchorCallbackHandler
 
 # Adapter sample: the coordinator replaces this once the adapters ship.
-with AnchorCallbackHandler(
-    anchorer, raise_on_gaps=True, data_mode="standard"
-) as handler:
+with AnchorCallbackHandler(anchorer, raise_on_gaps=True) as handler:
     agent.invoke(inputs, config={"callbacks": [handler]})
 
 # The handler never closes the anchorer: do it when the process is done.

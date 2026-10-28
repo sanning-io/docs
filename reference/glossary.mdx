@@ -16,16 +16,16 @@ names such as `event_id` and `eventType` keep their spelling.
 | API key | The credential for your organization. It authorizes calls and never signs evidence. Its prefix decides Sandbox or Live. |
 | Case | A set of records, named by `context.case_id`, that belong to one piece of work across agents. |
 | Closing record | The `agent.run_closed` record. It lists the records of its invocation and states how the invocation ended. |
-| Content | The bytes a record commits to. The agent keeps them in its log store. Sanning receives them only in Full. |
-| Content-blind | Sanning receives no content and no hash of content. True in Private and Standard, not in Full. |
+| Content | The bytes a record commits to. The agent keeps them in its log store. Sanning does not receive them. |
+| Content-blind | Sanning receives no content and no hash of content. True in Private, the one mode Sanning offers. |
 | Control plane | The Sanning service for issuance, enrollment, metering and billing. It is not in the trust path. |
-| Data mode | `private`, `standard` or `full`: what Sanning receives beside each record. See [Data modes](/concepts/data-modes). |
+| Data mode | `private`, `standard` or `full`: what Sanning receives beside each record. Only Private is offered. See [Data modes](/concepts/data-modes). |
 | Envelope | The signed wrapper around a record. It carries the signature and the hash the signature covers. |
 | Event type | The name of a record's kind, such as `agent.tool_call.started`. See [Event types](/reference/event-types). |
 | Hand-off | A message from one agent to another. Each side signs its own record: `agent.handoff.sent` and `agent.handoff.received`. |
 | Hash-only field | A field a record commits to through `event.content_hash` and does not show. You can reveal it. |
 | Hidden field | A clear field a record withholds. The record keeps the hash of its value in `context.hidden`. |
-| Id | An opaque identifier of 1 to 128 characters. Never hashed, and never a name, a path or customer content. |
+| Id | An opaque identifier of 1 to 128 characters. Never hashed, and sent to Sanning in clear. Never a name, a path or customer content. |
 | Invocation | One run of an agent from its input to its output. Its id is `run.root_run_id`. |
 | Kernel | The open-source code that verifies a pack offline: `sanning-proof` in Python, `@sanning/proof` in TypeScript. |
 | Live | The mode whose stamps reach the public record. Its API keys start `sanning_prod_`. |

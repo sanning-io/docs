@@ -32,10 +32,10 @@ This table is the product. Everything else is mechanism.
 
 | Sanning receives | Sanning never receives |
 |---|---|
-| A SHA-256 commitment to each step | The step's content |
+| A signed record of each step: ids, times and outcomes | The step's content, or a hash of it |
 | An Ed25519 signature from your agent | Your agent's signing key |
-| Timing, ordering, and the agent's name | Your prompts, outputs, or documents |
-| A file's name, size and hash | The file |
+| Timing, ordering, and the case id and other ids in clear | Your prompts, outputs, or documents |
+| A link to the tool call that produced a file | The file, or its name, size or hash |
 
 Being content-blind is not a privacy feature bolted on afterwards. It is why we cannot
 alter your evidence, and why an auditor does not have to take our word for anything.

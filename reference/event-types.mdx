@@ -104,7 +104,7 @@ These fields appear on every `agent.*` record.
 
 | Field | Meaning |
 |---|---|
-| `context.data_mode` | `private`, `standard` or `full`: what Sanning receives. One invocation has one mode. |
+| `context.data_mode` | `private`, `standard` or `full`: what Sanning receives. Only `private` is offered. One invocation has one mode. |
 | `run.run_id` | The operation this record belongs to. A start and its end carry the same value. |
 | `run.parent_run_id` | The operation this one runs inside, or `null` at the root. |
 | `run.root_run_id` | The invocation. Every record of one invocation carries one value. |

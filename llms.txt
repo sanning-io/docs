@@ -20,7 +20,7 @@
 - [The witness](https://docs.sanning.io/concepts/witness.md): Why evidence is sealed on an interval, and what that means for you
 - [Sandbox and live](https://docs.sanning.io/concepts/sandbox-and-live.md): Two modes on one host: what the API key decides, and what changes between them
 - [What a hand-off record does not prove](https://docs.sanning.io/concepts/limits.md): Integrity, not accuracy; attribution, not independence; a record, not a control; ambiguity and unclaimed records; and the wait for independent time
-- [Data modes](https://docs.sanning.io/concepts/data-modes.md): What Sanning receives in Private, Standard and Full, and how to hide or reveal a field
+- [Data modes](https://docs.sanning.io/concepts/data-modes.md): What Sanning receives in Private, which ids it sees in clear, and how to hide or reveal a field
 - [What a pack proves](https://docs.sanning.io/concepts/what-a-pack-proves.md): What a verified pack of agent records proves, and what it does not
 
 ## Guides

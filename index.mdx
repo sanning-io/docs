@@ -6,8 +6,8 @@ description: "Evidence your auditor can check without us"
 Sanning records what your AI agents do, so a third party can check it later without
 taking your word for it, and without taking ours.
 
-Your agent hashes each step locally and sends Sanning a signed record of it. In Private
-and Standard, Sanning never receives the step itself. Sanning commits a stamp of those records to a public record, and
+Your agent hashes each step locally and sends Sanning a signed record of it. Sanning never
+receives the step itself. Sanning commits a stamp of those records to a public record, and
 anyone holding the resulting evidence pack can verify it offline with an open-source
 kernel.
 
@@ -40,13 +40,12 @@ later.
 | Sanning receives | Sanning never receives |
 |---|---|
 | A signed envelope for each record | Your agent's signing key |
-| Record ids, times and outcomes | The step's content, in Private and Standard |
-| In Standard, names and counts | Hashes, lengths or paths of content, in Private and Standard |
+| Record ids, times and outcomes | The step's content |
+| The case id and the other ids, in clear | Hashes, lengths or paths of content |
 
-The data mode decides how much Sanning receives: Private sends ids, times and outcomes,
-Standard (the default) adds names and counts, and Full adds hashes, lengths and content.
-Sanning is content-blind in Private and Standard only. See
-[Data modes](/concepts/data-modes). For what a verified pack proves, and what it does
+Sanning offers one data mode, Private, which sends ids, times and outcomes. Sanning is
+content-blind in Private. Ids reach Sanning in clear, so keep personal data out of them.
+See [Data modes](/concepts/data-modes). For what a verified pack proves, and what it does
 not, see [What a pack proves](/concepts/what-a-pack-proves).
 
 <Card title="Quickstart" icon="rocket" href="/quickstart">
