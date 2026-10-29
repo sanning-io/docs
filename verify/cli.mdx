@@ -17,21 +17,21 @@ cd pack
 npx @sanning/proof verify bundle.json --logs logs/
 ```
 
-A verified pack prints its per-record results and exits **0**:
+A verified pack prints **Verified**, then a witness line, then its per-record results,
+and exits **0**:
 
 ```
-VERIFIED  verified offline (no gateway re-fetch requested)
-  declaration: this pack holds exactly what it declares: 2 record(s), 0 withheld on purpose
-  logs: 2/2 record(s) content-verified
+Verified
+Witness: Not checked: no lookup was run
 ```
 
 Leave out `--logs` when the pack has no `logs/` directory. A pack of hand-off
-records has none, and `--logs` naming a directory that does not exist exits 2.
+records has none, and `--logs` naming a directory that does not exist exits 4.
 
 **From 0.17.0, a `--logs` folder is read by one rule.** The command reads each
 regular file named `<event_id>.json` as that record's disclosed content. It never
 follows a link, never enters a subfolder, and names every other entry in a `note:`
-line without reading it. It exits 2 for a name that is not valid UTF-8, for more than
+line without reading it. It exits 4 for a name that is not valid UTF-8, for more than
 50,000 entries, and for more than 1 GiB of `<event_id>.json` files. Both
 `@sanning/proof` and `sanning-proof` apply the same rule, so one folder no longer reads
 differently in the two.
@@ -41,22 +41,24 @@ differently in the two.
 This is the one table every verb of `@sanning/proof` and `sanning-proof`
 uses, `verify`, `export` and `case` alike:
 
-| Code | Means |
-|---|---|
-| 0 | Verified, or the export was written |
-| 1 | A check ran and failed, or the pack deviates from its own declaration. The output names the record |
-| 2 | The input could not be read at all |
-| 3 | Undetermined: the pack reads `incomplete` or `partial`, or a gateway re-fetch was asked for and something in it could not be checked |
-| 4 | Mixed: more than one outcome, none of them failed |
-| 5 | Sandbox: every check passed, but the pack holds a record signed `environment: "dev"`, which is sandbox evidence, not production evidence. A pack whose records are all `dev` also exits 5 when the only witness left unchecked is a simulated one |
-| 6 | Does not conform (`nonconforming`): a record is signed and intact and breaks the vocabulary it names. Nothing is proven altered |
+| Code | Name | Means |
+|---|---|---|
+| 0 | verified | The verdict is `verified` and no record is signed `environment: "dev"`. For `export`: the export was written |
+| 1 | failed | The verdict is `failed`, for either reason kind. A Sandbox pack that fails also exits 1 |
+| 2 | incomplete | The verdict is `incomplete`. A Sandbox pack that is incomplete also exits 2 |
+| 3 | sandbox | The verdict is `verified` and a record is signed `environment: "dev"`: sandbox evidence, not production evidence |
+| 4 | could not run | A bad flag, a missing file, or an input that is not a pack or a case at all |
+
+The first line of the output is the title: **Verified**, **Failed** or **Incomplete**,
+and the lines after it name the claims behind it. See
+[What a verdict means](/verify/what-a-verdict-means).
 
 A pack whose declaration says a record's content is withheld on purpose still
 reads `verified`: a hand-off record commits to a message's hash and the pack
 carries no file for it, and the declaration says so, so its content binding
-is undetermined rather than missing. A pack with **no** declaration (built
+is not a gap. A pack with **no** declaration (built
 with no signing seed) and a record that discloses nothing reads `incomplete`
-instead, because nothing says the absence was on purpose. Either way the
+instead (exit 2), because nothing says the absence was on purpose. Either way the
 signatures, the inclusion proofs and the declaration, where the pack has one,
 are still checked, and the output says so on its own lines.
 
@@ -92,29 +94,30 @@ This command reads one pack. To read several parties' packs as one case, see
 </Note>
 
 <Note>
-  **From 0.14.0, parsing is stricter.** A repeated key anywhere in the JSON reads
-  `malformed`, exit 2. `event_id`, `payload_hash`, `payload_ref`, `subject`, and every
+  **From 0.14.0, parsing is stricter.** A repeated key anywhere in the bundle file or a
+  `--logs` map exits 4. `event_id`, `payload_hash`, `payload_ref`, `subject`, and every
   time field a verdict carries, are checked against their exact wire shapes rather than
   accepted as any string. Nothing on the public record is affected.
 </Note>
 
 ## A Sandbox pack
 
-A pack built in the Sandbox passes its checks and prints `SANDBOX` in place of
-`VERIFIED`. It exits **5**:
+A pack built in the Sandbox passes its checks and prints **Verified**, then a
+Sandbox line. It exits **3**:
 
 ```
-SANDBOX  verified offline (no gateway re-fetch requested)
-  Sandbox evidence (environment dev): not production evidence
+Verified
+Sandbox: these records are sandbox records, not production evidence.
+Witness: Not checked: no lookup was run
 ```
 
-The exit code stays 5 with `--gateways`, because a Sandbox stamp is simulated and no
-gateway can look it up. A failure is still 1. See
+The exit code stays 3 with `--gateways`, because a Sandbox stamp is simulated and no
+gateway can look it up. A failure is still 1, and an incomplete pack is still 2. See
 [What a verdict means](/verify/what-a-verdict-means#what-a-sandbox-verdict-means).
 
 ## Two errors you might hit first
 
-Both exit 2, before any check runs.
+Both exit 4, before any check runs.
 
 **You pointed it at the zip.** The kernel reads JSON, not an archive:
 
@@ -174,8 +177,9 @@ ours.
   **Only an `arweave` witness with a 43-character transaction id is re-fetched.**
   That is the one witness kind and id shape the kernel knows how to look up. A
   witness of any other kind, or an `arweave` witness whose id is not exactly 43
-  characters, is reported as not checked rather than skipped silently, and the
-  run answers `partial` and exits `3`.
+  characters, is reported as not checked on the witness line rather than skipped silently. The
+  lookup does not move the verdict or the exit code. Only a lookup that finds other
+  bytes does: it disproves `witnessed`, and the run exits `1`.
 </Note>
 
 <Note>
@@ -187,7 +191,8 @@ ours.
 <Note>
   **A stamp reaches the chain before an index can serve it.** It is submitted,
   then bundled, then indexed, so a gateway can answer `404` for a few minutes
-  on a stamp that exists. That is exit code `3` as well, and it is a statement
+  on a stamp that exists. The witness line says the lookup was not settled, and
+  the verdict and exit code do not move. It is a statement
   about reachability rather than about your evidence. The offline check does
   not wait on any of it. Retry the online one.
 </Note>

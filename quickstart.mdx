@@ -298,18 +298,19 @@ echo "exit code: $?"
 Same verbs, same flags, same exit codes. Your auditor picks whichever runtime they
 already have, and needs neither an account nor a network.
 
-Every check passes, and the headline is `SANDBOX`, not `VERIFIED`:
+Every check passes, and the kernel adds a Sandbox line and exits 3 instead of 0:
 
 ```
-SANDBOX  verified offline (no gateway re-fetch requested)
-  Sandbox evidence (environment dev): not production evidence
-  declaration: this pack does not say what it holds, so whether it is complete is UNKNOWN
-  logs: 1/1 record(s) content-verified
-exit code: 5
+Verified
+Note: this pack does not say what it holds, so whether it is complete is unknown.
+Sandbox: these records are sandbox records, not production evidence.
+Witness: Not checked: no lookup was run
+exit code: 3
 ```
 
-Exit code 5 means Sandbox. The kernel checked the signature, the inclusion proof and the
-disclosed bytes, and it refuses to call a Sandbox pack verified. The browser page shows
+Exit code 3 means Sandbox. The kernel checked the signature, the inclusion proof and the
+disclosed bytes, and it refuses to give a Sandbox pack the exit code of production
+evidence. The browser page shows
 **Sandbox** the same way. A pack with one changed byte exits 1 and names the record that
 failed.
 

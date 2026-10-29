@@ -23,7 +23,7 @@ Take the adversarial view. Assume Sanning is careless, compromised, or hostile.
 | alters a stored record | fails verification, because your key signed the original |
 | forges a record | cannot, having never held your signing key |
 | lies about a verdict | is not consulted; the kernel recomputes locally |
-| publishes nothing | leaves the pack `partial`, which the verdict states |
+| publishes nothing | leaves `witnessed` not proven, so the pack reads `incomplete` |
 
 The one thing Sanning holds that matters is the **witness**: the published commitment that
 a set of records existed by a time. That lives on a public record, not with us, which is

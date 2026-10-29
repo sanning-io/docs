@@ -114,39 +114,75 @@ npx @sanning/proof verify bundle.json --logs logs/
 | Argument | Meaning |
 |---|---|
 | `bundle.json` | The bundle file, extracted from the pack |
-| `--logs` | The folder of disclosed files, if the pack carries them. From 0.17.0, only regular files named `<event_id>.json` are read; links are never followed, subfolders are never entered, and every other entry is named. Exit 2 for a non-UTF-8 name, more than 50,000 entries, or more than 1 GiB of `<event_id>.json` files |
+| `--logs` | The folder of disclosed files, if the pack carries them. From 0.17.0, only regular files named `<event_id>.json` are read; links are never followed, subfolders are never entered, and every other entry is named. Exit 4 for a non-UTF-8 name, more than 50,000 entries, or more than 1 GiB of `<event_id>.json` files |
 | `--gateways` | Comma-separated gateway URLs. Re-fetches each witness and byte-compares it |
 | `--files` | From 0.14.0. Files beside the pack to match against the records that commit to their bytes: SHA-256 over each file, checked against `event.content_hash` or a hand-off file part's `content_hash`. Never matched by name. From 0.17.0 a path can be a folder: the regular files inside it are matched, recursively and hidden files included, and a link, a pipe, or an unreadable file is named in the `skipped` list (`files.skipped` in `--json`) |
-| `--json` | Print the verdict, the causes and the exit code as JSON |
+| `--json` | Print the reading as JSON, for a script. See [The `--json` output](#json-output) |
 
-`verify`, `export` and `case` share one exit table:
+`verify`, `export` and `case` share one exit table, and every `--help` prints it in
+the same words:
 
-| Exit | Means |
-|---|---|
-| 0 | Verified, or the export was written |
-| 1 | A check ran and failed, or the pack deviates from its own declaration. The output names the record |
-| 2 | The input could not be read |
-| 3 | Undetermined: the pack reads `incomplete` or `partial`, or a gateway re-fetch was asked for and something in it could not be checked |
-| 4 | Mixed: more than one outcome, none of them failed |
-| 5 | Sandbox: every check passed, but the pack holds a record signed `environment: "dev"`, which is sandbox evidence, not production evidence. A pack whose records are all `dev` also exits 5 when the only witness left unchecked is a simulated one |
-| 6 | Does not conform (`nonconforming`): a record is signed and intact and breaks the vocabulary it names. Nothing is proven altered |
+| Exit | Name | Means |
+|---|---|---|
+| 0 | verified | The verdict is `verified` and no record is signed `environment: "dev"`. For `export`: the export was written |
+| 1 | failed | The verdict is `failed`, for either reason kind. A Sandbox pack that fails also exits 1 |
+| 2 | incomplete | The verdict is `incomplete`. A Sandbox pack that is incomplete also exits 2 |
+| 3 | sandbox | The verdict is `verified` and a record is signed `environment: "dev"`: sandbox evidence, not production evidence |
+| 4 | could not run | A bad flag, a missing file, or an input that is not a pack or case at all |
 
-Exit 5 is the Sandbox: the pack verified, and its stamp is simulated. See
+Exit 3 is the Sandbox: the pack verified, and its stamp is simulated. See
 [Sandbox and live](/concepts/sandbox-and-live).
+
+### Text output
+
+The text report starts with the person layer, then the detail. The kernel prints only the
+lines that apply:
+
+```
+<Title>
+<one line for each claim that is disproven or not proven>
+Next: <one next action>
+Note: <one line for each note>
+Sandbox: these records are sandbox records, not production evidence.
+Witness: <the witness line>
+```
+
+The title is one of **Verified**, **Failed: do not rely on this evidence.**, **Failed: a
+record does not follow the rules.** or **Incomplete: not everything could be checked.**
+For example, a pack whose closing record lists records that are not in the pack prints:
+
+```
+Incomplete: not everything could be checked.
+Complete: not proven for 1 record. The run's closing record lists 2 records that are not in the pack.
+Next: Ask the sender for the run's other records.
+Witness: Not checked: no lookup was run
+```
+
+### JSON output
+
+`--json` carries the same words in data, so a script can render the report from `--json`
+alone:
+
+| Member | Holds |
+|---|---|
+| `verdict` | `status` (`verified`, `failed` or `incomplete`), and `reason_kind` (`changed` or `nonconforming`) on `failed` only |
+| `claims` | One entry for each claim in scope: `claim`, `state` (`proven`, `disproven` or `not_proven`), `reason` (`missing`, `unreadable` or `not_checked`) on `not_proven`, and `items`, the records the claim is about |
+| `person` | `title`, `lines`, `next`, `notes`, `sandbox` (the line, or `null`) and `witness` |
+| `exit_code` | The exit code from the table |
 
 A pack whose declaration says a record's content is withheld on purpose reads
 `verified`; a pack with no declaration and an undisclosed record reads
 `incomplete` instead, because nothing says the absence was on purpose. Only an
 `arweave` witness with a 43-character transaction id is re-fetched from a
 gateway. A witness of any other kind, or an id that is not exactly 43
-characters, is reported as not checked, and the run answers `partial` and
-exits `3`.
+characters, is reported as not checked on the witness line. A lookup that
+could not be settled does not move the verdict or the exit code.
 
 **From 0.14.0, parsing is stricter.** A bundle, an envelope or a log file whose JSON
-repeats a key reads `malformed`, exit 2, rather than silently keeping the last value.
+repeats a key exits 4, rather than silently keeping the last value.
 `event_id`, `payload_hash`, `payload_ref` and `subject`, and every time field a verdict
 carries, are checked against their exact wire shapes; a value that fails names the field
-and reads `malformed` or `failed` where it used to read `verified` with nothing to compare
+and reads `failed` where it used to read `verified` with nothing to compare
 against. No item on the public record is affected.
 
 `sanning-proof` on PyPI is the same kernel and ships the same `verify` command. See
@@ -163,9 +199,10 @@ npx @sanning/proof case assessor-pack/ reviewer-pack/
 npx @sanning/proof case case-5d1e9a.zip
 ```
 
-`case` shares `verify`'s exit table, above. `--gateways` takes a
-comma-separated list and re-fetches each pack's witnesses, reported on their
-own line; the lookup never moves the verdict. `--files`, from 0.14.0, works
+`case` shares `verify`'s exit table, above. A case reads its worst pack. `--gateways`
+takes a comma-separated list and re-fetches each pack's witnesses, reported on their
+own line; a lookup that finds other bytes disproves `witnessed`, and any other result
+moves nothing. `--files`, from 0.14.0, works
 the same way `verify` uses it: files handed in beside the case are matched
 against every party's records, never by name, and a path can be a folder from
 0.17.0. See
@@ -177,7 +214,7 @@ with SHA-256 and listed as vouched for by a record in a named pack, as matching 
 record, or as skipped (a link, a pipe, a refused zip entry, or an unreadable file). The
 section is information only: the verdict and exit code never move. The loose files
 share 1 GiB, and a file past it is skipped as `too_large`. A `.zip` larger than
-1.25 GiB on disk exits 2 before it is read. If a file the case index lists passes
+1.25 GiB on disk exits 4 before it is read. If a file the case index lists passes
 its 1 GiB, the comparison reports `case_index_file_too_large`; if `contents.json`
 would pass the run's whole-read budget, or cannot be read, the index reads as
 `case_index_unreadable` and the verdict still prints.

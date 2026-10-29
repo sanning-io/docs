@@ -1,19 +1,20 @@
 ---
 title: "Event types"
-description: "The 18 agent.* record types, what each one commits to, and which fields are hidden or revealed"
+description: "The 19 agent.* record types, what each one commits to, and which fields are hidden or revealed"
 ---
 
 This page is the single place for event names. Every record an agent writes has one of
-the 18 `agent.*` types in the following tables, and no other `agent.*` name exists. A
-verifier reads a name it does not know as `nonconforming`, which the verifier shows as
-"Does not conform". Names compare exactly: `AGENT.TOOL_CALL.STARTED` is not in the set.
+the 19 `agent.*` types in the following tables, and no other `agent.*` name exists. A
+verifier reads a name it does not know as breaking the vocabulary: the pack reads
+`failed` with the reason kind `nonconforming`, shown as "Failed: a record does not
+follow the rules". Names compare exactly: `AGENT.TOOL_CALL.STARTED` is not in the set.
 
 The vocabulary is `sanning.agent/1`. The normative text is
 [`agent-events.md`](https://github.com/sanning-io/specs/blob/main/agent-events.md) in
 `sanning-io/specs`, and this page follows its sections 3, 5, 6 and 9.3. For which
 moment writes which type, see [What to record](/guides/what-to-record).
 
-## The 18 types
+## The 19 types
 
 An operation (a step, a model call, a tool call, a retrieval) is two records: a
 `started` record before it runs and an `ended` record after. An approval is a
@@ -23,22 +24,32 @@ An operation (a step, a model call, a tool call, a retrieval) is two records: a
 | Kind | Types | Written when |
 |---|---|---|
 | Run | `agent.run_opened`, `agent.run_closed` | An invocation starts, and the adapter closes it. |
-| Step | `agent.step.started`, `agent.step.ended` | A framework step starts and ends: a graph node, a chain, the invocation's root. |
+| Step | `agent.step.started`, `agent.step.ended`, `agent.step.occurred` | A framework step starts and ends: a graph node, a chain, the invocation's root. `agent.step.occurred` is one record for a moment the framework reports as a single event. |
 | Model call | `agent.model_call.started`, `agent.model_call.ended` | Before the request, and after the response or the failure. |
 | Tool call | `agent.tool_call.started`, `agent.tool_call.ended` | Before the tool runs, and when it returns or fails. |
 | Retrieval | `agent.retrieval.started`, `agent.retrieval.ended` | Before the query, and after the documents return. |
 | Approval | `agent.approval.requested`, `agent.approval.resolved` | An action waits for a human, a policy or a model, and the answer arrives. |
 | Hand-off | `agent.handoff.sent`, `agent.handoff.received` | One agent sends a message to another, and the other receives it. |
 | Decision | `agent.decision` | The agent states a business outcome. |
-| Custom | `agent.custom` | An event that no other type describes. |
+| Custom | `agent.custom` | An event the customer named, even when an adapter relays it. |
 | File | `agent.file` | A tool produces or reads a file. One record per file. |
 | Error | `agent.error` | An error outside any operation, such as a callback that failed. |
 
 An error inside an operation is not an `agent.error`. It is that operation's `ended`
 record with `outcome.status` set to `failed`.
 
-An adapter writes `agent.custom` only for an event that no other type describes. It
-never writes it for a tool call, which is an `agent.tool_call.*` pair.
+An adapter writes `agent.custom` only for an event the customer named, even when the
+adapter relays it, such as a LangChain `dispatch_custom_event`. It never writes it for a
+tool call, which is an `agent.tool_call.*` pair, and never for a moment the framework
+reports itself, which is an `agent.step.occurred` record.
+
+`agent.step.occurred` is one record and not an operation: it has no start, no end and no
+outcome. Its `run.run_id` is the operation it occurred inside, or the invocation's root.
+It requires `run.source_type`, the framework's own name for the event, as lowercase
+dotted segments that start with a letter and run to at most 64 characters, such as
+`langchain.agent_action`. It carries none of the fields of an operation: `outcome`,
+`run.started_event_id`, `run.observed_started_at`, and the tool and model fields read as
+`failed` with the reason `unknown_field`.
 
 Seven record types sit outside this vocabulary: `event`, `checkpoint`, `declaration`,
 `runner.run_opened`, `runner.run_closed`, `runner.egress` and `runner.relay`. The names
@@ -51,7 +62,7 @@ Plain `anchor()` builds an `event` record, or a `checkpoint` or `declaration`. T
 refuses to sign an `agent.*` type there. An `agent.*` record comes from an adapter or
 from the agent record builder, which checks the record against the schema first. See
 [Anchor from your agent](/guides/anchor#record-a-decision). The SDK also refuses a type
-outside the set, such as `claims.decision`, because a verifier would read it
+outside the set, such as `claims.decision`, because a verifier would fail the record as
 `nonconforming`.
 
 ## What each type commits to
@@ -67,6 +78,7 @@ with `null` where the adapter has no value.
 | `agent.run_opened` | The fixed object `{"authority": {"expires_at", "principal", "scope"}, "input"}`. |
 | `agent.run_closed` | The empty object `{}`. |
 | `agent.step.started`, `agent.step.ended` | The step's inputs on started. Its outputs or error on ended. |
+| `agent.step.occurred` | The event as the framework handed it to the adapter. |
 | `agent.model_call.started`, `agent.model_call.ended` | The request on started. The response, streamed output included, or the error on ended. |
 | `agent.tool_call.started`, `agent.tool_call.ended` | The arguments on started. The result or error on ended. |
 | `agent.retrieval.started`, `agent.retrieval.ended` | The query on started. The documents on ended. |
@@ -96,7 +108,7 @@ the hidable fields, which are the clear fields you can withhold.
 | Type | Hash-only fields | Hidable fields |
 |---|---|---|
 | `agent.run_opened` | `authority.principal` | `run.name` |
-| `agent.step.started`, `agent.step.ended` | | `run.name` |
+| `agent.step.started`, `agent.step.ended`, `agent.step.occurred` | | `run.name` |
 | `agent.model_call.started` | `gen_ai.input.messages`, `gen_ai.system_instructions` | `run.name`, `gen_ai.prompt.name` |
 | `agent.model_call.ended` | `gen_ai.output.messages` | `run.name` |
 | `agent.tool_call.started` | `gen_ai.tool.call.arguments` | `run.name`, `gen_ai.tool.name` |
@@ -133,8 +145,8 @@ Every `ended` record also carries `outcome.status` (`completed`, `failed`,
 operation. An end names its start by that `event_id`, so a verifier pairs the two even
 when a framework reuses a run id.
 
-Every object in a record is closed. A member the vocabulary does not name reads
-`nonconforming`, so an extra field is added to the vocabulary and never carried beside
+Every object in a record is closed. A member the vocabulary does not name fails the
+record as `nonconforming`, so an extra field is added to the vocabulary and never carried beside
 it.
 
 ## The salt
@@ -144,7 +156,7 @@ random bits), fresh for each record. The salt stops anyone who holds only the en
 from confirming a guessed short value against its hash. The SDK builds the salt, and no
 builder option sets it. Sanning does not receive it. A verifier checks only that it has
 the right form: a missing salt on an `agent.*` record, or a salt in any other form on any
-record, reads `nonconforming`.
+record, fails the record as `nonconforming`.
 
 ## Name a decision for what is decided
 
@@ -156,12 +168,13 @@ answers. It is never text built from the case.
 
 ## How a verifier reads a record that breaks the vocabulary
 
-A record that is signed and intact but breaks the vocabulary reads `nonconforming`,
-shown as "Does not conform", and the command line exits 6. Examples are a type outside the
+A record that is signed and intact but breaks the vocabulary makes the pack `failed`
+with the reason kind `nonconforming`, shown as "Failed: a record does not follow the
+rules", and the command line exits 1. Examples are a type outside the
 closed set, a missing or extra field, and a salt that is not 32 lowercase hex characters.
-This is a different verdict from `malformed`, an input that cannot be read at all, and
-from `failed`, a check that ran and did not pass. A `nonconforming` record is the
-producer's error, such as an adapter bug. Nothing is proven altered.
+This differs from the reason kind `changed`, where a signature or a hash does not
+match. A `nonconforming` record is the producer's error, such as an adapter bug. Nothing
+is proven altered.
 
 ## Check an integration
 
