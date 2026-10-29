@@ -11,6 +11,12 @@ Sanning records what an AI agent does so a third party can check it later withou
 
 The lifecycle is anchor, read, verify.
 
+## Event types
+
+Read the event types page before you write any record: https://docs.sanning.io/reference/event-types. It is the single place for names. Every agent record has one of 18 `agent.*` types, for example `agent.run_opened`, `agent.model_call.started`, `agent.tool_call.ended`, `agent.decision` and `agent.file`. A name outside the set reads `nonconforming`, shown as "Does not conform" (exit 6). Plain `anchor()` builds an `event` record and refuses an `agent.*` type. An adapter writes the right `agent.*` type for each moment, or you build one with the agent record builder in https://docs.sanning.io/guides/anchor; the table of moments, events and what Sanning receives is at https://docs.sanning.io/guides/what-to-record.
+
+Sanning receives ids, times, outcomes and each record's type, with no content, no content hash, no names and no model details. Sanning receives the case id, run ids, chain key, conversation id and agent id in clear; use an opaque id when a case id would be personal data. The SDK refuses to sign a record that breaks the schema, and `recordingStatus().refused` (`recording_status().refused` in Python) lists each refused record by event id, type, reason and pointer. Every record carries a random salt that the SDK writes and Sanning does not receive. To check an integration, run the conformance suite in `sanning-io/specs`: https://docs.sanning.io/reference/specs-and-conformance.
+
 ## Start in the sandbox
 
 Every new integration starts in the sandbox. One host serves both modes, and the API key decides which one a request reaches.
@@ -23,7 +29,7 @@ Every new integration starts in the sandbox. One host serves both modes, and the
 | Records | Deleted after 30 days; Reset clears them | Permanent |
 | Offline verify | `SANDBOX`, exit code 5 | `VERIFIED`, exit code 0 |
 
-A person creates the API key in the console: sign in at `https://console.sanning.io`, open the account menu, choose **Switch to sandbox**, then **Settings, API keys, Create key**. You cannot create an organization or an API key through the API on your own; access starts with the Sanning team.
+A person creates the API key in the console: sign in at `https://console.sanning.io`, open the account menu, choose **Switch to sandbox**, then **Settings, API keys, Create key**. Every key carries the three anchor scopes (`agent:enroll`, `anchor:write`, `anchor:read`); scopes are not chosen one at a time. You cannot create an organization or an API key through the API on your own; access starts with the Sanning team.
 
 Requests go to `https://api.sanning.io`. A live plane refuses a sandbox API key (`SANDBOX_KEY_ON_LIVE`), and a sandbox refuses a live one (`LIVE_KEY_ON_SANDBOX`). Every sandbox response carries the header `Sanning-Mode: sandbox`.
 
@@ -46,11 +52,12 @@ const anchorer = createAnchorer({
   signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED!),
   logStore: new FsLogStore("./logstore"),
 });
-await anchorer.anchor({ eventType: "agent.decision", content: "the decision your agent just made" });
+await anchorer.anchor({ content: JSON.stringify({ claim: "CLM-4417", action: "referred" }) });
 await anchorer.close(); // throws if any signed event was not delivered
 ```
 
 ```python
+import json
 import os
 from sanning_anchor import Anchorer, FsLogStore, LocalEd25519Signer
 
@@ -60,7 +67,7 @@ anchorer = Anchorer(
     signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
     log_store=FsLogStore("./logstore"),
 )
-anchorer.anchor(content=b"the decision your agent just made", event_type="agent.decision")
+anchorer.anchor(content=json.dumps({"claim": "CLM-4417", "action": "referred"}).encode())
 anchorer.close()
 ```
 
@@ -89,13 +96,19 @@ Switch to a `sanning_prod_` API key. A live agent enrolls fresh: sandbox and liv
 
 ## Rules
 
-- Content never leaves your side; only the signed commitment does. Do not put secrets or personal data in `agent_id` or `event_type`.
+- Content never leaves your side; only the signed record does. Ids are never hashed and reach Sanning in clear, so keep secrets and personal data out of `agent_id` and every id.
 - Keep one signing seed per agent, for the agent's life.
 - Treat exit code 5 as "sandbox", never as production evidence.
 - Sanning is not in the trust path: a pack verifies offline without Sanning.
 
 ## Pages
 
+- Event types: https://docs.sanning.io/reference/event-types
+- What to record: https://docs.sanning.io/guides/what-to-record
+- Hide, reveal and scrub fields: https://docs.sanning.io/concepts/hide-and-reveal-fields
+- What a pack proves: https://docs.sanning.io/concepts/what-a-pack-proves
+- Specs and conformance: https://docs.sanning.io/reference/specs-and-conformance
+- Glossary: https://docs.sanning.io/reference/glossary
 - Quickstart: https://docs.sanning.io/quickstart
 - Sandbox and live: https://docs.sanning.io/concepts/sandbox-and-live
 - Go live: https://docs.sanning.io/guides/go-live

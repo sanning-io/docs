@@ -23,13 +23,13 @@ or supports the A2A protocol.
 </Note>
 
 The Sanning side of each row holds for `@sanning/anchor` and `sanning-anchor`
-0.16.0, the current release of each SDK. See
+0.20.0. See
 [Record a hand-off between two agents](/guides/handoff).
 
 ## How an A2A message becomes a record
 
 Pass the A2A `Message` object, in its JSON form, as the `message` argument to
-`send`. The `handoff.sent` record commits to SHA-256 over that object's
+`send`. The `agent.handoff.sent` record commits to SHA-256 over that object's
 canonical form (JCS, RFC 8785), in `event.message_hash`. The receiver commits to
 the object it received in the same way, and the two hashes match only if the
 objects are equal.
@@ -65,7 +65,7 @@ name:
 | `contextId` | Closest to `context.case_id` | Both group related messages. `case_id` is yours to choose, at most 128 characters matching `^[A-Za-z0-9_.:-]+$`, and must be opaque because it is committed permanently and indexed. A2A lets the server agent generate a `contextId`. Reuse one as `case_id` only when it meets those rules. |
 | `taskId` | Inside `event.message_hash` only | A2A has the server agent generate it. No record field carries it. |
 | `referenceTaskIds` | Inside `event.message_hash` only | `context.in_reply_to` is not its counterpart: it names one earlier message by that message's `message_hash`, and names no task. |
-| `role` | Inside `event.message_hash` only | A2A's `ROLE_USER` and `ROLE_AGENT` say client or server. Which side of a hand-off wrote a record is its record type, `handoff.sent` or `handoff.received`. |
+| `role` | Inside `event.message_hash` only | A2A's `ROLE_USER` and `ROLE_AGENT` say client or server. Which side of a hand-off wrote a record is its record type, `agent.handoff.sent` or `agent.handoff.received`. |
 | `parts` | Inside `event.message_hash` only | Each part is committed as JSON inside the message object. The next table covers them. |
 | `metadata` | Inside `event.message_hash` only | Not the record's own `metadata`, which is yours and which no verifier reads. |
 | `extensions` | Inside `event.message_hash` only | Committed as it appears. |

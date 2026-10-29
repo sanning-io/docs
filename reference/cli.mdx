@@ -129,6 +129,7 @@ npx @sanning/proof verify bundle.json --logs logs/
 | 3 | Undetermined: the pack reads `incomplete` or `partial`, or a gateway re-fetch was asked for and something in it could not be checked |
 | 4 | Mixed: more than one outcome, none of them failed |
 | 5 | Sandbox: every check passed, but the pack holds a record signed `environment: "dev"`, which is sandbox evidence, not production evidence. A pack whose records are all `dev` also exits 5 when the only witness left unchecked is a simulated one |
+| 6 | Does not conform (`nonconforming`): a record is signed and intact and breaks the vocabulary it names. Nothing is proven altered |
 
 Exit 5 is the Sandbox: the pack verified, and its stamp is simulated. See
 [Sandbox and live](/concepts/sandbox-and-live).

@@ -6,8 +6,8 @@ description: "Evidence your auditor can check without us"
 Sanning records what your AI agents do, so a third party can check it later without
 taking your word for it, and without taking ours.
 
-Your agent hashes each step locally and sends Sanning a signed commitment to it. Sanning
-never receives the step itself. Those commitments are committed to a public record, and
+Your agent hashes each step locally and sends Sanning a signed record of it. Sanning never
+receives the step itself. Sanning commits a stamp of those records to a public record, and
 anyone holding the resulting evidence pack can verify it offline with an open-source
 kernel.
 
@@ -39,12 +39,14 @@ later.
 
 | Sanning receives | Sanning never receives |
 |---|---|
-| A SHA-256 commitment to each step | The step's content |
-| A signature from your agent's key | Your agent's signing key |
-| Timing and ordering metadata | Your prompts, outputs, or files |
+| A signed envelope for each record | Your agent's signing key |
+| Record ids, times and outcomes | The step's content |
+| The case id and the other ids, in clear | Hashes, lengths or paths of content |
 
-Files your tools produce are recorded by name, size and hash. The bytes stay where you
-put them.
+Sanning is content-blind in Private mode, the data mode Sanning offers: it does not receive the content an agent produced, and it receives ids, times and outcomes. Ids reach Sanning in
+clear, so keep personal data out of them. See
+[What crosses the boundary](/concepts/how-it-works#what-crosses-the-boundary). For what a verified pack proves, and what it does
+not, see [What a pack proves](/concepts/what-a-pack-proves).
 
 <Card title="Quickstart" icon="rocket" href="/quickstart">
   Anchor your first record in the Sandbox and verify it, in about ten minutes.
