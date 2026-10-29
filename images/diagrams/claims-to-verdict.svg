@@ -10,19 +10,19 @@
 <rect x="0" y="0" width="760" height="404" fill="#FFFFFF"/>
 <rect x="10" y="10" width="230" height="318" fill="none" stroke="#D8D8D2" stroke-width="1"/>
 <text class="zone" x="20" y="26" text-anchor="start">SIX CLAIMS</text>
-<text class="lbl" x="24" y="54" text-anchor="start">signed</text>
+<text class="lbl" x="24" y="54" text-anchor="start">Signed</text>
 <text class="sub" x="24" y="66" text-anchor="start">the named key signed it</text>
-<text class="lbl" x="24" y="96" text-anchor="start">unchanged</text>
+<text class="lbl" x="24" y="96" text-anchor="start">Unchanged</text>
 <text class="sub" x="24" y="108" text-anchor="start">bytes match what was signed</text>
-<text class="lbl" x="24" y="138" text-anchor="start">witnessed</text>
+<text class="lbl" x="24" y="138" text-anchor="start">Witnessed</text>
 <text class="sub" x="24" y="150" text-anchor="start">a stamp covers it and verifies</text>
-<text class="lbl" x="24" y="180" text-anchor="start">complete</text>
+<text class="lbl" x="24" y="180" text-anchor="start">Complete</text>
 <text class="sub" x="24" y="192" text-anchor="start">the pack holds all it declares</text>
-<text class="lbl" x="24" y="222" text-anchor="start">agreed</text>
+<text class="lbl" x="24" y="222" text-anchor="start">Agreed</text>
 <text class="sub" x="24" y="234" text-anchor="start">both sides of a hand-off agree</text>
-<text class="lbl" x="24" y="264" text-anchor="start">follows_rules</text>
+<text class="lbl" x="24" y="264" text-anchor="start">Follows the rules</text>
 <text class="sub" x="24" y="276" text-anchor="start">follows the vocabulary it names</text>
-<text class="sub" x="24" y="312" text-anchor="start">each: proven, disproven, not_proven</text>
+<text class="sub" x="24" y="312" text-anchor="start">each: proven, disproven, not proven</text>
 <rect x="284" y="10" width="200" height="318" fill="none" stroke="#D8D8D2" stroke-width="1"/>
 <text class="zone" x="294" y="26" text-anchor="start">THE RULE</text>
 <text class="step" x="298" y="90" text-anchor="start">1</text>

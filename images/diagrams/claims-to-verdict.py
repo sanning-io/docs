@@ -13,15 +13,15 @@ ARIA = ("How six claims become one verdict. On the left are the six claims the k
 def build(dark=False):
     d = D(760, 404, ARIA, dark)
     d.zone(10, 10, 230, 318, "Six claims")
-    claims = [("signed", "the named key signed it"),
-              ("unchanged", "bytes match what was signed"),
-              ("witnessed", "a stamp covers it and verifies"),
-              ("complete", "the pack holds all it declares"),
-              ("agreed", "both sides of a hand-off agree"),
-              ("follows_rules", "follows the vocabulary it names")]
+    claims = [("Signed", "the named key signed it"),
+              ("Unchanged", "bytes match what was signed"),
+              ("Witnessed", "a stamp covers it and verifies"),
+              ("Complete", "the pack holds all it declares"),
+              ("Agreed", "both sides of a hand-off agree"),
+              ("Follows the rules", "follows the vocabulary it names")]
     for i, (a, b) in enumerate(claims):
         d.node(24, 54 + i*42, a, [b])
-    d.text(24, 312, "each: proven, disproven, not_proven")
+    d.text(24, 312, "each: proven, disproven, not proven")
 
     d.zone(284, 10, 200, 318, "The rule")
     d.node(298, 90, "Any claim disproven?", num=1)
