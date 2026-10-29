@@ -5,7 +5,8 @@ description: "The moment, the event, what is hashed, what goes in the pack, and 
 
 This page maps each moment in an agent's run to the event that records it. The event
 names are the ones on [Event types](/reference/event-types). The adapters write these
-records for you. Use the table to decide what your agent records, and to check what
+records for you, and the agent record builder writes the others. Plain `anchor()` builds
+an `event` record, not an `agent.*` record. Use the table to decide what your agent records, and to check what
 leaves your process.
 
 ## What the pack holds
@@ -31,6 +32,7 @@ the content you can put in the pack.
 | An action waits for a decision | `agent.approval.requested`, `agent.approval.resolved` | The action under review, then the answer, reviewer and notes | The action and the answer |
 | One agent sends a message to another | `agent.handoff.sent`, `agent.handoff.received` | The message, as `event.message_hash` | The message |
 | The agent states an outcome | `agent.decision` | The decision name and value | The value |
+| An event no other type describes | `agent.custom` | The custom name and value | The value |
 | A tool produces or reads a file | `agent.file` | The file's own bytes | The file |
 | Something fails outside an operation | `agent.error` | The error type and message | The message |
 | The invocation ends | `agent.run_closed` | The empty object `{}` | Nothing |
@@ -43,6 +45,7 @@ step's `agent.step.ended` record.
 
 Beside each signed envelope, Sanning receives the following:
 
+- The record's type, the agent id, and the hash of the previous record on the chain.
 - Record ids, times and outcomes.
 - The case id, the run ids, the chain key, the conversation id and the agent id, all in
   clear.
@@ -53,11 +56,38 @@ Beside each signed envelope, Sanning receives the following:
   `agent.handoff.*`, the link to the record each one answers.
 
 Sanning receives no content, no hash of content, no name and no model details. It never
-receives the signing key.
+receives the signing key. It does not receive the record's salt.
 
 Because ids reach Sanning in clear, use an opaque id wherever an id could be personal
 data, such as a case id built from a customer's name. Sanning can clear stored ids on
 request, and the signed evidence is untouched.
+
+### What Sanning can still learn
+
+Private hides content, names and values. It does not hide the shape of a run. Sanning
+can learn the following:
+
+- **When records were signed.** Every envelope carries `signed_at`. The gap between a
+  model call's start record and its end record roughly shows how long the model took.
+- **How each operation ended.** Sanning receives `outcome.status` and the links between
+  records. It can tell a tool call that was refused from one that ran. A tool call that
+  was refused ends `skipped`, and one that ran ends `completed` or `failed`. After a
+  resume, Sanning cannot tell from the answer which way it went, because no end record is
+  written for the old call.
+- **Which key handed off to which.** The sender's envelope carries its key. Where both
+  sides of a hand-off anchor with Sanning, Sanning can tell which key sent a message to
+  which. Sanning knows which customer owns each key, so this can show that two customers
+  do business.
+
+Two envelope fields are set by the caller and reach Sanning in every case:
+
+| Field | What the SDK writes | What a caller can write |
+|---|---|---|
+| `payload_ref` | An opaque locator from your log store, where it has one | Any URI of up to 2048 characters, signed as given. It can encode a customer or a path. |
+| `signed_at` | A time to the millisecond | A fraction of a second of any length |
+
+Keep names, paths and customer data out of `payload_ref`, and leave `signed_at` to the
+SDK.
 
 ## Choose what to record
 

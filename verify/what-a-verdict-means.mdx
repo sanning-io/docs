@@ -6,7 +6,7 @@ description: "What a verified pack proves, and the four things it does not"
 You have been handed an evidence pack and the kernel printed `VERIFIED`. This page tells
 you exactly what you may conclude from that, and what you may not.
 
-The limits are specified in `evidence-bundle.md` §5.3.4, which ships inside the
+The limits are specified in `evidence-bundle.md` section 5.3.4, which ships inside the
 `sanning-proof` package and is the normative source. This page is the plain
 reading. See [Wire formats](/reference/wire-formats) for how to open it.
 
@@ -119,6 +119,15 @@ from failure on purpose.
 | `failed` | A check ran and did not pass |
 | `partial` | The pack is sound, and something could not be checked |
 | `undetermined` | A check could not run at all |
+| `malformed` | The input could not be read as what it claims to be. Nothing is proven altered |
+| `nonconforming` | A record is signed and intact and breaks the vocabulary it names. Nothing is proven altered |
+
+**`nonconforming` is not `malformed` and not `failed`.** The kernel prints "Does not
+conform" and exits 6. The record's signature and hash hold, so the record is neither
+broken nor tampered with: its producer wrote something the specification does not
+allow. Examples are a type outside the closed set of event types, a field the type does
+not name, and a `context.salt` that is not 32 lowercase hex characters. The
+output names the record and the rule it breaks.
 
 **Absent evidence is reported as absent, never as failure.** If an agent withheld the
 bytes for a record, its content binding is undetermined. That is an agent exercising
@@ -147,7 +156,8 @@ shows:
 | Group | Example | Word it contributes |
 |---|---|---|
 | Something is proven wrong | The two sides of a hand-off commit to different messages | `failed` |
-| Something is not in a readable form | A hand-off record is missing a field its type requires | `malformed` |
+| Something is not in a readable form | A pack's `bundle.json` is not valid JSON | `malformed` |
+| A record breaks its vocabulary | A record's type is outside the closed set | `nonconforming` |
 | The reader could not tell | No pack signed by the key one side of a hand-off names is in what you dropped | `incomplete` |
 | Something was not there to read | A pack does not say what it holds | `partial` |
 

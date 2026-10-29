@@ -1,10 +1,10 @@
 # Sanning
 
-> Sanning records what AI agents do, so a third party can verify it offline without trusting you or Sanning. Lifecycle: anchor, read, verify. Start with the event types: every record an agent writes has one of 17 `agent.*` names, and Event types is the single place for them.
+> Sanning records what AI agents do, so a third party can verify it offline without trusting you or Sanning. Lifecycle: anchor, read, verify. Start with the event types: every record an agent writes has one of 18 `agent.*` names, and Event types is the single place for them.
 
 ## Start here
 
-- [Event types](https://docs.sanning.io/reference/event-types.md): The 17 `agent.*` record types, what each commits to, and which fields are hidden or revealed
+- [Event types](https://docs.sanning.io/reference/event-types.md): The 18 `agent.*` record types, what each commits to, and which fields are hidden or revealed
 - [What to record](https://docs.sanning.io/guides/what-to-record.md): The moment, the event, what is hashed, and what Sanning receives
 - [Skill](https://docs.sanning.io/skill.md): How a coding agent integrates Sanning
 
@@ -47,7 +47,7 @@
 
 ## Reference
 
-- [Event types](https://docs.sanning.io/reference/event-types.md): The 17 agent.* record types, what each one commits to, and which fields are hidden or revealed
+- [Event types](https://docs.sanning.io/reference/event-types.md): The 18 agent.* record types, what each one commits to, and which fields are hidden or revealed
 - [Specs and conformance](https://docs.sanning.io/reference/specs-and-conformance.md): The specifications behind the records, and the conformance suite that checks an integration
 - [Glossary](https://docs.sanning.io/reference/glossary.md): One word for each thing on this site
 - [Command line](https://docs.sanning.io/reference/cli.md): The two commands, their flags, and their exit codes

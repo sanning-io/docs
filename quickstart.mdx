@@ -97,13 +97,18 @@ pip install "sanning-anchor[langchain]"
 ## Anchor a step
 
 The agent signs each step with the seed and hashes the content locally. Sanning
-never receives the seed or the content. The event type is one of the 17 on
-[Event types](/reference/event-types); `agent.decision` records an outcome you state.
+never receives the seed or the content. A plain `anchor()` call builds an `event`
+record. The records of an agent's work, such as a model call, a tool call or a
+decision, are `agent.*` records, and the SDK refuses to build one through plain
+`anchor()`. An adapter writes them, or you build them with the agent record builder
+in [Anchor from your agent](/guides/anchor#record-a-decision).
 
 <CodeGroup>
 
 ```python Python
+import json
 import os
+
 from sanning_anchor import Anchorer, FsLogStore, LocalEd25519Signer
 
 anchorer = Anchorer(
@@ -115,10 +120,8 @@ anchorer = Anchorer(
     log_store=FsLogStore("./logstore"),
 )
 
-# Anchorer-call sample: the coordinator replaces this once the adapters ship.
 result = anchorer.anchor(
-    content={"name": "claim_referred", "value": {"claim": "CLM-4417"}},
-    event_type="agent.decision",
+    content=json.dumps({"claim": "CLM-4417", "action": "referred"}).encode(),
 )
 print(result.event_id)
 
@@ -147,10 +150,8 @@ const anchorer = createAnchorer({
   logStore: new FsLogStore("./logstore"),
 });
 
-// Anchorer-call sample: the coordinator replaces this once the adapters ship.
 const result = await anchorer.anchor({
-  content: { name: "claim_referred", value: { claim: "CLM-4417" } },
-  eventType: "agent.decision",
+  content: JSON.stringify({ claim: "CLM-4417", action: "referred" }),
 });
 console.log(result.eventId);
 
@@ -180,7 +181,6 @@ produces.
 ```python
 from sanning_anchor import AnchorCallbackHandler
 
-# Adapter sample: the coordinator replaces this once the adapters ship.
 with AnchorCallbackHandler(anchorer, raise_on_gaps=True) as handler:
     agent.invoke(inputs, config={"callbacks": [handler]})
 

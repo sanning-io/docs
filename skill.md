@@ -13,9 +13,9 @@ The lifecycle is anchor, read, verify.
 
 ## Event types
 
-Read the event types page before you write any record: https://docs.sanning.io/reference/event-types. It is the single place for names. Every record has one of 17 `agent.*` types, for example `agent.run_opened`, `agent.model_call.started`, `agent.tool_call.ended`, `agent.decision` and `agent.file`. A name outside the set is `malformed`. An adapter writes the right type for each moment; the table of moments, events and what Sanning receives is at https://docs.sanning.io/guides/what-to-record.
+Read the event types page before you write any record: https://docs.sanning.io/reference/event-types. It is the single place for names. Every agent record has one of 18 `agent.*` types, for example `agent.run_opened`, `agent.model_call.started`, `agent.tool_call.ended`, `agent.decision` and `agent.file`. A name outside the set reads `nonconforming`, shown as "Does not conform" (exit 6). Plain `anchor()` builds an `event` record and refuses an `agent.*` type. An adapter writes the right `agent.*` type for each moment, or you build one with the agent record builder in https://docs.sanning.io/guides/anchor; the table of moments, events and what Sanning receives is at https://docs.sanning.io/guides/what-to-record.
 
-Sanning receives ids, times and outcomes only, with no content, no content hash, no names and no model details. Sanning receives the case id, run ids, chain key, conversation id and agent id in clear; use an opaque id when a case id would be personal data. The SDK refuses to sign a record that breaks the schema. To check an integration, run the conformance suite in `sanning-io/specs`: https://docs.sanning.io/reference/specs-and-conformance.
+Sanning receives ids, times, outcomes and each record's type, with no content, no content hash, no names and no model details. Sanning receives the case id, run ids, chain key, conversation id and agent id in clear; use an opaque id when a case id would be personal data. The SDK refuses to sign a record that breaks the schema, and `recordingStatus().refused` (`recording_status().refused` in Python) lists each refused record by event id, type, reason and pointer. Every record carries a random salt that the SDK writes and Sanning does not receive. To check an integration, run the conformance suite in `sanning-io/specs`: https://docs.sanning.io/reference/specs-and-conformance.
 
 ## Start in the sandbox
 
@@ -52,12 +52,12 @@ const anchorer = createAnchorer({
   signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED!),
   logStore: new FsLogStore("./logstore"),
 });
-// Anchorer-call sample: the coordinator replaces this once the adapters ship.
-await anchorer.anchor({ eventType: "agent.decision", content: { name: "claim_referred", value: { claim: "CLM-4417" } } });
+await anchorer.anchor({ content: JSON.stringify({ claim: "CLM-4417", action: "referred" }) });
 await anchorer.close(); // throws if any signed event was not delivered
 ```
 
 ```python
+import json
 import os
 from sanning_anchor import Anchorer, FsLogStore, LocalEd25519Signer
 
@@ -67,15 +67,14 @@ anchorer = Anchorer(
     signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
     log_store=FsLogStore("./logstore"),
 )
-# Anchorer-call sample: the coordinator replaces this once the adapters ship.
-anchorer.anchor(content={"name": "claim_referred", "value": {"claim": "CLM-4417"}}, event_type="agent.decision")
+anchorer.anchor(content=json.dumps({"claim": "CLM-4417", "action": "referred"}).encode())
 anchorer.close()
 ```
 
 - Pass no `environment`: the SDK signs it from the API key.
 - The SDK enrolls the signing key on the first anchor; the agent then appears on the console's **Agents** page.
 - The log store keeps the content on your side. The pack step reads it, so keep the directory.
-- For LangChain, use `AnchorCallbackHandler(anchorer, raise_on_gaps=True)` as a context manager (adapter sample: the coordinator replaces it once the adapters ship); for the Vercel AI SDK, see the Vercel guide in Pages.
+- For LangChain, use `AnchorCallbackHandler(anchorer, raise_on_gaps=True)` as a context manager; for the Vercel AI SDK, see the Vercel guide in Pages.
 
 ## Build a pack and verify it
 

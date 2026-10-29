@@ -1,19 +1,19 @@
 ---
 title: "Event types"
-description: "The 17 agent.* record types, what each one commits to, and which fields are hidden or revealed"
+description: "The 18 agent.* record types, what each one commits to, and which fields are hidden or revealed"
 ---
 
 This page is the single place for event names. Every record an agent writes has one of
-the 17 `agent.*` types in the following tables, and no other `agent.*` name exists. A
-verifier reads a name it does not know as `malformed`. Names compare exactly:
-`AGENT.TOOL_CALL.STARTED` is not in the set.
+the 18 `agent.*` types in the following tables, and no other `agent.*` name exists. A
+verifier reads a name it does not know as `nonconforming`, which the verifier shows as
+"Does not conform". Names compare exactly: `AGENT.TOOL_CALL.STARTED` is not in the set.
 
 The vocabulary is `sanning.agent/1`. The normative text is
 [`agent-events.md`](https://github.com/sanning-io/specs/blob/main/agent-events.md) in
 `sanning-io/specs`, and this page follows its sections 3, 5, 6 and 9.3. For which
 moment writes which type, see [What to record](/guides/what-to-record).
 
-## The 17 types
+## The 18 types
 
 An operation (a step, a model call, a tool call, a retrieval) is two records: a
 `started` record before it runs and an `ended` record after. An approval is a
@@ -30,16 +30,29 @@ An operation (a step, a model call, a tool call, a retrieval) is two records: a
 | Approval | `agent.approval.requested`, `agent.approval.resolved` | An action waits for a human, a policy or a model, and the answer arrives. |
 | Hand-off | `agent.handoff.sent`, `agent.handoff.received` | One agent sends a message to another, and the other receives it. |
 | Decision | `agent.decision` | The agent states a business outcome. |
+| Custom | `agent.custom` | An event that no other type describes. |
 | File | `agent.file` | A tool produces or reads a file. One record per file. |
 | Error | `agent.error` | An error outside any operation, such as a callback that failed. |
 
 An error inside an operation is not an `agent.error`. It is that operation's `ended`
 record with `outcome.status` set to `failed`.
 
+An adapter writes `agent.custom` only for an event that no other type describes. It
+never writes it for a tool call, which is an `agent.tool_call.*` pair.
+
 Seven record types sit outside this vocabulary: `event`, `checkpoint`, `declaration`,
 `runner.run_opened`, `runner.run_closed`, `runner.egress` and `runner.relay`. The names
 used before the vocabulary, such as `langchain.tool_start` or `handoff.sent`, and any
 name a builder invents, are not in the set.
+
+## What the SDK builds
+
+Plain `anchor()` builds an `event` record, or a `checkpoint` or `declaration`. The SDK
+refuses to sign an `agent.*` type there. An `agent.*` record comes from an adapter or
+from the agent record builder, which checks the record against the schema first. See
+[Anchor from your agent](/guides/anchor#record-a-decision). The SDK also refuses a type
+outside the set, such as `claims.decision`, because a verifier would read it
+`nonconforming`.
 
 ## What each type commits to
 
@@ -61,6 +74,7 @@ with `null` where the adapter has no value.
 | `agent.approval.resolved` | The fixed object `{"edited_action", "notes", "response", "reviewer"}`. |
 | `agent.handoff.sent`, `agent.handoff.received` | No content hash. `event.message_hash` commits to the JCS bytes of the message, as sent or as held. |
 | `agent.decision` | The fixed object `{"name", "value"}`, as you handed them to the SDK. |
+| `agent.custom` | The fixed object `{"name", "value"}`, as the adapter handed them to the SDK. |
 | `agent.file` | The file's own bytes, so `sha256sum` of the file is `event.content_hash`. A file that could not be read commits to `{}`. |
 | `agent.error` | The fixed object `{"message", "type"}`. |
 
@@ -92,6 +106,7 @@ the hidable fields, which are the clear fields you can withhold.
 | `agent.approval.requested` | `approval.action` | |
 | `agent.approval.resolved` | `approval.reviewer`, `approval.notes`, `approval.edited_action` | |
 | `agent.decision` | `decision.value` | |
+| `agent.custom` | `custom.value` | |
 | `agent.file` | | `artifact.name`, `artifact.path`, `artifact.source`, `artifact.destination` |
 | `agent.error` | `exception.message` | |
 
@@ -111,17 +126,48 @@ These fields appear on every `agent.*` record.
 | `run.prev_event_id` | The previous record's `event_id`, or `null` on the first record. |
 | `otel.scope.name`, `otel.scope.version` | The published package and version that wrote the record. |
 | `extras.event_schema` | The vocabulary version, `sanning.agent/1`. |
+| `context.salt` | A random value, fresh for each record. See [The salt](#the-salt). |
 
-Every `ended` record also carries `outcome.status` (`completed`, `failed` or
-`interrupted`) and `run.started_event_id`, the `event_id` of the record that began the
+Every `ended` record also carries `outcome.status` (`completed`, `failed`,
+`interrupted` or `skipped`) and `run.started_event_id`, the `event_id` of the record that began the
 operation. An end names its start by that `event_id`, so a verifier pairs the two even
 when a framework reuses a run id.
 
 Every object in a record is closed. A member the vocabulary does not name reads
-`malformed`, so an extra field is added to the vocabulary and never carried beside it.
+`nonconforming`, so an extra field is added to the vocabulary and never carried beside
+it.
+
+## The salt
+
+Every record the SDK builds carries `context.salt`: 32 lowercase hex characters (128
+random bits), fresh for each record. The salt stops anyone who holds only the envelope
+from confirming a guessed short value against its hash. The SDK builds the salt, and no
+builder option sets it. Sanning does not receive it. A verifier checks only that it has
+the right form: a missing salt on an `agent.*` record, or a salt in any other form on any
+record, reads `nonconforming`.
+
+## Name a decision for what is decided
+
+An `agent.decision` has a name and a value. Name the decision for what is decided, and
+put the result in the value: the name `credit_verdict` with the value `declined`. Do not
+write the name `credit_declined`. A name that holds one result stops a reader comparing
+decisions. A name is a short code you fix in advance, one per question the agent
+answers. It is never text built from the case.
+
+## How a verifier reads a record that breaks the vocabulary
+
+A record that is signed and intact but breaks the vocabulary reads `nonconforming`,
+shown as "Does not conform", and the command line exits 6. Examples are a type outside the
+closed set, a missing or extra field, and a salt that is not 32 lowercase hex characters.
+This is a different verdict from `malformed`, an input that cannot be read at all, and
+from `failed`, a check that ran and did not pass. A `nonconforming` record is the
+producer's error, such as an adapter bug. Nothing is proven altered.
 
 ## Check an integration
 
 The [conformance suite](/reference/specs-and-conformance) is the way to check that your
 integration writes valid records. The SDK also refuses to sign a record that breaks the
-schema, and the adapter reports a record it could not write instead of dropping it.
+schema, and the adapter reports a record it could not write instead of dropping it. The
+anchorer lists each refused record, by event id, type, reason and pointer, in
+`recordingStatus().refused` (`recording_status().refused` in Python). It never lists a
+value from the record.

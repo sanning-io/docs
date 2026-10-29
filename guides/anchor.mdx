@@ -14,7 +14,9 @@ the call itself and what to know before you wire it into a service.
 ## Anchor one event
 
 Build the anchorer once, when your service starts, and call `anchor` at the
-point where the agent does something you want on the record.
+point where the agent does something you want on the record. A plain `anchor`
+call builds an `event` record. For a record that has an agent type, such as a
+decision, see [Record a decision](#record-a-decision).
 
 <CodeGroup>
 
@@ -43,13 +45,11 @@ const anchorer = createAnchorer({
   logStore: new FsLogStore("./logstore"),
 });
 
-const decision = { name: "claim_referred", value: { claim: "CLM-4417" } };
+const step = { claim: "CLM-4417", action: "referred" };
 
-// Anchorer-call sample: the coordinator replaces this once the adapters ship.
 const result = await anchorer.anchor({
-  eventType: "agent.decision",
   // Hashed in this process. These bytes are never sent to Sanning.
-  content: JSON.stringify(decision),
+  content: JSON.stringify(step),
 });
 
 console.log(result.eventId);
@@ -73,13 +73,11 @@ anchorer = Anchorer(
     log_store=FsLogStore("./logstore"),
 )
 
-decision = {"name": "claim_referred", "value": {"claim": "CLM-4417"}}
+step = {"claim": "CLM-4417", "action": "referred"}
 
-# Anchorer-call sample: the coordinator replaces this once the adapters ship.
 result = anchorer.anchor(
-    event_type="agent.decision",
     # Hashed in this process. These bytes are never sent to Sanning.
-    content=json.dumps(decision).encode(),
+    content=json.dumps(step).encode(),
 )
 
 print(result.event_id)
@@ -153,14 +151,204 @@ producing evidence, so it works on the first boot and fails on the second with
 
 ## Event types are a closed set
 
-An event type is one of the 17 `agent.*` names on [Event types](/reference/event-types).
-A name outside the set, such as `claims.decision`, is not a Sanning record type, and a
-verifier reads it as `malformed`. The SDK also refuses to sign a record that breaks the
-schema, at the call rather than on the wire.
+A record has one of the 18 `agent.*` types on [Event types](/reference/event-types), or
+one of seven types outside that vocabulary. Plain `anchor()` builds `event`,
+`checkpoint` or `declaration`, and builds `event` when you name no type.
 
-Use `agent.decision` for a business outcome you state yourself. For a record that
-describes what the agent did, such as a model call or a tool call, use an adapter, which
-writes the right type for each moment. See [What to record](/guides/what-to-record).
+The SDK refuses to sign the following, at the call and before anything is sent:
+
+- An `agent.*` type passed to plain `anchor()`, such as `agent.decision`. The SDK
+  raises `InvalidRecordError` with the reason `event_schema_missing`. An `agent.*` record
+  comes from an adapter or from the agent record builder.
+- A type outside the set, such as `claims.decision`. The SDK raises
+  `InvalidRecordError` with the reason `event_type_not_in_set`. A verifier reads a
+  record of that type as `nonconforming`.
+
+For a record that describes what the agent did, such as a model call or a tool call,
+use an adapter, which writes the right type for each moment. See
+[What to record](/guides/what-to-record).
+
+## Record a decision
+
+Use `agent.decision` when the agent states a business outcome. Build the record with
+the agent record builder and pass it to `anchor` as `buildRecord` (`build_record` in
+Python). The builder checks the record against the `sanning.agent/1` schema. If the
+record breaks the schema, the SDK raises `InvalidRecordError` and signs nothing.
+
+Name the decision for what is decided, and put the result in the value. Use the name
+`credit_verdict` with the value `declined`. Do not use the name `credit_declined`:
+a name that holds one result stops a reader comparing decisions.
+
+<CodeGroup>
+
+```ts TypeScript
+import { randomUUID } from "node:crypto";
+import {
+  agentContent,
+  buildAgentRecord,
+  createAnchorer,
+  decisionContent,
+  FsLogStore,
+  LocalEd25519Signer,
+} from "@sanning/anchor";
+
+const apiKey = process.env.SANNING_API_KEY;
+const seedHex = process.env.SANNING_SIGNING_SEED;
+if (!apiKey || !seedHex) {
+  throw new Error("set SANNING_API_KEY and SANNING_SIGNING_SEED");
+}
+
+const anchorer = createAnchorer({
+  signer: LocalEd25519Signer.fromSeedHex(seedHex),
+  subject: { type: "agent", agent_id: "claims-triage" },
+  apiKey,
+  logStore: new FsLogStore("./logstore"),
+});
+
+const content = agentContent(
+  decisionContent({ name: "claim_route", value: "referred" }),
+);
+
+// A decision outside any run is a run of one record.
+const runId = randomUUID();
+
+const result = await anchorer.anchor({
+  // Hashed in this process. These bytes are never sent to Sanning.
+  content: content.bytes,
+  buildRecord: ({ subject, chainKey, previousHash }) =>
+    buildAgentRecord({
+      type: "agent.decision",
+      subject,
+      ...(chainKey !== undefined ? { chainKey, previousHash } : {}),
+      content,
+      metadata: {
+        run: {
+          run_id: runId,
+          parent_run_id: null,
+          root_run_id: runId,
+          seq: 0,
+          prev_event_id: null,
+        },
+        otel: {
+          scope: {
+            name: "@acme/claims-triage",
+            version: "1.0.0",
+            schema_url: "https://opentelemetry.io/schemas/1.41.0",
+          },
+        },
+        decision: { name: "claim_route" },
+      },
+    }),
+});
+
+console.log(result.eventId);
+await anchorer.close();
+```
+
+```python Python
+import os
+import uuid
+
+from sanning_anchor import (
+    Anchorer,
+    FsLogStore,
+    LocalEd25519Signer,
+    agent_content,
+    build_agent_record,
+    decision_content,
+)
+
+anchorer = Anchorer(
+    signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
+    subject={"type": "agent", "agent_id": "claims-triage"},
+    api_key=os.environ["SANNING_API_KEY"],
+    log_store=FsLogStore("./logstore"),
+)
+
+content = agent_content(decision_content(name="claim_route", value="referred"))
+
+# A decision outside any run is a run of one record.
+run_id = str(uuid.uuid4())
+
+
+def build(subject, chain_key, previous_hash):
+    return build_agent_record(
+        event_type="agent.decision",
+        subject=subject,
+        chain_key=chain_key,
+        previous_hash=previous_hash,
+        content=content,
+        metadata={
+            "run": {
+                "run_id": run_id,
+                "parent_run_id": None,
+                "root_run_id": run_id,
+                "seq": 0,
+                "prev_event_id": None,
+            },
+            "otel": {
+                "scope": {
+                    "name": "acme-claims-triage",
+                    "version": "1.0.0",
+                    "schema_url": "https://opentelemetry.io/schemas/1.41.0",
+                },
+            },
+            "decision": {"name": "claim_route"},
+        },
+    )
+
+
+result = anchorer.anchor(
+    # Hashed in this process. These bytes are never sent to Sanning.
+    content=content.bytes,
+    build_record=build,
+)
+
+print(result.event_id)
+anchorer.close()
+```
+
+</CodeGroup>
+
+Replace `@acme/claims-triage` (`acme-claims-triage` in Python) with the name and
+version of your own package. `otel.scope` names the code that wrote the record. The
+`content.bytes` are the canonical bytes that `event.content_hash` commits to. Keep
+them: a verifier hashes them.
+
+## Every record carries a random salt
+
+The SDK writes a fresh random salt, `context.salt`, into every record it builds. The
+salt stops anyone who holds only the envelope from confirming a guessed short value
+against `payload_hash`. Without it, someone could rebuild the record from a guess, hash
+it, and compare the result.
+
+Sanning does not receive the salt. No builder option sets it. A record you build
+yourself and pass in through `buildRecord` is signed with the salt it carries.
+
+## See which records the SDK refused
+
+A refused record is a hole a verifier would see, so the SDK reports it as well as
+raising. `recordingStatus().refused` (`recording_status().refused` in Python) lists
+each refused record, oldest first. Each entry has the event id, the type, the reason and
+the JSON Pointer to the field at fault. An entry never holds a value from the record.
+
+<CodeGroup>
+
+```ts TypeScript
+for (const refused of anchorer.recordingStatus().refused) {
+  console.log(refused.eventId, refused.eventType, refused.reason, refused.at);
+}
+```
+
+```python Python
+for refused in anchorer.recording_status().refused:
+    print(refused.event_id, refused.event_type, refused.reason, refused.at)
+```
+
+</CodeGroup>
+
+For an `agent.decision` passed to plain `anchor()`, the entry reads
+`agent.decision`, `event_schema_missing`, `/extras/event_schema`.
 
 ## Close the anchorer before the process exits
 

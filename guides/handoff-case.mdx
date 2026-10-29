@@ -14,9 +14,8 @@ of its own records, and a **case reading** drops every party's pack together
 and returns one **case verdict**, with every exception named.
 
 <Note>
-  This page uses `@sanning/anchor` 0.16.0 and `sanning-anchor` 0.16.0 to build
-  packs, and `@sanning/proof` and `sanning-proof` 0.14.0 to read a case. Where
-  a behavior is new at one of those versions, this page says so.
+  This page uses `@sanning/anchor` and `sanning-anchor` 0.20.0 to build packs,
+  and `@sanning/proof` and `sanning-proof` 0.20.0 to read a case.
 </Note>
 
 ## The path
@@ -39,8 +38,6 @@ other record that belongs to the case needs it passed by hand:
 
 ```ts TypeScript
 await anchorer.anchor({
-  // Anchorer-call sample: the coordinator replaces this once the adapters ship.
-  eventType: "agent.step.ended",
   content: JSON.stringify(step),
   caseId: "case-5d1e9a",
 });
@@ -48,14 +45,16 @@ await anchorer.anchor({
 
 ```python Python
 anchorer.anchor(
-    # Anchorer-call sample: the coordinator replaces this once the adapters ship.
-    event_type="agent.step.ended",
     content=json.dumps(step).encode(),
     case_id="case-5d1e9a",
 )
 ```
 
 </CodeGroup>
+
+Plain `anchor()` builds an `event` record, which carries the case id like any other.
+An adapter writes the `agent.*` records of a run and takes the case id when you build
+it, as the next section shows.
 
 `bundle --case` selects records by the case id signed into each one, so a
 record that names no case cannot be placed. When the pack carries a
@@ -73,7 +72,7 @@ guess, and names how many it found.
 ## Close each run
 
 A closing record says how a run ended. It lists the records the run delivered,
-what was observed (`completed`, `failed` or `unknown`), and, separately, what
+what was observed (`completed`, `failed`, `interrupted` or `unknown`), and, separately, what
 your code states. The two are never merged, so a run that ended cleanly inside
 a case that failed says both.
 
@@ -132,50 +131,125 @@ with `closing.outcome.observed` from the run's own end and
 same `caseId` and `close({ outcome, reason })`; it cannot see how a run ended, so
 its observed status is always `unknown`.
 
-Without an adapter, anchor a closing record yourself. `promotedClosing` builds
-the same `closing` field the adapters write:
+Without an adapter, build the closing record yourself with the agent record
+builder, because plain `anchor()` refuses an `agent.*` type. `promotedClosing`
+(`promoted_closing` in Python) builds the same `closing` field the adapters write:
 
 <CodeGroup>
 
 ```ts TypeScript
-import { promotedClosing } from "@sanning/anchor";
+import {
+  agentContent,
+  buildAgentRecord,
+  promotedClosing,
+  runClosedContent,
+} from "@sanning/anchor";
+
+// The run's id, the ids of the records it anchored, in order.
+const runId = "8f0c6a2e-52d4-4b8e-9a1c-3d7e41b60f92";
+const deliveredEventIds = [
+  "3c1d5e7a-90b2-4f46-8a1e-6b2d9c0f4e11",
+  "b7a94c20-1e3f-4d58-a6c9-52f08d3e7b64",
+];
+
+const content = agentContent(runClosedContent());
 
 await anchorer.anchor({
-  // Anchorer-call sample: the coordinator replaces this once the adapters ship.
-  eventType: "agent.run_closed",
-  content: JSON.stringify({ closed: "case-5d1e9a" }),
-  caseId: "case-5d1e9a",
-  metadata: promotedClosing(
-    deliveredEventIds,
-    { status: "unknown" },
-    { stated: { status: "completed" } },
-  ),
+  content: content.bytes,
+  buildRecord: ({ subject, chainKey, previousHash }) =>
+    buildAgentRecord({
+      type: "agent.run_closed",
+      subject,
+      ...(chainKey !== undefined ? { chainKey, previousHash } : {}),
+      caseId: "case-5d1e9a",
+      content,
+      metadata: {
+        run: {
+          run_id: runId,
+          parent_run_id: null,
+          root_run_id: runId,
+          seq: deliveredEventIds.length,
+          prev_event_id: deliveredEventIds.at(-1),
+        },
+        otel: {
+          scope: {
+            name: "@acme/assessor",
+            version: "1.0.0",
+            schema_url: "https://opentelemetry.io/schemas/1.41.0",
+          },
+        },
+        gen_ai: { operation: { name: "invoke_agent" } },
+        ...promotedClosing(
+          deliveredEventIds,
+          { status: "unknown" },
+          { stated: { status: "completed" } },
+        ),
+      },
+    }),
 });
 ```
 
 ```python Python
-from sanning_anchor import promoted_closing
-
-anchorer.anchor(
-    # Anchorer-call sample: the coordinator replaces this once the adapters ship.
-    event_type="agent.run_closed",
-    content=json.dumps({"closed": "case-5d1e9a"}).encode(),
-    case_id="case-5d1e9a",
-    metadata=promoted_closing(
-        delivered_event_ids,
-        {"status": "unknown"},
-        stated={"status": "completed"},
-    ),
+from sanning_anchor import (
+    agent_content,
+    build_agent_record,
+    promoted_closing,
+    run_closed_content,
 )
+
+# The run's id, the ids of the records it anchored, in order.
+run_id = "8f0c6a2e-52d4-4b8e-9a1c-3d7e41b60f92"
+delivered_event_ids = [
+    "3c1d5e7a-90b2-4f46-8a1e-6b2d9c0f4e11",
+    "b7a94c20-1e3f-4d58-a6c9-52f08d3e7b64",
+]
+
+content = agent_content(run_closed_content())
+
+
+def build(subject, chain_key, previous_hash):
+    return build_agent_record(
+        event_type="agent.run_closed",
+        subject=subject,
+        chain_key=chain_key,
+        previous_hash=previous_hash,
+        case_id="case-5d1e9a",
+        content=content,
+        metadata={
+            "run": {
+                "run_id": run_id,
+                "parent_run_id": None,
+                "root_run_id": run_id,
+                "seq": len(delivered_event_ids),
+                "prev_event_id": delivered_event_ids[-1],
+            },
+            "otel": {
+                "scope": {
+                    "name": "acme-assessor",
+                    "version": "1.0.0",
+                    "schema_url": "https://opentelemetry.io/schemas/1.41.0",
+                },
+            },
+            "gen_ai": {"operation": {"name": "invoke_agent"}},
+            **promoted_closing(
+                delivered_event_ids,
+                {"status": "unknown"},
+                stated={"status": "completed"},
+            ),
+        },
+    )
+
+
+anchorer.anchor(content=content.bytes, build_record=build)
 ```
 
 </CodeGroup>
 
-Replace `deliveredEventIds` (`delivered_event_ids`) with the event ids this run
-anchored. Pass `unknown` as the observed status unless something watched the
-run end, and put what your code knows in `stated`. The case rides in `caseId`
-on the `anchor()` call itself, the same option every other record in the case
-uses; a closing record carries no case field of its own.
+Replace `runId` (`run_id`) with the run's id, and `deliveredEventIds`
+(`delivered_event_ids`) with the event ids this run anchored, in order. Pass `unknown`
+as the observed status unless something watched the run end, and put what your code
+knows in `stated`. The case rides in `caseId` (`case_id`) on the builder, the same
+option every other record in the case uses.
 
 No kernel reads a closing record's metadata. A case reading names it as a
 **step record**, as [Read the verdict](#read-the-verdict) shows.
@@ -192,7 +266,7 @@ are:
 export SANNING_API_KEY=API_KEY
 export SANNING_SIGNING_SEED=AGENT_SIGNING_SEED
 npx @sanning/anchor bundle \
-  --agent assessor --from 2026-09-21 --to 2026-09-21 \
+  --agent assessor \
   --case case-5d1e9a \
   --logs ./logstore --out assessor-case-5d1e9a.zip
 ```
@@ -201,7 +275,7 @@ npx @sanning/anchor bundle \
 export SANNING_API_KEY=API_KEY
 export SANNING_SIGNING_SEED=AGENT_SIGNING_SEED
 sanning-anchor bundle \
-  --agent assessor --from 2026-09-21 --to 2026-09-21 \
+  --agent assessor \
   --case case-5d1e9a \
   --logs ./logstore --out assessor-case-5d1e9a.zip
 ```
@@ -213,12 +287,11 @@ Replace the following:
 - `API_KEY` with the organization's API key.
 - `AGENT_SIGNING_SEED` with the seed the `assessor` agent signs its records
   with. `bundle` signs the declaration and the pack with it.
-- `assessor`, the dates and `./logstore` with the agent, the days and the log
-  store root that hold the case.
+- `assessor` and `./logstore` with the agent and the log store root that hold
+  the case.
 
-`--from` and `--to` select on the time Sanning received each record, which can
-sit a moment before the time your code captured. Widen the window rather than
-cut it close.
+A case pack takes no dates. `--case` selects every record of the case, however
+long the case runs, and `bundle` refuses `--from` or `--to` beside it.
 
 Every declared pack signs `sanning.declaration/v2`: each record it holds
 carries a `role`, `handoff` or `step`. A hand-off record's message travels as
@@ -245,7 +318,6 @@ export SANNING_API_KEY=API_KEY
 export SANNING_SIGNING_SEEDS=assessor=SEED_A,reviewer=SEED_B
 npx @sanning/anchor bundle --case case-5d1e9a \
   --agent assessor --agent reviewer \
-  --from 2026-09-21 --to 2026-09-21 \
   --logs ./logstore --out case-5d1e9a.zip
 ```
 
@@ -328,10 +400,11 @@ The following table lists the exit codes every verb of `@sanning/proof` and
 | 3 | `incomplete` or `partial` |
 | 4 | `mixed` |
 | 5 | `verified` over a record signed `environment: "dev"`: sandbox evidence, not production evidence |
+| 6 | `nonconforming` |
 
 ## Read the verdict
 
-A case reading reaches six of the kernel's eight verdict words, and each one
+A case reading reaches seven of the kernel's nine verdict words, and each one
 carries a fixed reliance line, printed with the headline:
 
 | Case verdict | What a reader may rely on |
@@ -341,6 +414,7 @@ carries a fixed reliance line, printed with the headline:
 | `incomplete` | Nothing here was proven wrong, and part of it could not be checked: the other side of a hand-off is not in this drop, bytes were not handed over, or a claim could not be read. |
 | `failed` | A check ran and did not pass. Do not rely on this drop until the named failure is explained. |
 | `malformed` | Not readable. Part of this drop could not be read as evidence, and nothing was proven wrong. |
+| `nonconforming` | Shown as "Does not conform". A record in this drop is signed and unaltered and does not follow the vocabulary it names. Nothing was proven altered. The exceptions name the record and the rule it breaks. |
 | `mixed` | The readings here differ and none of them failed: some are verified and some could not be checked. Read each pack's row and each exception before relying on any of it. |
 
 Under the headline, the **scope sentence** names how many packs and signing

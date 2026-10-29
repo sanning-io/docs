@@ -24,7 +24,9 @@ The fields a type can reveal or hide are listed in
   agent can disclose the value later, and a verifier confirms it against that hash.
 
 A hidden field keeps the hash of its value. Anyone who holds a hidden field's hash and
-guesses a short value, such as a tool name, can confirm the guess. Ids are never hidden.
+guesses a short value, such as a tool name, can confirm the guess. The record's salt does
+not change this: it protects the hash of the whole record in the envelope, not the
+hashes inside the record. Ids are never hidden.
 
 ## Credential scrubbing
 
