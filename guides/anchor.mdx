@@ -114,8 +114,8 @@ call off and drive it yourself.
 ## What leaves your process
 
 The content you pass to `anchor` is hashed where you pass it. Only the signed
-envelope travels, and it carries no hash of the content. Sanning is
-content-blind by construction rather than by policy: it never receives the
+envelope travels, and it carries a salted hash of the record, never the content.
+Sanning is content-blind in Private mode by construction rather than by policy: it never receives the
 bytes, so it cannot disclose them. The full boundary is on the
 [Introduction](/).
 
