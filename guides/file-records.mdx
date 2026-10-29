@@ -15,7 +15,7 @@ follow.
 
 ## What a file record holds
 
-One record per file, of type `langchain.artifact`, linked to the tool step
+One record per file, of type `agent.file`, linked to the tool step
 that produced it. Its promoted metadata is the part a reader can use without
 opening the body:
 
@@ -153,19 +153,18 @@ rather than truncated.
 ## A file the SDK cannot read
 
 A file the tool declared and the SDK could not hash becomes its own record,
-`langchain.artifact_unreadable`, carrying the reason. Silence is how three
+`agent.file` with `outcome.status` set to `failed`, carrying the reason. Silence is how three
 files went unrecorded on a run that reported success.
 
 ```json
-"payload": {
+"artifact": {
   "name": "other.csv",
   "reason": "outside_root",
-  "message": "resolves outside the permitted root",
   "path": "/srv/other/other.csv"
 }
 ```
 
-The reasons are `not_found`, `outside_root`, `not_a_regular_file`,
+`path` is hidable, and Sanning does not receive it. The reasons are `not_found`, `outside_root`, `not_a_regular_file`,
 `too_large`, `read_failed` and `path_reading_disabled`. A trail that says "I
 could not hash this" is evidence. A trail that says nothing is not.
 

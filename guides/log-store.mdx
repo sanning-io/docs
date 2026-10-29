@@ -216,7 +216,7 @@ the same in both languages: an object store inside a log store.
 <CodeGroup>
 
 ```bash TypeScript
-npm install @sanning/anchor-s3 @aws-sdk/client-s3
+npm install @sanning/anchor @aws-sdk/client-s3
 ```
 
 ```bash Python
@@ -229,7 +229,7 @@ pip install "sanning-anchor[s3]"
 
 ```ts TypeScript
 import { createAnchorer, ObjectLogStore } from "@sanning/anchor";
-import { S3ObjectStore } from "@sanning/anchor-s3";
+import { S3ObjectStore } from "@sanning/anchor/s3";
 import { S3Client } from "@aws-sdk/client-s3";
 
 const logStore = new ObjectLogStore(
@@ -245,6 +245,11 @@ log_store = ObjectLogStore(S3ObjectStore(bucket="evidence-claims"))
 ```
 
 </CodeGroup>
+
+The S3 store is in the SDK itself, at `@sanning/anchor/s3` in TypeScript and
+`sanning_anchor.s3` in Python. `@aws-sdk/client-s3` (TypeScript) and `boto3`
+(Python, through the `s3` extra) are optional: the root import never loads
+them. `s3ObjectStore(options)` is a function form of `new S3ObjectStore(options)`.
 
 It is your bucket and Sanning never sees it. The store takes your own client,
 so any credential arrangement works, and an `endpoint` with path-style
@@ -275,7 +280,8 @@ sanning-anchor bundle --agent claims-triage \
   --out claims-triage-2026-06.zip
 ```
 
-Reading a bucket needs `SANNING_S3_ENDPOINT`, `SANNING_S3_ACCESS_KEY_ID` and
+Reading a bucket needs the AWS client installed (`@aws-sdk/client-s3`; in
+Python, the `s3` extra). It also needs `SANNING_S3_ENDPOINT`, `SANNING_S3_ACCESS_KEY_ID` and
 `SANNING_S3_SECRET_ACCESS_KEY` in the environment. There is no flag for them,
 because a credential in argv lands in shell history. A missing one is named
 individually rather than reported as "credentials are missing", so you know
@@ -283,6 +289,11 @@ which to set.
 
 The reader credential is enough: `s3:GetObject` and `s3:ListBucket`, and
 nothing that writes. See [Set up the bucket](/guides/bucket).
+
+To read the same layout from your own code, use `S3LogStoreReader`
+(`from "@sanning/anchor/s3"`, `from sanning_anchor.s3 import S3LogStoreReader`). It
+takes the same options as `S3ObjectStore`, never creates or checks the bucket, and checks that the SHA-256 of each object it reads
+equals the name it read it from.
 
 A local copy still works, so syncing the prefix down first remains a valid
 route when you would rather hand the command a directory.

@@ -104,20 +104,21 @@ Only the hash reaches Sanning. Prompts, outputs and tool input and output are
 hashed in your process, and the bytes go to the log store you configured or
 stay in `eventBytes` for you to drain.
 
-The event vocabulary is exported as `EVENT_TYPES` in both languages:
+Each callback writes one of the `agent.*` types on [Event types](/reference/event-types):
 
-- Chain steps: `langchain.chain_start`, `langchain.chain_end`,
-  `langchain.chain_error`.
-- Model calls: `langchain.chat_model_start`, `langchain.llm_start`,
-  `langchain.llm_end`, `langchain.llm_error`.
-- Tool calls: `langchain.tool_start`, `langchain.tool_end`,
-  `langchain.tool_error`.
-- Retrieval: `langchain.retriever_start`, `langchain.retriever_end`,
-  `langchain.retriever_error`.
-- The agent's own decisions: `langchain.agent_action`,
-  `langchain.agent_finish`.
-- Files: `langchain.artifact`, `langchain.artifact_unreadable`.
-- The run's end: `langchain.run_closed`, the closing record.
+- Chain steps: `agent.step.started`, `agent.step.ended`.
+- Model calls: `agent.model_call.started`, `agent.model_call.ended`.
+- Tool calls: `agent.tool_call.started`, `agent.tool_call.ended`.
+- Retrieval: `agent.retrieval.started`, `agent.retrieval.ended`.
+- Files: `agent.file`, with `outcome.status` set to `failed` and an `artifact.reason`
+  where the file could not be read.
+- A decision: `agent.decision`, from a tool you name (see
+  [Record a decision from a named tool](#record-a-decision-from-a-named-tool)).
+- Errors outside a step: `agent.error`.
+- The run's start and end: `agent.run_opened` and `agent.run_closed`, the closing record.
+
+A step that fails is its `ended` record with `outcome.status` set to `failed`, not a
+separate type.
 
 Each record also carries a closed list of promoted fields in named metadata,
 so a reader can select one run, or one model, without opening the body:
@@ -155,6 +156,72 @@ to omit `run.name` and `gen_ai.tool.name` when a name could reveal more than
 you want a reader of the record to see.
 
 A field that is unknown is absent rather than empty.
+
+## Record a decision from a named tool
+
+The handler cannot tell which tool call states a decision, so you name it. Give the
+handler the tool and the name of the decision. When that tool ends `completed`, the
+handler writes an `agent.decision` record with that name. Its value is what the tool
+returned.
+
+Name the decision for what is decided, and put the result in the value. Use the name
+`credit_verdict` with the value `declined`. Do not use the name `credit_declined`:
+a name that holds one result stops a reader comparing decisions.
+
+<CodeGroup>
+
+```ts TypeScript
+import { tool } from "@langchain/core/tools";
+import { z } from "zod";
+import { anchorCallbacks } from "@sanning/anchor-langchain";
+
+// The tool your agent calls to state its conclusion.
+const recordConclusion = tool(async ({ verdict }) => verdict, {
+  name: "record_conclusion",
+  description: "State the credit verdict for the application.",
+  schema: z.object({ verdict: z.enum(["approved", "declined"]) }),
+});
+
+const evidence = anchorCallbacks(anchorer, {
+  decisions: [{ tool: recordConclusion, name: "credit_verdict" }],
+});
+```
+
+```python Python
+from langchain_core.tools import tool
+from sanning_anchor import AnchorCallbackHandler, DecisionTool
+
+
+@tool
+def record_conclusion(verdict: str) -> str:
+    """State the credit verdict for the application."""
+    return verdict
+
+
+handler = AnchorCallbackHandler(
+    anchorer, decisions=[DecisionTool(record_conclusion, "credit_verdict")]
+)
+```
+
+</CodeGroup>
+
+Pass the tool object. The handler refuses, when you construct it, a tool that does not
+exist, a tool named twice, and a name that is not a label. A call that ends `failed`
+writes no decision.
+
+## A run paused for approval
+
+When a LangGraph node calls `interrupt()`, the run waits for a person. The handler
+records the pause as `interrupted`, not as `completed` or `failed`. A tool that was
+waiting for approval ends `interrupted` in the run that started it.
+
+When the run resumes, LangGraph runs the tool again as a new tool call, with its own
+start and end. The answer to the approval, a refusal included, writes no end for the old call.
+
+A verifier warns `ran_after_refusal` when a tool call ran after its approval refused
+it. In version 1 that warning does not cover a tool call that LangGraph re-runs after a
+resume, because nothing links the new call to the refusal. The records still show both
+calls.
 
 ## The run tree makes a missing step visible
 
@@ -208,6 +275,19 @@ trail an error. Python's `with` block asserts completeness on a clean exit and
 raises `IncompleteTrailError`, and a block that is already unwinding gets its
 gaps logged so the agent's own exception survives.
 
+The handler refuses to build a record whose id is not 1 to 128 characters of letters,
+digits and `_ . : -`, such as a `thread_id` that is an email address. The refusal is a
+hole in the trail, and by default the agent keeps running.
+
+`evidence.recordingStatus()` (`handler.recording_status()` in Python) reports both
+kinds of refusal:
+
+- `refused` lists each record the handler refused, with its record type and the field
+  at fault. It never lists a value.
+- `anchorer` holds the anchorer's own status. Its `refused` list names each record the
+  anchorer refused to sign, with the event id, the type, the reason and the JSON Pointer
+  to the field at fault.
+
 ## Close the anchorer yourself
 
 A handler answers for its own records, and `close()` never closes the
@@ -238,7 +318,7 @@ one handler per run; [Hand over and verify a case](/guides/handoff-case) shows t
 ## Show which policy a step applied
 
 To show which policy file a step read, have the tool that reads it return the
-file as its artifact. The handler then writes a `langchain.artifact` record on
+file as its artifact. The handler then writes an `agent.file` record on
 that tool's step, and the record commits to the file's own bytes. The trail
 shows the policy the step actually read, not one named when you configured the
 handler.

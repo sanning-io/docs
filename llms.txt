@@ -1,0 +1,58 @@
+# Sanning
+
+> Sanning records what AI agents do, so a third party can verify it offline without trusting you or Sanning. Lifecycle: anchor, read, verify. Start with the event types: every record an agent writes has one of 18 `agent.*` names, and Event types is the single place for them.
+
+## Start here
+
+- [Event types](https://docs.sanning.io/reference/event-types.md): The 18 `agent.*` record types, what each commits to, and which fields are hidden or revealed
+- [What to record](https://docs.sanning.io/guides/what-to-record.md): The moment, the event, what is hashed, and what Sanning receives
+- [Skill](https://docs.sanning.io/skill.md): How a coding agent integrates Sanning
+
+## Getting started
+
+- [Introduction](https://docs.sanning.io/index.md): Evidence your auditor can check without us
+- [Quickstart](https://docs.sanning.io/quickstart.md): Anchor a step in the sandbox, hand over a pack, and verify it without Sanning
+
+## Concepts
+
+- [How Sanning works](https://docs.sanning.io/concepts/how-it-works.md): Three verbs, and the boundary that makes the third one meaningful
+- [The trust boundary](https://docs.sanning.io/concepts/trust-boundary.md): Why your counterparty does not have to trust Sanning, or you
+- [The witness](https://docs.sanning.io/concepts/witness.md): Why evidence is sealed on an interval, and what that means for you
+- [Sandbox and live](https://docs.sanning.io/concepts/sandbox-and-live.md): Two modes on one host: what the API key decides, and what changes between them
+- [What a hand-off record does not prove](https://docs.sanning.io/concepts/limits.md): Integrity, not accuracy; attribution, not independence; a record, not a control; ambiguity and unclaimed records; and the wait for independent time
+- [Hide, reveal and scrub fields](https://docs.sanning.io/concepts/hide-and-reveal-fields.md): How to move a field between clear and hash-only, the credential scrub, and content conversions
+- [What a pack proves](https://docs.sanning.io/concepts/what-a-pack-proves.md): What a verified pack of agent records proves, and what it does not
+
+## Guides
+
+- [Anchor from your agent](https://docs.sanning.io/guides/anchor.md): Commit a step your agent takes, in TypeScript or Python
+- [What to record](https://docs.sanning.io/guides/what-to-record.md): The moment, the event, what is hashed, what goes in the pack, and what Sanning receives
+- [Trace a LangChain agent](https://docs.sanning.io/guides/langchain.md): One callback handler anchors every step of a run, in either language
+- [Trace a Vercel AI SDK call](https://docs.sanning.io/guides/vercel.md): One language-model middleware turns every generate and stream into a signed record
+- [Record a file a tool produces](https://docs.sanning.io/guides/file-records.md): Name, size and hash for every file, and the check an auditor runs
+- [Record a hand-off between two agents](https://docs.sanning.io/guides/handoff.md): One call on each side, so a reader can check the second agent recorded exactly what the first sent
+- [Hand over and verify a case](https://docs.sanning.io/guides/handoff-case.md): Close each run, bundle one pack per agent, and read every party's pack as one case
+- [Keep what you anchored](https://docs.sanning.io/guides/log-store.md): The bytes a commitment is over, where they live, and why a pack needs them
+- [Set up the bucket](https://docs.sanning.io/guides/bucket.md): What the SDK creates by default, and the three credentials that touch it
+- [API keys and scopes](https://docs.sanning.io/guides/keys-and-scopes.md): The two things a key can do, and why enrollment is not a step you write
+- [How an agent enrolls](https://docs.sanning.io/guides/enrollment.md): The SDK enrolls a signing key on the first anchor, and an owner or admin recovers one from the console
+- [Go live](https://docs.sanning.io/guides/go-live.md): Switch an agent from the Sandbox to Live, and check the first pack
+- [Test in CI](https://docs.sanning.io/guides/test-in-ci.md): Run the Sandbox from a pipeline with one stored seed, and accept exit code 5
+
+## Verify
+
+- [Verify in a browser](https://docs.sanning.io/verify/browser.md): Drop a pack on the public verifier and read the result
+- [Verify at the command line](https://docs.sanning.io/verify/cli.md): Two commands, no account, and what each exit code means
+- [What a verdict means](https://docs.sanning.io/verify/what-a-verdict-means.md): What a verified pack proves, and the four things it does not
+
+## Reference
+
+- [Event types](https://docs.sanning.io/reference/event-types.md): The 18 agent.* record types, what each one commits to, and which fields are hidden or revealed
+- [Specs and conformance](https://docs.sanning.io/reference/specs-and-conformance.md): The specifications behind the records, and the conformance suite that checks an integration
+- [Glossary](https://docs.sanning.io/reference/glossary.md): One word for each thing on this site
+- [Command line](https://docs.sanning.io/reference/cli.md): The two commands, their flags, and their exit codes
+- [Scopes](https://docs.sanning.io/reference/scopes.md): The two sets a key can carry, and what each one contains
+- [Errors](https://docs.sanning.io/reference/errors.md): What each message means and what to do about it
+- [Rate limits and ceilings](https://docs.sanning.io/reference/rate-limits-and-ceilings.md): The fixed limits of the Sandbox, and how Live limits are set
+- [Wire formats](https://docs.sanning.io/reference/wire-formats.md): Where the normative specifications are, and how to read them
+- [A2A 1.0.0 mapping](https://docs.sanning.io/reference/a2a-mapping.md): Where each part of an A2A 1.0.0 message ends up in a Sanning hand-off record

@@ -1,0 +1,57 @@
+---
+title: "Hide, reveal and scrub fields"
+description: "How to move a field between clear and hash-only, how adapters scrub credentials, and how content is converted before it is hashed"
+---
+
+Each record keeps some fields in clear and commits to others by hash. This page covers
+the controls that change that for one field, the credential scrub, and the conversions
+an adapter applies before it hashes content. For what Sanning receives, see
+[What crosses the boundary](/concepts/how-it-works#what-crosses-the-boundary).
+
+## Hide and reveal a field
+
+Two controls move one field across the line between clear and hash-only. Each is listed
+inside the signed record, so a verifier can tell a withheld field from a missing one.
+The fields a type can reveal or hide are listed in
+[Event types](/reference/event-types#clear-fields-hash-only-fields-and-ids).
+
+- **Reveal** a hash-only field to carry it in clear, for example tool arguments for an
+  auditor. The field appears under its own name and its path is listed in
+  `context.revealed`. Revealing a field changes the record you keep and hand to a
+  verifier. Sanning does not receive it.
+- **Hide** a clear field to withhold it, for example a tool name. The field is absent,
+  and `context.hidden` maps its path to the SHA-256 of the JCS bytes of its value. The
+  agent can disclose the value later, and a verifier confirms it against that hash.
+
+A hidden field keeps the hash of its value. Anyone who holds a hidden field's hash and
+guesses a short value, such as a tool name, can confirm the guess. The record's salt does
+not change this: it protects the hash of the whole record in the envelope, not the
+hashes inside the record. Ids are never hidden.
+
+## Credential scrubbing
+
+An adapter can scrub the content object before it hashes it. The scrub walks the object
+at every depth, and wherever a member's key contains `api_key`, `access_token`,
+`authorization`, `bearer`, `secret`, `password` or `credential` (ASCII letters, any
+case, with `_` or `-` optional in the first two), it replaces that member's whole value
+with the string `"[scrubbed]"`. It matches keys only, never values, and renames nothing.
+
+An adapter that scrubs writes `context.content_scrubbed: true`, whether or not it
+replaced anything, because the hash then commits to the object after the scrub. A
+verifier shows that fact. Hand-off messages and files are never scrubbed.
+
+## Conversions and dates
+
+The content object is what the framework handed the adapter. Where a value has no JSON
+form, the adapter uses the framework's own JSON form of it. Where the framework has
+none, these are the only conversions:
+
+- An error is `{"message", "type"}`, with its class name as `type`.
+- A date and time is an RFC 3339 UTC string with a four-digit year. A date and time with
+  no UTC offset names no instant, and the adapter refuses it by name.
+- A calendar date with no time is `YYYY-MM-DD`.
+- Bytes are a base64 string.
+- A number that is not finite is the string JavaScript prints for it.
+
+Leaving out a member, renaming one or re-serializing the JSON changes the hash, so a
+verifier holding the object can no longer confirm it.

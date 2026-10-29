@@ -23,8 +23,9 @@ Before you begin, you must have:
 2. Open the account menu and select **Switch to sandbox**. A strip across the top
    of the console says you are in the sandbox.
 3. Open **Settings, API keys** and select **Create key**.
-4. Name the key and leave **Verify** unchecked. Every key can already anchor, which
-   covers everything an agent runtime does. See
+4. Name the key and leave **Verify** unchecked. Every key carries the three anchor
+   scopes (`agent:enroll`, `anchor:write` and `anchor:read`), which cover enrolling the
+   agent, anchoring and building a pack. You do not select scopes one at a time. See
    [API keys and scopes](/guides/keys-and-scopes).
 5. Copy the key. The console shows it once.
 
@@ -96,12 +97,18 @@ pip install "sanning-anchor[langchain]"
 ## Anchor a step
 
 The agent signs each step with the seed and hashes the content locally. Sanning
-never receives the seed or the content.
+never receives the seed or the content. A plain `anchor()` call builds an `event`
+record. The records of an agent's work, such as a model call, a tool call or a
+decision, are `agent.*` records, and the SDK refuses to build one through plain
+`anchor()`. An adapter writes them, or you build them with the agent record builder
+in [Anchor from your agent](/guides/anchor#record-a-decision).
 
 <CodeGroup>
 
 ```python Python
+import json
 import os
+
 from sanning_anchor import Anchorer, FsLogStore, LocalEd25519Signer
 
 anchorer = Anchorer(
@@ -114,8 +121,7 @@ anchorer = Anchorer(
 )
 
 result = anchorer.anchor(
-    content=b"the decision your agent just made",
-    event_type="agent.decision",
+    content=json.dumps({"claim": "CLM-4417", "action": "referred"}).encode(),
 )
 print(result.event_id)
 
@@ -145,8 +151,7 @@ const anchorer = createAnchorer({
 });
 
 const result = await anchorer.anchor({
-  content: "the decision your agent just made",
-  eventType: "agent.decision",
+  content: JSON.stringify({ claim: "CLM-4417", action: "referred" }),
 });
 console.log(result.eventId);
 
@@ -158,7 +163,9 @@ await anchorer.close();
 Replace `claims-triage` with a name for this agent. Keep it stable: it is how the agent
 appears on the **Agents** page.
 
-The content is hashed locally. The hash is anchored; the bytes are not sent. The SDK
+The content is hashed locally. Sanning receives a signed envelope, never the bytes. It
+receives ids, times and outcomes, and no hash of the content either. The ids, including
+the case id, reach Sanning in clear. The SDK
 enrolls your signing key with your organization before the first anchor, so the agent
 appears on the **Agents** page without a separate registration step.
 
@@ -191,9 +198,10 @@ guide:
   what it cannot, and you find out when an auditor asks. `raise_on_gaps=True`
   stops the agent on a hole in the trail instead.
 - **The whole step is committed**, prompts, outputs, tool input and output. It
-  is hashed locally and stays with you.
+  is hashed locally and stays with you. For what Sanning receives, see
+  [What to record](/guides/what-to-record).
 
-For the event vocabulary, the promoted fields and worked examples, see
+For the event types, see [Event types](/reference/event-types). For worked examples, see
 [Trace a LangChain agent](/guides/langchain).
 
 ## Wait for the stamp
@@ -312,6 +320,9 @@ the pack with an open-source kernel and no call to Sanning. The stamp was simula
 the pack is a rehearsal and not evidence.
 
 <CardGroup cols={2}>
+  <Card title="What to record" icon="list" href="/guides/what-to-record">
+    Which event records which moment, and what Sanning receives.
+  </Card>
   <Card title="Go live" icon="rocket" href="/guides/go-live">
     Switch to a Live API key and produce evidence that reaches the public record.
   </Card>

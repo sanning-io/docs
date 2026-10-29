@@ -1,0 +1,46 @@
+---
+title: "What a pack proves"
+description: "What a verified pack of agent records proves, and what it does not"
+---
+
+A verified pack proves that the holder of a signing key signed exact records, that the
+records follow the `sanning.agent/1` vocabulary, and that the records were in the set a
+stamp witnessed. It does not prove that what the records say happened. Verification
+runs offline, on the checker's machine, and Sanning is never in the trust path.
+
+## What it proves
+
+A verified `agent.*` record proves four things:
+
+- The holder of the signing key signed exactly these bytes.
+- The record is well formed: its type is one of the [18 event types](/reference/event-types),
+  and every field is one the vocabulary names, in the shape it names.
+- `event.content_hash` commits to one exact byte string, so anyone later handed the
+  content can confirm it is what the agent recorded.
+- On a chain, nobody removed or reordered a record between two links.
+
+## What it does not prove
+
+- **That what the record says happened.** Signed is not true. A record is the agent's
+  own account, written by an adapter inside the agent's process.
+- **That the adapter saw every step.** A step the framework never reported has no
+  record. The adapter's `capture.not_captured` list is the adapter's own word.
+- **That an operation with no end failed.** A start with no end says only that no end
+  record was written.
+- **That a revealed field matches the content.** The two agree only where a verifier
+  holds the content and compares them.
+- **That a hidden field cannot be recovered.** A hidden field keeps the hash of its
+  value, and anyone who guesses a short value can confirm the guess.
+- **That a clear field carries no customer data.** The schema bounds each field's shape
+  and length, never its meaning.
+- **That a scrubbed content hash matches the framework's raw object.** Where
+  `context.content_scrubbed` is `true`, the hash commits to the object after the adapter
+  replaced credential-shaped values.
+- **What Sanning received or stored.** A pack does not show what Sanning
+  received. Ids reach Sanning in clear.
+- **That a closing record lists every record of its invocation.** Completeness is a
+  separate question that the vocabulary does not answer.
+
+For the verdict words and the limits on a whole pack, see
+[What a verdict means](/verify/what-a-verdict-means). For the argument that nobody
+has to trust Sanning, see [The trust boundary](/concepts/trust-boundary).

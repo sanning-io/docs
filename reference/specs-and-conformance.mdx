@@ -1,0 +1,46 @@
+---
+title: "Specs and conformance"
+description: "The specifications behind the records, and the conformance suite that checks an integration"
+---
+
+The agent record format is specified in the open. You can read the text, run the
+reference reader, and check your own integration against the same cases the Sanning SDKs
+pass.
+
+## The specifications
+
+- [`agent-events.md`](https://github.com/sanning-io/specs/blob/main/agent-events.md):
+  the `sanning.agent/1` vocabulary. It defines the 18 types, the fields each carries, and
+  how a verifier reads a record.
+- [Schemas](https://github.com/sanning-io/specs/tree/main/schemas): the JSON Schema for
+  each type.
+- [`sanning-io/specs`](https://github.com/sanning-io/specs): the repository that holds
+  both, with the conformance cases and the reference reader.
+
+The envelope, the evidence bundle and the log store are specified in the documents that
+ship inside the `sanning-proof` package. See [Wire formats](/reference/wire-formats).
+
+## Check an integration with the conformance suite
+
+Every example in the specification is a case in the `conformance/cases/` folder. A case
+directory holds `record.json`, `held.json` where the case needs other records, and
+`expected.json`, which gives the verdict, the reason and the field path a verifier must
+produce. The format is in
+[`conformance/README.md`](https://github.com/sanning-io/specs/blob/main/conformance/README.md).
+
+To check an integration, do the following:
+
+1. Clone `sanning-io/specs`. You need Node.js 22 or later and no account or network.
+2. If you write a verifier, read every case with it and compare the output with
+   `expected.json`.
+3. If you write an SDK or an adapter, sign the record in every case that is valid, refuse
+   every case that is not, and for each case that has a `sent.json`, send the fields in it.
+4. Run `CI=true npm install` and `npm test` to run the reference reader over the suite.
+5. State the commit of `sanning-io/specs` that your implementation passed against.
+
+The suite cannot check what an adapter hashes, whether it scrubs only credentials, or
+whether it counts hand-off parts correctly, because it has no input a framework hands an
+adapter. Test those by reading the content object your adapter hashed against the rules
+in [Hide, reveal and scrub fields](/concepts/hide-and-reveal-fields).
+
+For the types, see [Event types](/reference/event-types).

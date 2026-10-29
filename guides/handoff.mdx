@@ -15,8 +15,8 @@ and needs no framework. When both sides have recorded their hand-offs,
 verdict a third party can reproduce.
 
 <Note>
-  This page uses `@sanning/anchor` and `sanning-anchor` 0.16.0, the current
-  release of each SDK. Where a call is new in 0.15.0, this page says so.
+  This page uses `@sanning/anchor` and `sanning-anchor` 0.20.0. Where a call
+  is new in 0.15.0, this page says so.
 </Note>
 
 ## Before you start
@@ -125,7 +125,7 @@ transport.send(body=sent.wire_bytes, sanning=sent.attachment)
 Replace `RECEIVER_PUBLIC_KEY` with the receiving agent's public key, and
 `transport` with however your agents talk to each other.
 
-`send` signs a `handoff.sent` record in your process, writes it to your own log
+`send` signs an `agent.handoff.sent` record in your process, writes it to your own log
 store, and anchors it. It returns the bytes to send (`wireBytes`) and an
 attachment to send beside them (`attachment`). The attachment is plain JSON
 that holds the signed record, which the receiver checks on arrival.
@@ -181,7 +181,7 @@ Replace `SENDER_PUBLIC_KEY` with the sending agent's public key, in lowercase.
 Either case of a key is the same key.
 
 `receive` verifies the sender's record with the open kernel, in your process,
-with no call to Sanning. Then it records `handoff.received`, committing to the
+with no call to Sanning. Then it records `agent.handoff.received`, committing to the
 message this side holds, and returns that message. `outcome` records what your
 agent did with it: `accepted`, `rejected` or `failed`. It is required: this SDK
 never signs a decision on your behalf, and a missing or invalid value raises
@@ -199,7 +199,7 @@ verifies it, and a forged claim fails there with `HandoffUnverifiedError`.
 
 ## Confirm the hand-off to the sender
 
-The receiver's `handoff.received` record is itself signed, so it can travel
+The receiver's `agent.handoff.received` record is itself signed, so it can travel
 back as the confirmation. Send back the record `receive` wrote, then let the
 sender's own `handoff` helper check it:
 
@@ -269,7 +269,7 @@ Each refusal has its own error, with the same name in both languages:
 | `HandoffOutcomeRequiredError` | `outcome` is missing or is not `accepted`, `rejected` or `failed` | No |
 | `HandoffUnexpectedSenderError` | `expectedSender` was passed and the record's signed key is a different one | No |
 | `HandoffUnverifiedError` | The sender's record does not verify: its signature, its version, or its binding to its own bytes | No |
-| `HandoffAlteredError` | The record verifies, and the message that arrived is not the message it commits to | Yes: a `handoff.received` with `outcome: "rejected"`, written before the error is thrown |
+| `HandoffAlteredError` | The record verifies, and the message that arrived is not the message it commits to | Yes: an `agent.handoff.received` with `outcome: "rejected"`, written before the error is thrown |
 | `HandoffMisroutedError` | The record is addressed to a different key than this receiver's, or names a different case or record type | No |
 | `HandoffMalformedRecordError` | The sender's record breaks the rules for its own fields | No |
 | `HandoffReplayError` | This helper already received the same sender's message with the same sequence number | No |
