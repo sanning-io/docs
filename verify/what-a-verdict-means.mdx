@@ -46,14 +46,8 @@ kernel cannot check it, for example a record written in a newer vocabulary versi
 The kernel turns the six claims into one verdict by one rule, at every level: a
 record, a hand-off, a pack, a case.
 
-```mermaid
-flowchart TD
-  A["Check the six claims"] --> B{"Any claim disproven?"}
-  B -- "Yes" --> F["Failed"]
-  B -- "No" --> C{"Any claim not proven?"}
-  C -- "Yes" --> I["Incomplete"]
-  C -- "No" --> V["Verified"]
-```
+<img src="/images/diagrams/claims-to-verdict.svg" alt="Six claims, read by one rule, give one of three verdicts. Any claim disproven gives Failed, exit 1. Otherwise any claim not proven gives Incomplete, exit 2. Otherwise Verified, exit 0. Sandbox evidence that verifies exits 3, and is a label, not a verdict." className="block dark:hidden" />
+<img src="/images/diagrams/claims-to-verdict-dark.svg" alt="Six claims, read by one rule, give one of three verdicts. Any claim disproven gives Failed, exit 1. Otherwise any claim not proven gives Incomplete, exit 2. Otherwise Verified, exit 0. Sandbox evidence that verifies exits 3, and is a label, not a verdict." className="hidden dark:block" />
 
 There are three verdicts and no others:
 
