@@ -64,20 +64,39 @@ request, and the signed evidence is untouched.
 
 ### What Sanning can still learn
 
-Private hides content, names and values. It does not hide the shape of a run. Sanning
-can learn the following:
+Private limits the fields Sanning receives. It does not hide how records connect. Sanning
+receives the following fields that link records, and so does anyone who breaches Sanning's
+envelope store or compels Sanning to hand it over:
 
-- **When records were signed.** Every envelope carries `signed_at`. The gap between a
-  model call's start record and its end record roughly shows how long the model took.
-- **How each operation ended.** Sanning receives `outcome.status` and the links between
-  records. It can tell a tool call that was refused from one that ran. A tool call that
-  was refused ends `skipped`, and one that ran ends `completed` or `failed`. After a
-  resume, Sanning cannot tell from the answer which way it went, because no end record is
-  written for the old call.
-- **Which key handed off to which.** The sender's envelope carries its key. Where both
-  sides of a hand-off anchor with Sanning, Sanning can tell which key sent a message to
-  which. Sanning knows which customer owns each key, so this can show that two customers
-  do business.
+- **Ids that point at other records.** These are the `run.*` ids, `approval.subject_event_id`,
+  `handoff.sent_event_id`, `artifact.tool_call_event_id` and `closing.record_ids`.
+- **The case id.** `context.case_id` is the same on every record of one case.
+- **The conversation id.** `gen_ai.conversation.id` is the same on every invocation of one
+  conversation, a resume included.
+- **Record types and outcomes.** Sanning sees what each record is and how each operation
+  ended (`outcome.status`).
+- **Signing time and key.** Every envelope carries `signed_at` and the key that signed it.
+
+From these fields, Sanning can infer at most the following:
+
+- **Which records belong together.** Records that share a `run.root_run_id`, a conversation
+  id or a case id belong to one invocation, one conversation or one case.
+- **Who handed off to whom.** Where both sides of a hand-off anchor with Sanning, Sanning
+  can tell which key sent a message to which. It reads this from `handoff.sent_event_id`, or
+  from a case id that both sides write. Private withholds `event.counterparty_public_key`,
+  but that does not stop this inference. Sanning knows which customer owns each key, so this
+  can show that two customers do business.
+- **Whether more records followed an approval's answer.** Sanning sees whether more records
+  follow the answer and how each ended. For some agent designs, this shows that the action
+  under review was refused. For other designs, the records look the same whichever way the
+  answer went. It is never the verdict itself.
+- **How long an operation took.** Where an operation's start and end records both reach
+  Sanning, the gap between their `signed_at` values approximates the duration. For a model
+  call, it also roughly shows how much the model wrote.
+
+Sanning cannot read an approval's verdict (`approval.verdict`), any content, or any name or
+value. It cannot tell what an agent read or wrote, or which tool or model it used, unless
+an id spells it out.
 
 Two envelope fields are set by the caller and reach Sanning in every case:
 

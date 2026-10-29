@@ -43,8 +43,11 @@ id and the agent id. It also receives the event type and the outcome words, whic
 from a closed list. Sanning never receives content, content hashes, names or model
 details.
 
-Hiding content does not hide the shape of a run. Sanning can still tell when records
-were signed, how each operation ended, and which key handed off to which. See
+Hiding content does not hide how records connect. From the ids, the record types, the
+outcomes and the signing times, Sanning can infer which records belong together, who handed
+off to whom where both sides use Sanning, whether more records followed an approval's
+answer, and how long an operation took. It cannot read the verdict, the content, the names
+or the values. See
 [What Sanning can still learn](/guides/what-to-record#what-sanning-can-still-learn).
 
 An id is 1 to 128 characters of `A-Z a-z 0-9 _ . : -`. Ids are never hashed, so treat

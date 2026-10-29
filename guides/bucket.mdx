@@ -15,10 +15,16 @@ resolves it, see [Keep what you anchored](/guides/log-store).
 Before it writes a byte, the store checks the bucket once. There are two
 acceptable outcomes and a third the check exists to prevent.
 
+The S3 store is part of the SDK, behind its own entry point. In TypeScript, install
+the AWS client beside `@sanning/anchor`: `npm install @aws-sdk/client-s3`. In
+Python, install the extra: `pip install "sanning-anchor[s3]"`. The root
+`@sanning/anchor` import never loads the AWS client, so you pay for it only when
+you import `@sanning/anchor/s3`.
+
 <CodeGroup>
 
 ```ts TypeScript
-import { S3ObjectStore } from "@sanning/anchor-s3";
+import { S3ObjectStore } from "@sanning/anchor/s3";
 
 const objects = new S3ObjectStore({
   bucket: "evidence-claims",
