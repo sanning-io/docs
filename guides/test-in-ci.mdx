@@ -44,23 +44,36 @@ signed as Live, and exit 1 or 2 means a check failed or could not finish. All th
 
 ## Wait for the stamp
 
-A Sandbox stamp seals within about a minute. Until it does, `bundle` exits 3 with
-`no stamped records`. Retry for a few minutes before you fail the job:
+A Sandbox stamp seals within about a minute. Until it does, the pack reads
+Incomplete, and `bundle` exits 2. Once the stamp has sealed, `bundle` exits 3 for a
+Sandbox pack, the code `verify` gives it. Retry on 2 for a few minutes before you fail
+the job:
 
 ```bash
 for attempt in $(seq 1 12); do
-  if sanning-anchor bundle \
+  set +e
+  sanning-anchor bundle \
     --agent claims-triage \
     --from "$(date -u +%F)" \
     --to "$(date -u +%F)" \
     --logs ./logstore \
-    --out pack.zip; then
+    --out pack.zip
+  code=$?
+  set -e
+  if [ "$code" -ne 2 ]; then
     break
   fi
   sleep 15
 done
-test -f pack.zip
+
+if [ "$code" -ne 3 ]; then
+  echo "expected exit code 3 (Sandbox pack), got $code"
+  exit 1
+fi
 ```
+
+`bundle` exits with the code `verify` would give the pack it wrote, and it writes
+nothing when that pack would read Failed. See [Command line](/reference/cli#bundle).
 
 The window names today in UTC. A job that runs across midnight UTC can miss records
 anchored before it, so anchor and bundle in one job.

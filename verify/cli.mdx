@@ -79,7 +79,7 @@ This command reads one pack. To read several parties' packs as one case, see
   attempted and then named as skipped (`unreadable`); the report names each in a
   `skipped` list with the reason. A folder
   nested more than 32 levels deep, holding more than 50,000 names, or holding a name
-  that is not valid UTF-8 exits 2. Files found inside folders share 1 GiB per run, and
+  that is not valid UTF-8 exits 4. Files found inside folders share 1 GiB per run, and
   one that would pass it is skipped as `too_large`. A file you name is read at any size.
   You can mix files and folders, and the verdict and exit code never move.
 </Note>
@@ -119,18 +119,22 @@ gateway can look it up. A failure is still 1, and an incomplete pack is still 2.
 
 Both exit 4, before any check runs.
 
-**You pointed it at the zip.** The kernel reads JSON, not an archive:
+**You pointed it at the zip.** The kernel reads JSON, not an archive. `npx @sanning/proof`
+prints the parser's message, and `sanning-proof` prints Python's:
 
 ```
-pack.zip is not valid JSON: Unexpected token 'P', "PK  "... is not valid JSON
+pack.zip is not valid JSON: Unexpected token 'P', "PK\x03\x04\x14\x00\x00\x00\x00\x00"... is not valid JSON
+pack.zip is not valid JSON: Expecting value: line 1 column 1 (char 0)
 ```
 
 Extract the zip and point at `bundle.json` inside it.
 
-**You pointed it at the directory.**
+**You pointed it at the directory.** The two commands again word the reason in their
+own runtime's terms:
 
 ```
 cannot read pack/: EISDIR: illegal operation on a directory, read
+cannot read pack/: [Errno 21] Is a directory: 'pack'
 ```
 
 Name `bundle.json`, not the folder that holds it. Only `--logs` and `--files` take a
@@ -223,6 +227,13 @@ content = {p.stem: p.read_bytes() for p in pathlib.Path("logs").glob("*.json")}
 result = verify_evidence_bundle(bundle, content=content)
 print(result.status)
 ```
+
+`result.status` is the status of the signed bundle alone. It reads `verified` when the
+signature, the inclusion proofs and the disclosed bytes hold, even for a pack the
+command line reads `incomplete`, such as one whose closing record lists records the
+pack does not hold. The pack verdict is the one `read_case` (`readCase` in
+TypeScript) returns for the pack as a case of one: see
+[What a verdict means](/verify/what-a-verdict-means#a-verdict-over-a-case).
 
 Two kernels, one corpus. They agree record by record, and disagreeing is a bug we treat as
 release-blocking.

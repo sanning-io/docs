@@ -163,7 +163,7 @@ The flags mean the same in both languages:
 **`--logs` is optional in the flag grammar and required in practice.** The
 verb needs your record objects to work out which events are this agent's:
 `subject.agent_id` lives in the record, and a minimum-disclosure envelope
-does not carry it. Without the store the command exits `2` and says so.
+does not carry it. Without the store the command exits `4`, could not run, and says so.
 
 The verb verifies the whole pack, bundle and disclosed logs, before it writes
 anything, so a pack that would fail at the auditor is never produced.
@@ -182,10 +182,10 @@ bundle: no stamped records for agent "claims-triage" in 2026-06-01 → 2026-06-3
 how many records in the window are anchored and waiting for a stamp. Those
 records exist, they are signed, and they are retained. Read the second line
 before treating the first as a failure. Both languages print that pair, and
-the command exits `3`: run it again after the interval seals.
+the command exits `2`: run it again after the interval seals.
 When nothing in the window matches at all, it exits `1`.
 
-The partial case exits `3` too, and for a different reason:
+The partial case exits `2` too, and for a different reason:
 
 ```
 bundle: 2 record(s) in 2026-06-01 → 2026-06-30 are anchored and retained but

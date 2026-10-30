@@ -78,9 +78,19 @@ building an empty or mismatched pack.
 **`bundle` refuses a window that mixes Sandbox and Live evidence** for one agent, because
 a pack carries one mode.
 
-**It verifies its own output before writing.** If the assembled pack does not verify,
-nothing is written and the command exits non-zero. A pack that only fails at the auditor
-is a pack shipped broken.
+**It reads its own output the way `verify` does, before writing.** If the assembled
+pack would read Failed, nothing is written and the command exits 1. A pack that only
+fails at the auditor is a pack shipped broken.
+
+**`bundle` exits with the code `verify` would give the pack it wrote:**
+
+| Exit | Means |
+|---|---|
+| 0 | The pack was written and reads Verified |
+| 1 | Nothing was written: the pack would read Failed |
+| 2 | The pack was written and reads Incomplete, for example because a stamp is not settled yet. Run `bundle` again later to replace it |
+| 3 | The pack was written and reads Verified with Sandbox evidence |
+| 4 | The command could not run: a bad flag, a missing file or an input it cannot read |
 
 **From 0.16.0, `bundle` writes `witness-cache.json` beside `bundle.json`** when a stamp's
 witness is already in a block. It records a witnessed time your side already looked up, so
@@ -98,7 +108,7 @@ log, a record id, or a file name, and Sanning never receives the pack itself.
 Every run of `bundle` builds a new `bundle.json` with its own build time, so every run is
 reported, even one covering a period you have already handed over.
 
-If the report fails, `bundle` prints one line naming the pack's digest and still exits 0:
+If the report fails, `bundle` prints one line naming the pack's digest and still exits with the pack's code:
 the pack was assembled and verified before the report was attempted, so a reporting
 failure does not undo it. The credential needs `anchor:read`, the scope it already holds
 to read your records back.
@@ -149,12 +159,14 @@ Witness: <the witness line>
 
 The title is one of **Verified**, **Failed: do not rely on this evidence.**, **Failed: a
 record does not follow the rules.** or **Incomplete: not everything could be checked.**
-For example, a pack whose closing record lists records that are not in the pack prints:
+For example, a pack whose closing record lists records that are not in the pack prints
+this person layer, then a blank line and the per-record detail:
 
 ```
 Incomplete: not everything could be checked.
-Complete: not proven for 1 record. The run's closing record lists 2 records that are not in the pack.
+Complete: not proven for 2 records. The run's closing record lists 2 records that are not in the pack.
 Next: Ask the sender for the run's other records.
+Note: this pack does not say what it holds, so whether it is complete is unknown.
 Witness: Not checked: no lookup was run
 ```
 
@@ -165,10 +177,29 @@ alone:
 
 | Member | Holds |
 |---|---|
-| `verdict` | `status` (`verified`, `failed` or `incomplete`), and `reason_kind` (`changed` or `nonconforming`) on `failed` only |
-| `claims` | One entry for each claim in scope: `claim`, `state` (`proven`, `disproven` or `not_proven`), `reason` (`missing`, `unreadable` or `not_checked`) on `not_proven`, and `items`, the records the claim is about |
-| `person` | `title`, `lines`, `next`, `notes`, `sandbox` (the line, or `null`) and `witness` |
+| `verdict` | An object, `{status, reason_kind}`: `status` is `verified`, `failed` or `incomplete`, and `reason_kind` (`changed` or `nonconforming`) is present on `failed` only |
+| `claims` | One entry for each of the six claims: `claim`, `label` (the name a person reads), `question` (what the claim asks), `state` (`proven`, `disproven`, `not_proven` or `not_in_scope`), `reason` on `not_proven` (`missing`, `unreadable` or `not_checked`) and on `not_in_scope` (why nothing is about the claim), `items`, the records the claim is about, and `problems`, what moved the claim |
+| `person` | The words the text report prints, as data. See the following table |
 | `exit_code` | The exit code from the table |
+
+Each entry in `items` names a record by `event_id`, with `pack` (the pack's position),
+`pack_ref` and `record` (the record's position in its pack) where they apply.
+
+The `person` member carries both the sentences and their parts, so a script can lay
+out the report without parsing a sentence:
+
+| Member | Holds |
+|---|---|
+| `title` | The headline, for example `Incomplete: not everything could be checked.` |
+| `title_parts` | `word` (`Verified`, `Failed` or `Incomplete`) and `sentence`, the rest of the headline, or `null` |
+| `lines` | One sentence for each claim that is disproven or not proven |
+| `line_parts` | One entry for each line: `claim`, `state`, `reason`, `count`, `noun`, `scope` (for example `2 records`), `why` and `text`, the whole sentence |
+| `next` | The one next action, or `null` |
+| `notes`, `note_parts` | The notes, and for each note its `kind` and `text` |
+| `sandbox` | The Sandbox sentence without its `Sandbox:` label, or `null` |
+| `witness`, `witness_state` | The witness sentence without its `Witness:` label, and its state: `confirmed`, `not_checked` or `differs` |
+
+`case --json` carries the same `verdict`, `claims`, `person` and `exit_code` members.
 
 A pack whose declaration says a record's content is withheld on purpose reads
 `verified`; a pack with no declaration and an undisclosed record reads

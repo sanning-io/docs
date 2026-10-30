@@ -27,14 +27,15 @@ account.
 ## Six claims, three verdicts
 
 The kernel checks six claims. Each claim is `proven`, `disproven` or `not_proven`. A
-claim with nothing to check, such as `agreed` in a pack with no hand-off, is not in
-scope and the kernel does not print it.
+claim with nothing to check, such as `agreed` in a pack with no hand-off, is
+`not_in_scope`: the text report does not print it, and `--json` carries it with the
+reason nothing was about it.
 
 | Claim | The kernel asks |
 |---|---|
-| `signed` | Did the key that the pack or record names sign it? |
+| `signed` | Did the key the pack or record names sign it? |
 | `unchanged` | Do the bytes agree with what was signed? |
-| `witnessed` | Does a stamp cover each record, and does the stamp verify? |
+| `witnessed` | Does a stamp cover each record? |
 | `complete` | Does the pack hold everything its own signed declaration and its stamp say it holds? |
 | `agreed` | Do the two sides of each hand-off agree? |
 | `follows_rules` | Does each record follow the vocabulary it names? |
@@ -42,6 +43,9 @@ scope and the kernel does not print it.
 A `not_proven` claim has one reason: `missing` (something is not in the pack),
 `unreadable` (it is there and the kernel cannot read it) or `not_checked` (this
 kernel cannot check it, for example a record written in a newer vocabulary version).
+
+One rule governs every reading: a claim that cannot be checked is not proven on that
+claim alone, and every other check still runs. A claim that is disproven wins.
 
 The kernel turns the six claims into one verdict by one rule, at every level: a
 record, a hand-off, a pack, a case.
@@ -172,9 +176,10 @@ agent's claim about their own evidence. You are reading your own machine's answe
 bytes for a record, `unchanged` is `not_proven` for that record and the pack reads
 `incomplete`, unless the pack's own signed declaration says the agent withheld them on
 purpose. That is an agent exercising minimum disclosure, not a defect, and treating it
-as tampering would be wrong. Input the kernel cannot read, such as a `bundle.json` that
-does not parse, is `not_proven` with the reason `unreadable`. It reads `incomplete`,
-never `failed`.
+as tampering would be wrong. Input the kernel cannot read, such as a record whose
+signing key is not a readable key, is `not_proven` with the reason `unreadable`. It
+reads `incomplete`, never `failed`. A `bundle.json` that is not JSON at all is
+different: `verify` cannot run and exits 4.
 
 Findings and notes never move a verdict. The kernel prints a finding as a line that
 starts "Note:".
@@ -194,7 +199,11 @@ Witness: <the witness line>
 ```
 
 The kernel prints only the lines that apply. The `--json` output carries the same words
-in `person`. See [Command line](/reference/cli#verify) for the members.
+in `person`, laid out so a script does not parse a sentence: `title_parts` (the verdict
+word and its sentence), `line_parts` (for each line, the claim, state, reason, count,
+what it is about and why), `note_parts` (each note's kind and text) and `witness_state`
+(`confirmed`, `not_checked` or `differs`). See [Command line](/reference/cli#json-output)
+for the members.
 
 ## A verdict over a case
 
@@ -245,7 +254,10 @@ line** that says whether any witness was looked up on the public record,
 independently of the headline.
 
 To read a case from your own code, pass the packs to `readCase` (`read_case`
-in Python). The `case` command does the same from a terminal, as
+in Python). The reading's `verdict` is the string `verified`, `failed` or
+`incomplete`; on `failed`, `reasonKind` (`reason_kind` in Python) sits beside it
+and holds `changed` or `nonconforming`. In `case --json`, `verdict` is an object,
+`{status, reason_kind}`. The `case` command does the same from a terminal, as
 [Hand over and verify a case](/guides/handoff-case#read-the-case-at-the-command-line)
 shows.
 
@@ -356,13 +368,17 @@ verified
 2 pack(s), 2 signing key(s), 4 hand-off record(s), 0 exception(s), read offline.
 ```
 
-Over a case whose two sides disagree, the output includes the verdict word and one
-line for each side of the hand-off that failed:
+Over a case whose two sides disagree, the output is the verdict word, the scope
+sentence and one line for each exception. Here both packs also grade `incomplete`
+because neither one discloses its records:
 
 ```
 failed
-assessor-pack/a634bed2-0495-461b-ac51-b092f09fbb72 failed on message_hash
-reviewer-pack/93d88dca-4dbb-4ec3-997f-5299135efdc6 failed on message_hash
+2 pack(s), 2 signing key(s), 2 hand-off record(s), 4 exception(s), read offline.
+org-a-pack grades incomplete as a pack (no_disclosure)
+org-b-pack grades incomplete as a pack (no_disclosure)
+org-a-pack/4643f383-94f4-4326-aad4-6b1864f62e83 failed on message_hash
+org-b-pack/b3eefa7e-88ab-4294-a8cd-3dd59246cc79 failed on message_hash
 ```
 
 A case verdict carries the same limits as a pack verdict, and more:

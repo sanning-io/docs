@@ -78,7 +78,7 @@ anchorer.close()
 
 ## Build a pack and verify it
 
-A record can go into a pack once its stamp has sealed. In the sandbox that takes about a minute. Until then, `bundle` exits 3 and says the records are not yet stamped: wait and run it again.
+A record can go into a pack once its stamp has sealed. In the sandbox that takes about a minute. Until then, `bundle` exits 2, because the pack reads incomplete: wait and run it again. `bundle` exits with the code `verify` would give the pack it wrote (0 verified, 2 incomplete, 3 verified with sandbox evidence), exits 1 and writes nothing when the pack would read failed, and exits 4 when it could not run.
 
 ```bash
 npx @sanning/anchor bundle --agent claims-triage --from 2026-10-27 --to 2026-10-27 --logs ./logstore --out pack.zip
