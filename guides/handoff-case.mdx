@@ -355,14 +355,14 @@ npx @sanning/proof verify bundle.json
 
 Add `--logs logs/` when the pack has a `logs/` directory. A pack of hand-off
 records has none, and pointing `--logs` at a directory that does not exist is
-an input error that exits 2.
+an input error that exits 4.
 
 None of a hand-off record's content is disclosed, so its content binding is
-undetermined rather than proven. A pack built with `SANNING_SIGNING_SEED`, as
+not proven. A pack built with `SANNING_SIGNING_SEED`, as
 above, says so in its own declaration, and reads `verified` (exit 0) even
 though nothing in it discloses content. A pack built with no signing seed
 carries no declaration to say the absence was on purpose, and the same pack
-then reads `incomplete` (exit 3) instead. Either way the signatures and the
+then reads `incomplete` (exit 2) instead. Either way the signatures and the
 inclusion proofs still pass, and the output says so on its own lines.
 
 A single-pack check does not pair anything. To read the case, pass every pack,
@@ -374,13 +374,12 @@ npx @sanning/proof case case-5d1e9a.zip          # a case file, read directly
 ```
 
 `case` reads a folder holding one pack, a folder holding several packs, or a
-case file named `<name>.zip`, unzipped as it reads it. It does not open a
-`.zip` that is not a case file: given one, it exits 2 and asks you to unzip it
-first and pass the folder. Pass `--json` for the full reading as data (from 0.17.0, packs are named by
+case file named `<name>.zip`, unzipped as it reads it. A `.zip` that cannot
+be read as an archive exits 4. Pass `--json` for the full reading as data (from 0.17.0, packs are named by
 `index`, exceptions by `pack_index` and `record_index`, and `records` lists every
 record with a `status`; see [What a verdict means](/verify/what-a-verdict-means)), and
 `--gateways <url,url>` to also look up each pack's witnesses on the public
-record; the lookup is reported on its own line and never moves the verdict.
+record; the lookup is reported on its own line, and moves the verdict only when it finds other bytes.
 
 **From 0.17.0, `case` also matches the files outside every pack, with no
 flag.** Run `npx @sanning/proof case audit-file.zip` and the command hashes each
@@ -392,62 +391,75 @@ are never compared. See [Command line](/reference/cli#case) for the size limits.
 The following table lists the exit codes every verb of `@sanning/proof` and
 `sanning-proof` uses, `verify`, `export` and `case` alike:
 
-| Exit | Means |
-|---|---|
-| 0 | `verified`, or the export was written |
-| 1 | `failed` |
-| 2 | `malformed`, or an input that cannot be read as a case |
-| 3 | `incomplete` or `partial` |
-| 4 | `mixed` |
-| 5 | `verified` over a record signed `environment: "dev"`: sandbox evidence, not production evidence |
-| 6 | `nonconforming` |
+| Exit | Name | Means |
+|---|---|---|
+| 0 | verified | `verified`, or the export was written |
+| 1 | failed | `failed`, for either reason kind |
+| 2 | incomplete | `incomplete` |
+| 3 | sandbox | `verified` over a record signed `environment: "dev"`: sandbox evidence, not production evidence |
+| 4 | could not run | A bad flag, a missing file, or an input that cannot be read as a pack or a case at all |
 
 ## Read the verdict
 
-A case reading reaches seven of the kernel's nine verdict words, and each one
-carries a fixed reliance line, printed with the headline:
+A case reading has one of three verdicts, and each one carries a fixed reliance line,
+printed with the headline. A case reads its worst pack: `failed`, then `incomplete`,
+then `verified`.
 
 | Case verdict | What a reader may rely on |
 |---|---|
-| `verified` | Every pack in this drop is genuine and unaltered and agrees with its own signed declaration. Every hand-off with both sides here is intact. Every other record is one its holder signed as a step. Nothing here could not be checked. This was read offline, on this device. It does not say these packs are everything the parties recorded. |
-| `partial` | Nothing here was proven wrong, and a check could not be completed: a pack names no witness, or a pack in a hand-off reading does not say what it holds. |
-| `incomplete` | Nothing here was proven wrong, and part of it could not be checked: the other side of a hand-off is not in this drop, bytes were not handed over, or a claim could not be read. |
-| `failed` | A check ran and did not pass. Do not rely on this drop until the named failure is explained. |
-| `malformed` | Not readable. Part of this drop could not be read as evidence, and nothing was proven wrong. |
-| `nonconforming` | Shown as "Does not conform". A record in this drop is signed and unaltered and does not follow the vocabulary it names. Nothing was proven altered. The exceptions name the record and the rule it breaks. |
-| `mixed` | The readings here differ and none of them failed: some are verified and some could not be checked. Read each pack's row and each exception before relying on any of it. |
+| `verified` | Every pack in this drop is genuine, unaltered, and matches its own signed declaration. Every hand-off with both sides in this drop is intact (said only where the drop holds a hand-off). Every record in it was signed by its holder's key. This was read offline, on this device. It does not say this drop holds everything that was recorded. |
+| `incomplete` | Nothing here was proven wrong, and part of it could not be checked: the other side of a hand-off is not in this drop, bytes were not handed over or could not be read, a pack names no witness, or a claim could not be read. Do not rely on the parts that are not proven. Each exception says what is missing and, where a key is known, whose pack would supply it. |
+| `failed` | A check ran and did not pass. Do not rely on this drop until the named failure is explained. The failure is named on the pack or record it is about, and every other exception is listed beside it. |
+| `failed`, only `follows_rules` disproven | A record in this drop is signed and unaltered and does not follow the vocabulary it names: its producer wrote something the specification does not allow. Nothing was proven altered. The exceptions name the record and the rule it breaks. |
 
-Under the headline, the **scope sentence** names how many packs and signing
-keys are in the reading, how many hand-off records, how many exceptions, and
-that the reading was made offline, plus how many records' content is withheld
-by their holder and how many packs do not say what they hold, when either is
-true:
+When the drop holds records signed `environment: "dev"`, each line gains a second
+sentence saying they are sandbox records and not production evidence.
+
+After the person layer (the headline, a line for each claim that is not proven, the
+next action, the notes, and the witness line), the **scope sentence** names how many
+packs and signing keys are in the reading, how many hand-off records, how many
+exceptions, and that the reading was made offline. When records are withheld by their
+holder, the same line adds how many:
 
 ```
-2 pack(s), 2 signing key(s), 6 hand-off record(s), 0 exception(s), read offline.
-6 record(s)' content withheld by their holder: their signatures and commitments were checked, their content was not.
+1 pack(s), 1 signing key(s), 1 hand-off record(s), 2 exception(s), read offline. 1 record(s)' content withheld by their holder: their signatures and commitments were checked, their content was not.
 ```
+
+That reading is `incomplete` because the other side of the hand-off is not in the
+drop, not because of the withheld record.
 
 Withheld content, and a full pack that includes step records, are not
 exceptions: a case with either still reads `verified`, and the sentence says
 so alongside it, never instead of it.
 
-Below the scope sentence, the **witness line** says how far a record travelled
-on the public record, independent of the headline: `confirmed`, `not_checked`
-(no lookup ran, or one did not settle), or `differs`. It never moves the
-headline. `--gateways` is what makes the lookup run; without it the line
+The **witness line**, the last line of the person layer, says how far a record
+travelled on the public record, independent of the headline: `confirmed`, `not_checked`
+(no lookup ran, or one did not settle), or `differs`. It moves the headline
+only when a lookup finds other bytes: that disproves `witnessed`, and the case reads
+`failed`. `--gateways` is what makes the lookup run; without it the line
 always reads `not_checked`.
 
 **A one-sided hand-off, or several messages in one direction, is a named
 exception, never a failure by itself.** An honest exchange of several messages
 in one direction, or a message that is fanning out to more than one receiver,
 reads `verified` once every candidate is accounted for; only a genuine mismatch
-reads `failed`, naming the record on each side:
+reads `failed`, naming the record on each side. These are the first lines of
+the output for one such case, as `case` prints them; the reliance line and a table of the
+packs follow:
 
 ```
-failed
-assessor-pack/a634bed2-0495-461b-ac51-b092f09fbb72 FAILED on message_hash
-reviewer-pack/93d88dca-4dbb-4ec3-997f-5299135efdc6 FAILED on message_hash
+Failed: do not rely on this evidence.
+Agreed: disproven for 2 records. The two sides of a hand-off signed different messages.
+Unchanged: not proven for 2 records. No event bytes are in the pack.
+Next: Do not rely on this hand-off. Ask both sides which message was sent.
+Sandbox: these records are sandbox records, not production evidence.
+Witness: Not checked: no lookup was run
+
+2 pack(s), 2 signing key(s), 2 hand-off record(s), 4 exception(s), read offline.
+  - org-a-pack grades incomplete as a pack (no_disclosure)
+  - org-b-pack grades incomplete as a pack (no_disclosure)
+  - org-a-pack/4643f383-94f4-4326-aad4-6b1864f62e83 failed on message_hash
+  - org-b-pack/b3eefa7e-88ab-4294-a8cd-3dd59246cc79 failed on message_hash
 ```
 
 A verified case carries the limits a verified pack carries, and more.

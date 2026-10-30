@@ -26,13 +26,14 @@ the content you can put in the pack.
 |---|---|---|---|
 | An invocation starts | `agent.run_opened` | The input, and who authorised the run | The input and authority |
 | A framework step starts or ends | `agent.step.started`, `agent.step.ended` | The step's inputs, then its outputs | The step content |
+| The framework reports one moment as a single event | `agent.step.occurred` | The event as the framework handed it over | The event |
 | The agent calls a model | `agent.model_call.started`, `agent.model_call.ended` | The request, then the response | The prompt and the response |
 | The agent calls a tool | `agent.tool_call.started`, `agent.tool_call.ended` | The arguments, then the result | The arguments and the result |
 | The agent searches | `agent.retrieval.started`, `agent.retrieval.ended` | The query, then the documents | The query and the documents |
 | An action waits for a decision | `agent.approval.requested`, `agent.approval.resolved` | The action under review, then the answer, reviewer and notes | The action and the answer |
 | One agent sends a message to another | `agent.handoff.sent`, `agent.handoff.received` | The message, as `event.message_hash` | The message |
 | The agent states an outcome | `agent.decision` | The decision name and value | The value |
-| An event no other type describes | `agent.custom` | The custom name and value | The value |
+| An event you name yourself | `agent.custom` | The custom name and value | The value |
 | A tool produces or reads a file | `agent.file` | The file's own bytes | The file |
 | Something fails outside an operation | `agent.error` | The error type and message | The message |
 | The invocation ends | `agent.run_closed` | The empty object `{}` | Nothing |

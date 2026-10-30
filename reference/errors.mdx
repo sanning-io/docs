@@ -266,5 +266,5 @@ call. See [Sandbox and live](/concepts/sandbox-and-live).
 
 ## Verdicts are not errors
 
-`partial` and `undetermined` are answers, not failures. A check that could not run is
-reported as not run. See [What a verdict means](/verify/what-a-verdict-means).
+`incomplete` is an answer, not a failure. A check that could not run is reported as not
+proven, and the kernel exits 2, not 1. See [What a verdict means](/verify/what-a-verdict-means).

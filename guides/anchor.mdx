@@ -151,7 +151,7 @@ producing evidence, so it works on the first boot and fails on the second with
 
 ## Event types are a closed set
 
-A record has one of the 18 `agent.*` types on [Event types](/reference/event-types), or
+A record has one of the 19 `agent.*` types on [Event types](/reference/event-types), or
 one of seven types outside that vocabulary. Plain `anchor()` builds `event`,
 `checkpoint` or `declaration`, and builds `event` when you name no type.
 
@@ -161,7 +161,7 @@ The SDK refuses to sign the following, at the call and before anything is sent:
   raises `InvalidRecordError` with the reason `event_schema_missing`. An `agent.*` record
   comes from an adapter or from the agent record builder.
 - A type outside the set, such as `claims.decision`. The SDK raises
-  `InvalidRecordError` with the reason `event_type_not_in_set`. A verifier reads a
+  `InvalidRecordError` with the reason `event_type_not_in_set`. A verifier fails a
   record of that type as `nonconforming`.
 
 For a record that describes what the agent did, such as a model call or a tool call,

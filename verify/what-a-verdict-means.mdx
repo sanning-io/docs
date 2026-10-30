@@ -3,7 +3,7 @@ title: "What a verdict means"
 description: "What a verified pack proves, and the four things it does not"
 ---
 
-You have been handed an evidence pack and the kernel printed `VERIFIED`. This page tells
+You have been handed an evidence pack and the kernel printed **Verified**. This page tells
 you exactly what you may conclude from that, and what you may not.
 
 The limits are specified in `evidence-bundle.md` section 5.3.4, which ships inside the
@@ -23,6 +23,49 @@ For every event in the pack:
 
 All of it offline, against keys and bytes inside the pack. No call to Sanning, and no
 account.
+
+## Six claims, three verdicts
+
+The kernel checks six claims. Each claim is `proven`, `disproven` or `not_proven`. A
+claim with nothing to check, such as `agreed` in a pack with no hand-off, is
+`not_in_scope`: the text report does not print it, and `--json` carries it with the
+reason nothing was about it.
+
+| Claim | The kernel asks |
+|---|---|
+| `signed` | Did the key the pack or record names sign it? |
+| `unchanged` | Do the bytes agree with what was signed? |
+| `witnessed` | Does a stamp cover each record? |
+| `complete` | Does the pack hold everything its own signed declaration and its stamp say it holds? |
+| `agreed` | Do the two sides of each hand-off agree? |
+| `follows_rules` | Does each record follow the vocabulary it names? |
+
+A `not_proven` claim has one reason: `missing` (something is not in the pack),
+`unreadable` (it is there and the kernel cannot read it) or `not_checked` (this
+kernel cannot check it, for example a record written in a newer vocabulary version).
+
+One rule governs every reading: a claim that cannot be checked is not proven on that
+claim alone, and every other check still runs. A claim that is disproven wins.
+
+The kernel turns the six claims into one verdict by one rule, at every level: a
+record, a hand-off, a pack, a case.
+
+<img src="/images/diagrams/claims-to-verdict.png" alt="Six claims, read by one rule, give one of three verdicts. Any claim disproven gives Failed, exit 1. Otherwise any claim not proven gives Incomplete, exit 2. Otherwise Verified, exit 0. Sandbox evidence that verifies exits 3, and is a label, not a verdict." className="block dark:hidden" />
+<img src="/images/diagrams/claims-to-verdict-dark.png" alt="Six claims, read by one rule, give one of three verdicts. Any claim disproven gives Failed, exit 1. Otherwise any claim not proven gives Incomplete, exit 2. Otherwise Verified, exit 0. Sandbox evidence that verifies exits 3, and is a label, not a verdict." className="hidden dark:block" />
+
+There are three verdicts and no others:
+
+| Verdict | Shown as | Means |
+|---|---|---|
+| `verified` | **Verified** | Every claim in scope is proven |
+| `failed` | **Failed** | At least one claim is disproven |
+| `incomplete` | **Incomplete** | No claim is disproven, and at least one is not proven |
+
+A `failed` verdict also carries a reason kind. It is `changed` when a disproven claim is
+`signed`, `unchanged`, `witnessed`, `complete` or `agreed`. It is `nonconforming` when
+the only disproven claim is `follows_rules`. When both hold, the reason kind is
+`changed`. Sandbox is a label on the result and never a claim or a verdict. See
+[What a Sandbox verdict means](#what-a-sandbox-verdict-means).
 
 ## What it does not claim
 
@@ -83,55 +126,84 @@ that organization anchored in the same interval.
 
 ## What a Sandbox verdict means
 
-A pack built in the Sandbox passes every check and still does not read `VERIFIED`. The
-kernel prints `SANDBOX`, adds the line "Sandbox evidence (environment dev): not production
-evidence", and exits 5. The browser page shows **Sandbox** in place of the verified
-verdict.
+A pack built in the Sandbox passes every check and still ends in a different exit code
+from a Live pack. The kernel prints **Verified**, adds the line "Sandbox: these records
+are sandbox records, not production evidence.", and exits 3. The browser page shows
+**Sandbox** in place of the verified verdict.
 
 The signatures, the inclusion proofs and the disclosed bytes all checked out, so the
 records are intact and attributed. What is missing is the witness: a Sandbox stamp is
 simulated, so it supplies no independent time and no public record holds it. Read a
 Sandbox pack as a rehearsal. Do not rely on it as evidence.
 
-The kernel reads the marker from the signed records in the pack, not from a field anyone
-can edit without a key, and no flag turns exit code 5 into 0. See
+A Sandbox pack that fails still exits 1, and one that is incomplete still exits 2. The
+kernel reads the marker from the signed records in the pack, not from a field anyone
+can edit without a key, and no flag turns exit code 3 into 0. See
 [Sandbox and live](/concepts/sandbox-and-live).
 
 ## What a failure means
 
-If the kernel prints `FAILED`, it names the record that broke and why. The pack itself
-carries an asserted verdict from whoever produced it, and **the kernel throws that away
-and recomputes**. Where the two disagree, the recomputed answer wins, and the output
-says the asserted verdict and the recomputed one by name, noting that the recomputed
-one is the one that counts.
+If the kernel prints **Failed**, it names each claim that was disproven, how many
+records it concerns and why. The next line says what to do. Read the title first:
 
-That is the property worth understanding. You are not reading the agent's claim about
-their own evidence. You are reading your own machine's answer.
+- **Failed: do not rely on this evidence.** The reason kind is `changed`. Something
+  does not match what was signed, such as a bad signature, bytes that differ from
+  their commitment, or two sides of a hand-off that signed different messages.
+- **Failed: a record does not follow the rules.** The reason kind is `nonconforming`.
+  A record is signed and intact and breaks the vocabulary it names. Examples are a type
+  outside the closed set of event types, a field the type does not name, and a
+  `context.salt` that is not 32 lowercase hex characters. Nothing was proven altered:
+  the producer wrote something the specification does not allow.
 
-## What "undetermined" means
+A bundle can carry a `verdict` member from whoever built it. The kernel never reads it.
+It computes the verdict from the claims on your machine, so you are not reading the
+agent's claim about their own evidence. You are reading your own machine's answer.
 
-A pack can verify while leaving some things unknown, and the kernel distinguishes that
-from failure on purpose.
+## What each verdict does not mean
 
-| Verdict | Means |
-|---|---|
-| `verified` | Every check the pack supports passed |
-| `failed` | A check ran and did not pass |
-| `partial` | The pack is sound, and something could not be checked |
-| `undetermined` | A check could not run at all |
-| `malformed` | The input could not be read as what it claims to be. Nothing is proven altered |
-| `nonconforming` | A record is signed and intact and breaks the vocabulary it names. Nothing is proven altered |
-
-**`nonconforming` is not `malformed` and not `failed`.** The kernel prints "Does not
-conform" and exits 6. The record's signature and hash hold, so the record is neither
-broken nor tampered with: its producer wrote something the specification does not
-allow. Examples are a type outside the closed set of event types, a field the type does
-not name, and a `context.salt` that is not 32 lowercase hex characters. The
-output names the record and the rule it breaks.
+- **Verified** does not mean the agent decided correctly, that everything that happened
+  was recorded, that the evidence complies with a rule or a law, or that the key belongs
+  to the organization named in the pack. It does not mean the public record was
+  checked, unless the witness line says so.
+- **Failed** does not mean anyone acted in bad faith. A failed `unchanged` means the
+  bytes changed after signing, not who changed them. A failed `follows_rules` means
+  nothing was proven altered.
+- **Incomplete** does not mean anything is wrong. Nothing was proven wrong, and
+  something could not be checked. It is not "verified with a warning": do not rely on
+  the parts that are not proven.
 
 **Absent evidence is reported as absent, never as failure.** If an agent withheld the
-bytes for a record, its content binding is undetermined. That is an agent exercising
-minimum disclosure, not a defect, and treating it as tampering would be wrong.
+bytes for a record, `unchanged` is `not_proven` for that record and the pack reads
+`incomplete`, unless the pack's own signed declaration says the agent withheld them on
+purpose. That is an agent exercising minimum disclosure, not a defect, and treating it
+as tampering would be wrong. Input the kernel cannot read, such as a record whose
+signing key is not a readable key, is `not_proven` with the reason `unreadable`. It
+reads `incomplete`, never `failed`. A `bundle.json` that is not JSON at all is
+different: `verify` cannot run and exits 4.
+
+Findings and notes never move a verdict. The kernel prints a finding as a line that
+starts "Note:".
+
+## What the kernel prints
+
+The kernel renders the words once, and the text report and `--json` both carry those
+words. The report has this shape:
+
+```
+<Title>
+<one line for each claim that is disproven or not proven>
+Next: <one next action>
+Note: <one line for each note>
+Sandbox: these records are sandbox records, not production evidence.
+Witness: <the witness line>
+```
+
+The kernel prints only the lines that apply. The `--json` output carries the same words
+in `person`, laid out so a script does not parse a sentence: `title_parts` (the verdict
+word and its sentence), `line_parts` (for each line, the claim, state, reason, count,
+what it is about and why), `note_parts` (each note's kind and text) and `witness_state`
+(`confirmed`, `not_checked` or `differs`). See [Command line](/reference/cli#json-output)
+for the members.
 
 ## A verdict over a case
 
@@ -143,36 +215,28 @@ verdict**, with every exception named. It needs `@sanning/proof` or
 names the other's signer, and a pair that does not fails the check
 `counterparty_named`.
 
-The verdict is reached by one rule. Every hand-off whose two sides were found
-and checked contributes a verdict, and so does every exception. If they all say
-the same word, that word is the case verdict. If they differ, and none of them
-is a proven failure, the case is `mixed`. Any proven failure keeps the
-headline: a case with even one `failed` contribution reads `failed`. A case
-reads `verified` only when there is no exception at all.
+A case reads its worst pack: `failed`, then `incomplete`, then `verified`. The kernel
+lists every problem in every pack. Each kind of exception maps to one claim and one
+state, as the following table shows:
 
-Each kind of exception contributes one verdict word, as the following table
-shows:
+| Group | Example | Claim and state | Verdict |
+|---|---|---|---|
+| Something is proven wrong | The two sides of a hand-off commit to different messages | `agreed` disproven | `failed` |
+| A record breaks its vocabulary | A record's type is outside the closed set | `follows_rules` disproven | `failed` |
+| Something is not in a readable form | A pack's `bundle.json` is not valid JSON | The claim it blocks is `not_proven`, reason `unreadable` | `incomplete` |
+| The reader could not tell | No pack signed by the key one side of a hand-off names is in what you dropped | `agreed` `not_proven`, reason `missing` | `incomplete` |
+| Something was not there to read | A pack does not say what it holds | `complete` `not_proven`, reason `not_checked` | `incomplete` |
 
-| Group | Example | Word it contributes |
-|---|---|---|
-| Something is proven wrong | The two sides of a hand-off commit to different messages | `failed` |
-| Something is not in a readable form | A pack's `bundle.json` is not valid JSON | `malformed` |
-| A record breaks its vocabulary | A record's type is outside the closed set | `nonconforming` |
-| The reader could not tell | No pack signed by the key one side of a hand-off names is in what you dropped | `incomplete` |
-| Something was not there to read | A pack does not say what it holds | `partial` |
-
-Two more land in the "reader could not tell" group: more than one record on
-the other side could be a hand-off's counterpart (fan-in, fan-out, or several
-messages one way), and a pack declares a record under the wrong **role**: a
-record marked `handoff` that no pair claims, or a record marked `step` that is
-actually a hand-off side. A candidate that another record already
-accounts for is set aside before the reader grades, so an honest exchange of
-several messages in one direction reads `verified`. A **step record**, such as
-a closing record, is signed as one under `sanning.declaration/v2` and sits
-outside the hand-off scope test entirely, so a full pack, hand-offs and step
-records together, reads cleanly. [What a hand-off record does not prove](/concepts/limits)
-says what each exception looks like and why the reader cannot resolve it on
-its own.
+Two more leave `agreed` `not_proven`: more than one record on the other side could be a
+hand-off's counterpart (fan-in, fan-out, or several messages one way), and a pack
+declares a record under the wrong **role**: a record marked `handoff` that no pair
+claims, or a record marked `step` that is actually a hand-off side. A candidate that
+another record already accounts for is set aside before the reader grades, so an honest
+exchange of several messages in one direction reads `verified`. A **step record**, such
+as a closing record, is signed as one under `sanning.declaration/v2` and sits outside the
+hand-off scope test entirely, so a full pack, hand-offs and step records together, reads
+cleanly. [What a hand-off record does not prove](/concepts/limits) says what each
+exception looks like and why the reader cannot resolve it on its own.
 
 One kind carries a pack's own verdict instead: a pack whose signature holds and
 which does not verify on its own passes its verdict to the case, so a case never
@@ -190,7 +254,10 @@ line** that says whether any witness was looked up on the public record,
 independently of the headline.
 
 To read a case from your own code, pass the packs to `readCase` (`read_case`
-in Python). The `case` command does the same from a terminal, as
+in Python). The reading's `verdict` is the string `verified`, `failed` or
+`incomplete`; on `failed`, `reasonKind` (`reason_kind` in Python) sits beside it
+and holds `changed` or `nonconforming`. In `case --json`, `verdict` is an object,
+`{status, reason_kind}`. The `case` command does the same from a terminal, as
 [Hand over and verify a case](/guides/handoff-case#read-the-case-at-the-command-line)
 shows.
 
@@ -292,22 +359,26 @@ A consumer that joined by `ref`, or read `records` as "the records that were
 read", must change. No verdict, exception kind, contribution or exit code moves.
 
 Run it with one directory per pack, each holding `bundle.json` and, when the
-pack has one, `logs/`. Over an honest case with every record withheld on
-purpose, both languages print the same lines:
+pack has one, `logs/`. Over an honest case with every record's content
+disclosed, the first line is the verdict word and the second is the scope
+sentence:
 
 ```
 verified
-2 pack(s), 2 signing key(s), 6 hand-off record(s), 0 exception(s), read offline. 6 record(s)' content withheld by their holder: their signatures and commitments were checked, their content was not.
-assessor withholds the content of 3 record(s) by its own signed declaration: their signatures and commitments were checked, their content was not
-challenger withholds the content of 3 record(s) by its own signed declaration: their signatures and commitments were checked, their content was not
+2 pack(s), 2 signing key(s), 4 hand-off record(s), 0 exception(s), read offline.
 ```
 
-Over a case whose two sides disagree, both languages instead print:
+Over a case whose two sides disagree, the output is the verdict word, the scope
+sentence and one line for each exception. Here both packs also grade `incomplete`
+because neither one discloses its records:
 
 ```
 failed
-assessor-pack/a634bed2-0495-461b-ac51-b092f09fbb72 FAILED on message_hash
-reviewer-pack/93d88dca-4dbb-4ec3-997f-5299135efdc6 FAILED on message_hash
+2 pack(s), 2 signing key(s), 2 hand-off record(s), 4 exception(s), read offline.
+org-a-pack grades incomplete as a pack (no_disclosure)
+org-b-pack grades incomplete as a pack (no_disclosure)
+org-a-pack/4643f383-94f4-4326-aad4-6b1864f62e83 failed on message_hash
+org-b-pack/b3eefa7e-88ab-4294-a8cd-3dd59246cc79 failed on message_hash
 ```
 
 A case verdict carries the same limits as a pack verdict, and more:
