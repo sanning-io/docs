@@ -45,8 +45,8 @@ them, and neither passes by agreeing with the other.
 | Flag | Required | Meaning |
 |---|---|---|
 | `--agent` | Yes | The agent whose records to gather. Use the name you anchored under |
-| `--from` | Yes | Start of the period |
-| `--to` | Yes | End of the period. A date-only bound names a whole day and is included; an ISO instant is exclusive |
+| `--from` | Yes | Start of the period, a whole UTC day written `YYYY-MM-DD`. A time is refused (exit 4) |
+| `--to` | Yes | End of the period, a whole UTC day written `YYYY-MM-DD`. That day is included |
 | `--logs` | In practice | Your store root: the local directory holding `content/` and `records/`, or `s3://bucket` or `s3://bucket/prefix` |
 | `--out` | Yes | Where to write the zip |
 | `--allow-unstamped` | No | Assemble even when records in the period are not yet stamped. Takes no value |
@@ -66,13 +66,14 @@ records you are bundling, 64 lowercase hex characters, and `bundle` signs a decl
 the pack's own statement of what it holds, and seals the pack with that key. Without it,
 `bundle` seals the pack with a one-time key it mints and discards, and builds no
 declaration. With it set, `bundle` refuses a window holding a record that names no case,
-a window holding more than one case, and an `s3://` log store. See
+and a window holding more than one case. With an `s3://` log store, it writes the
+declaration to the bucket the pack was read from. See
 [Hand over and verify a case](/guides/handoff-case#bundle-one-pack-per-agent).
 
 **`--agent` is checked twice.** The records route the command reads from filters by this
 name on the server, and the command also refuses if a record it gets back names a
 different agent. A misspelled `--agent` prints `bundle: no stamped records for agent
-"…" … (the control plane does not recognize this agent)` and exits 1, rather than
+"…" … (the control plane does not recognize this agent)` and exits 4, rather than
 building an empty or mismatched pack.
 
 **`bundle` refuses a window that mixes Sandbox and Live evidence** for one agent, because
@@ -252,8 +253,8 @@ would pass the run's whole-read budget, or cannot be read, the index reads as
 
 ## Getting help
 
-`--help` works on the top-level command in both languages. On a subcommand it exits 2 with
-`unknown argument: --help`, which is a rough edge rather than a failure.
+`--help` works on the top-level command and on each subcommand, and exits 0 in both
+languages.
 
 ```bash
 sanning-anchor --help

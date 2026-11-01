@@ -40,8 +40,8 @@ and no call to Sanning.
 
 <Note>
   **From 0.16.0, the store also keeps each record's signed envelope**, next
-  to the record itself under `envelopes/<payload_hash>` (proof#57). A store
-  written before this release has no `envelopes/` directory and reads exactly
+  to the record itself under `envelopes/<payload_hash>`. A store
+  written before 0.16.0 has no `envelopes/` directory and reads exactly
   as before; the layout marker stays `sanning.logstore/v1`.
 </Note>
 
@@ -155,8 +155,8 @@ The flags mean the same in both languages:
 | Flag | What it names |
 |---|---|
 | `--agent` | The agent's `agent_id`, as committed in each record. |
-| `--from` | Period start, inclusive. A date or an ISO instant. |
-| `--to` | Period end. A date names a whole day and is included; an ISO instant is exclusive. |
+| `--from` | Period start, a whole UTC day written `YYYY-MM-DD`, inclusive. A time is refused. |
+| `--to` | Period end, a whole UTC day written `YYYY-MM-DD`. That day is included. |
 | `--logs` | Your store root: the local directory holding `content/` and `records/`, or `s3://bucket` or `s3://bucket/prefix`. |
 | `--out` | Where to write the pack. A `.zip` suffix is added when absent. |
 
@@ -183,7 +183,7 @@ how many records in the window are anchored and waiting for a stamp. Those
 records exist, they are signed, and they are retained. Read the second line
 before treating the first as a failure. Both languages print that pair, and
 the command exits `2`: run it again after the interval seals.
-When nothing in the window matches at all, it exits `1`.
+When nothing in the window matches at all, it exits `4` and writes nothing.
 
 The partial case exits `2` too, and for a different reason:
 

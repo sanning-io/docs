@@ -3,18 +3,13 @@ title: "Wire formats"
 description: "Where the normative specifications are, and how to read them"
 ---
 
-The formats are specified in a set of documents that ship **inside the
-`sanning-proof` package**, beside the kernel that implements them. Those
-documents are normative. This page tells you which one answers which question,
-and how to open them.
-
-## Get them
-
-```bash
-pip download --no-deps --no-binary :all: sanning-proof
-tar xzf sanning_proof-*.tar.gz
-ls sanning_proof-*/specs/
-```
+The formats are specified in a set of documents in the
+[`specs/` folder of `sanning-io/proof`](https://github.com/sanning-io/proof/tree/main/specs),
+beside the kernel that implements them. The `sanning-proof` and `@sanning/proof`
+packages do not carry them. Those documents are normative. This page tells you
+which one answers which question. The `sanning.agent/1` vocabulary is specified
+separately, in [`sanning-io/specs`](https://github.com/sanning-io/specs/tree/v1.0.0)
+at `v1.0.0`.
 
 ## Which one answers what
 
@@ -31,16 +26,16 @@ holds one as Sandbox, with exit code 3. See [Sandbox and live](/concepts/sandbox
 
 ## The parts worth reading first
 
-**`evidence-bundle.md` §5.3.4** draws the boundaries on what a verdict claims.
+**`evidence-bundle.md` section 5.3.4** draws the boundaries on what a verdict claims.
 If you are deciding how much weight to put on a `verified` result, read that
 section rather than this site's summary of it.
 
-**`envelope-spec.md` §2** requires readers to ignore fields they do not
+**`envelope-spec.md` section 2** requires readers to ignore fields they do not
 recognize. That rule is what keeps every proof ever issued verifiable as the
 format grows, and it has a sharp edge: a field bolted onto a body type a reader
 does not dispatch on is silently ignored rather than rejected.
 
-**`log-store.md` §4** explains why a store and a hand-over pack are laid out
+**`log-store.md` section 4** explains why a store and a hand-over pack are laid out
 differently on purpose, and why unifying them would break either an auditor's
 ability to find a file or a traversal defense.
 

@@ -17,13 +17,19 @@ cd pack
 npx @sanning/proof verify bundle.json --logs logs/
 ```
 
-A verified pack prints **Verified**, then a witness line, then its per-record results,
-and exits **0**:
+A verified pack prints **Verified**, then any notes, then a witness line, then an
+**Evidence bundle** block with the result for each stamp and record, and exits **0**:
 
 ```
 Verified
+Note: this pack does not say what it holds, so whether it is complete is unknown.
 Witness: Not checked: no lookup was run
+
+Evidence bundle  bundle.json
+  logs          4/4 record(s) content-verified
 ```
+
+The block is shortened here.
 
 Leave out `--logs` when the pack has no `logs/` directory. A pack of hand-off
 records has none, and `--logs` naming a directory that does not exist exits 4.
@@ -151,8 +157,14 @@ printf 'x' | dd of=logs/SOME_EVENT_ID.json bs=1 seek=200 conv=notrunc
 npx @sanning/proof verify bundle.json --logs logs/
 ```
 
-It exits 1 and names the record you touched. Replace `SOME_EVENT_ID` with any filename
-from `logs/`.
+It exits 2 and prints `Incomplete`, because the changed bytes are not what the record
+signed, and nothing in the pack says who handed them in. The line names the cause:
+`The bytes handed in beside the pack do not match what was signed.` The count of
+content-verified records drops by one. Replace `SOME_EVENT_ID` with any filename from
+`logs/`.
+
+A pack whose own signed bytes are changed reads `Failed` and exits 1. To see that, change
+one byte of `bundle.json` instead.
 
 <Note>
   Confirm the file actually changed, with `sha256sum` before and after. An edit that

@@ -311,8 +311,9 @@ exit code: 3
 Exit code 3 means Sandbox. The kernel checked the signature, the inclusion proof and the
 disclosed bytes, and it refuses to give a Sandbox pack the exit code of production
 evidence. The browser page shows
-**Sandbox** the same way. A pack with one changed byte exits 1 and names the record that
-failed.
+**Sandbox** the same way. If you change one byte of a log beside the pack, the kernel
+reads the pack as Incomplete and exits 2, because the bytes no longer match what was
+signed.
 
 ## What you proved
 
