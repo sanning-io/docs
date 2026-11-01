@@ -335,7 +335,7 @@ the JSON Pointer to the field at fault. An entry never holds a value from the re
 <CodeGroup>
 
 ```ts TypeScript
-for (const refused of anchorer.recordingStatus().refused) {
+for (const refused of anchorer.recordingStatus?.().refused ?? []) {
   console.log(refused.eventId, refused.eventType, refused.reason, refused.at);
 }
 ```

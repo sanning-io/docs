@@ -287,8 +287,11 @@ because a credential in argv lands in shell history. A missing one is named
 individually rather than reported as "credentials are missing", so you know
 which to set.
 
-The reader credential is enough: `s3:GetObject` and `s3:ListBucket`, and
-nothing that writes. See [Set up the bucket](/guides/bucket).
+The reader credential is enough to build a pack: `s3:GetObject` and
+`s3:ListBucket`, and nothing that writes. With `SANNING_SIGNING_SEED` set,
+`bundle` also writes the pack's declaration to the same bucket, so that run needs
+write access, and a read-only credential is refused (exit 4). See
+[Set up the bucket](/guides/bucket).
 
 To read the same layout from your own code, use `S3LogStoreReader`
 (`from "@sanning/anchor/s3"`, `from sanning_anchor.s3 import S3LogStoreReader`). It

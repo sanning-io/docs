@@ -77,8 +77,8 @@ These resolve on their own. Retry rather than debugging.
     The pack covers a period and you must name it. `--agent`, `--from`, `--to` and `--out`
     are all required.
 
-    A date-only bound names a whole day. Pass a full timestamp such as
-    `2026-09-01T09:00:00Z` for a narrower window.
+    Each bound is a whole UTC day, written `YYYY-MM-DD`. A full timestamp such as
+    `2026-09-01T09:00:00Z` is refused, exit 4.
   </Accordion>
   <Accordion title="N record(s) in ... have no record object in your log store">
     The window you asked for includes records whose bytes are not in the store you pointed
@@ -111,7 +111,7 @@ These resolve on their own. Retry rather than debugging.
 
     Pass `--case` and run the command once per case.
   </Accordion>
-  <Accordion title="cannot read --logs logs/: ENOENT">
+  <Accordion title="cannot read --logs logs/">
     The pack has no `logs/` directory. A pack of hand-off records has none, because no
     hand-off record discloses content. Run `verify` without `--logs`.
   </Accordion>

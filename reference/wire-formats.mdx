@@ -39,12 +39,12 @@ does not dispatch on is silently ignored rather than rejected.
 differently on purpose, and why unifying them would break either an auditor's
 ability to find a file or a traversal defense.
 
-## The kernel ships with them
+## The kernel and the specs, side by side
 
-The same tarball carries the kernel's own source under the MIT license, so the
-specification and the implementation that claims to satisfy it arrive together
-and can be read against each other. `@sanning/proof` on npm ships its
-TypeScript source the same way.
+The specs live in the `sanning-io/proof` repository under `specs/`, beside the
+kernel's source, under the MIT license, so the specification and the
+implementation that claims to satisfy it can be read against each other. The
+packages on npm and PyPI carry the kernel's source, not the specs.
 
 Both kernels are graded against one corpus, and neither passes by agreeing with
 the other. A disagreement on the same input is treated as release-blocking.
