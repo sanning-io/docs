@@ -13,7 +13,7 @@ The brand is defined once, in [`sanning-io/sanning-design-system`](https://githu
 
 - `docs.json` carries the brand through Mintlify's own configuration only: the colours, the page background, the Geist font, the wordmark, the favicons, and the share image. No custom CSS or JS on top of the framework.
 - The design system's README section [Using it for the docs (Mintlify)](https://github.com/sanning-io/sanning-design-system#using-it-for-the-docs-mintlify) says which semantic token feeds each colour in `docs.json`, and which files to copy. Follow it, and keep no second map here.
-- `logo/`, `favicon.svg`, `favicon-midnight.svg`, `og/`, and `fonts/` are copied verbatim from the design system's `assets/`. **Copied from design-system commit `246c85a`.** When tokens or assets change upstream, re-copy them here in the same PR that bumps this line.
+- `logo/`, `favicon.svg`, `favicon-midnight.svg`, `og/`, and `fonts/` are copied verbatim from the design system's `assets/`. **Copied from design-system commit `b861b16`.** When tokens or assets change upstream, re-copy them here in the same PR that bumps this line.
 - Voice follows the design system's [`brand/voice.md`](https://github.com/sanning-io/sanning-design-system/blob/main/brand/voice.md): short true sentences, sentence case everywhere, buttons say exactly what happens. Never claim "safe", "compliant", "approved", "certified", or "audit-proof" — Sanning records integrity, authenticity, and provenance; the conclusion belongs to the customer's auditors. No hype words, no blockchain vocabulary ("anchored", "permanent", "independent" — never "on-chain", "web3", "trustless").
 - Technical values (code, hashes, timestamps, IDs) are always real-looking, never placeholders like `abc123`.
 
