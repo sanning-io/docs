@@ -132,8 +132,8 @@ Replace the following:
 - `claims-triage` with your agent's name.
 - The dates with the day you anchored.
 - `BUCKET` with the bucket that holds your log store. Reading it needs three S3
-  variables in your shell, and `SANNING_SIGNING_SEED` must not be set, because `bundle`
-  refuses an `s3://` log store when it is. See
+  variables in your shell. With `SANNING_SIGNING_SEED` set, `bundle` also writes the
+  declaration to that bucket. See
   [Keep what you anchored](/guides/log-store#build-a-pack-straight-from-the-bucket).
 - `GATEWAY_URL` with a gateway you choose. See
   [Verify at the command line](/verify/cli#confirm-the-witness-on-the-public-record).

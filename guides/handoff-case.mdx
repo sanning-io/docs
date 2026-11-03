@@ -14,7 +14,7 @@ of its own records, and a **case reading** drops every party's pack together
 and returns one **case verdict**, with every exception named.
 
 <Note>
-  This page uses `@sanning/anchor` and `sanning-anchor` 0.20.0 to build packs,
+  This page uses `@sanning/anchor` and `sanning-anchor` 0.21.1 to build packs,
   and `@sanning/proof` and `sanning-proof` 0.20.0 to read a case.
 </Note>
 
@@ -91,7 +91,7 @@ try {
   await agent.invoke(input, { callbacks: [evidence] });
   await evidence.close({ outcome: "completed" });
 } catch (err) {
-  await evidence.close({ outcome: "failed", reason: String(err) });
+  await evidence.close({ outcome: "failed", reason: "error" });
   throw err;
 } finally {
   // `evidence.close()` does not close the anchorer. Close it when the process
@@ -112,7 +112,7 @@ try:
     agent.invoke(inputs, config={"callbacks": [handler]})
     handler.close(outcome="completed")
 except Exception as err:
-    handler.close(outcome="failed", reason=str(err))
+    handler.close(outcome="failed", reason="error")
     raise
 finally:
     # handler.close() does not close the anchorer. raise_on_gaps=False keeps
@@ -124,6 +124,9 @@ if gaps:
 ```
 
 </CodeGroup>
+
+`reason` is one of `error`, `timeout`, `cancelled`, `interrupted` or `policy`. Any other
+text, such as `String(err)`, makes `close()` throw before anything is anchored.
 
 The adapter writes one closing record per root run, `agent.run_closed`,
 with `closing.outcome.observed` from the run's own end and

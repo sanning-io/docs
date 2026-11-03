@@ -155,7 +155,9 @@ anything, and cannot create or reconfigure a bucket.
 ### Reader, the pack-runner
 
 Reads objects and nothing else. No write, no delete, no configuration. This is
-the credential that syncs the bucket down before you build a pack.
+the credential that syncs the bucket down before you build a pack. A `bundle`
+run with `SANNING_SIGNING_SEED` set writes the pack's declaration to the bucket,
+so it needs a credential that can also write.
 
 ```json
 {
