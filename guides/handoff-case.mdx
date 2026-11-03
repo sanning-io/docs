@@ -63,10 +63,10 @@ guess, and names how many it found.
 
 <Warning>
   The LangChain and Vercel adapters write no `context.case_id` unless you name
-  one. Pass `caseId` (`case_id` in Python) when you build the handler, as
-  [Putting the records in a case](https://github.com/sanning-io/anchor#putting-the-records-in-a-case-caseid)
-  in the adapter's own README shows, or `bundle --case` refuses the adapter's
-  records rather than guess which case they belong to.
+  one. Pass `caseId` (`case_id` in Python) when you build the handler or the
+  middleware, for example `anchorMiddleware(anchorer, { caseId: "case-4b19de" })`,
+  or `bundle --case` refuses the adapter's records rather than guess which case
+  they belong to.
 </Warning>
 
 ## Close each run
