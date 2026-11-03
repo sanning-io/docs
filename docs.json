@@ -3,13 +3,13 @@
   "theme": "mint",
   "name": "Sanning",
   "colors": {
-    "primary": "#3457D5",
-    "light": "#7C97F0",
+    "primary": "#16181D",
+    "light": "#F5F5F2",
     "dark": "#16181D"
   },
   "background": {
     "color": {
-      "light": "#F5F5F2",
+      "light": "#FFFFFF",
       "dark": "#0E1118"
     }
   },
@@ -28,8 +28,14 @@
     "dark": "/favicon-midnight.svg"
   },
   "logo": {
-    "light": "/logo/sanning-lowercase-ink.svg",
-    "dark": "/logo/sanning-lowercase-paper.svg"
+    "light": "/logo/sanning-ink.svg",
+    "dark": "/logo/sanning-paper.svg"
+  },
+  "seo": {
+    "metatags": {
+      "og:image": "https://docs.sanning.io/og/og-base.png",
+      "twitter:image": "https://docs.sanning.io/og/og-base.png"
+    }
   },
   "styling": {
     "eyebrows": "section",
@@ -119,5 +125,10 @@
       "cursor",
       "vscode"
     ]
+  },
+  "integrations": {
+    "telemetry": {
+      "enabled": false
+    }
   }
 }
