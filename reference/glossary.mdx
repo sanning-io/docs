@@ -29,10 +29,10 @@ names such as `event_id` and `eventType` keep their spelling.
 | Kernel | The open-source code that verifies a pack offline: `sanning-proof` in Python, `@sanning/proof` in TypeScript. |
 | Live | The mode whose stamps reach the public record. Its API keys start `sanning_prod_`. |
 | Log store | The storage you keep, where the SDK writes content and canonical records before it anchors. |
-| Nonconforming | The verdict for a record that is signed and intact and breaks the vocabulary it names. Shown as "Does not conform". The command line exits 6. Not `malformed` and not `failed`. |
+| Nonconforming | The reason kind of a `failed` verdict when the only disproven claim is `follows_rules`: a record is signed and intact and breaks the vocabulary it names. Shown as "Failed: a record does not follow the rules." The command line exits 1. Nothing is proven altered. |
 | Operation | One unit of work inside an invocation, such as a step, a model call or a tool call. It is a `started` record and an `ended` record. |
 | Pack | One zip of `bundle.json` and a `logs/` folder, which a third party verifies offline. |
-| Record | What an agent signs for one moment: a `sanning.events/v2` record with one of the 18 `agent.*` types, or one of the seven types outside the agent vocabulary: `event`, `checkpoint`, `declaration`, and the four runner types `runner.run_opened`, `runner.run_closed`, `runner.egress` and `runner.relay`. |
+| Record | What an agent signs for one moment: a `sanning.events/v2` record with one of the 19 `agent.*` types, or one of the seven types outside the agent vocabulary: `event`, `checkpoint`, `declaration`, and the four runner types `runner.run_opened`, `runner.run_closed`, `runner.egress` and `runner.relay`. |
 | Refused record | A record the SDK would not sign because it breaks the schema or the type rules. Nothing is sent. `recordingStatus().refused` lists it by event id, type, reason and pointer. |
 | Revealed field | A hash-only field carried in clear. Its path is listed in `context.revealed`. |
 | Salt | A random 128-bit value the SDK writes into every record, as `context.salt`. It stops anyone who holds only the envelope from confirming a guessed short value against its hash. Sanning does not receive it. |

@@ -32,7 +32,7 @@ supplied them. The hash lives on the record itself, in `event.content_hash`,
 not in this metadata.
 
 <Note>
-  **From 0.16.0, the record commits to the file's own bytes** (proof#92).
+  **From 0.16.0, the record commits to the file's own bytes.**
   `event.content_hash` is the file's SHA-256, and the bytes go to your log
   store the same way any other content does: never sent to Sanning, which
   receives the signed envelope only. A record written before this release

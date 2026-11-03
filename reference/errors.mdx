@@ -77,8 +77,8 @@ These resolve on their own. Retry rather than debugging.
     The pack covers a period and you must name it. `--agent`, `--from`, `--to` and `--out`
     are all required.
 
-    A date-only bound names a whole day. Pass a full timestamp such as
-    `2026-09-01T09:00:00Z` for a narrower window.
+    Each bound is a whole UTC day, written `YYYY-MM-DD`. A full timestamp such as
+    `2026-09-01T09:00:00Z` is refused, exit 4.
   </Accordion>
   <Accordion title="N record(s) in ... have no record object in your log store">
     The window you asked for includes records whose bytes are not in the store you pointed
@@ -90,7 +90,7 @@ These resolve on their own. Retry rather than debugging.
   <Accordion title="the control plane does not recognize this agent">
     The plane's records route filters by `--agent` on the server, so a name that does not
     match one of your organization's agents stops there before `bundle` reads anything back. The
-    command prints `bundle: no stamped records for agent "…"` with this reason, and exits 1.
+    command prints `bundle: no stamped records for agent "…"` with this reason, and exits 4.
 
     Check the spelling against the console's **Agents** page. `--agent` takes the name you
     anchored under, not a display name you renamed it to later.
@@ -111,7 +111,7 @@ These resolve on their own. Retry rather than debugging.
 
     Pass `--case` and run the command once per case.
   </Accordion>
-  <Accordion title="cannot read --logs logs/: ENOENT">
+  <Accordion title="cannot read --logs logs/">
     The pack has no `logs/` directory. A pack of hand-off records has none, because no
     hand-off record discloses content. Run `verify` without `--logs`.
   </Accordion>
@@ -266,5 +266,5 @@ call. See [Sandbox and live](/concepts/sandbox-and-live).
 
 ## Verdicts are not errors
 
-`partial` and `undetermined` are answers, not failures. A check that could not run is
-reported as not run. See [What a verdict means](/verify/what-a-verdict-means).
+`incomplete` is an answer, not a failure. A check that could not run is reported as not
+proven, and the kernel exits 2, not 1. See [What a verdict means](/verify/what-a-verdict-means).

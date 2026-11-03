@@ -40,8 +40,8 @@ and no call to Sanning.
 
 <Note>
   **From 0.16.0, the store also keeps each record's signed envelope**, next
-  to the record itself under `envelopes/<payload_hash>` (proof#57). A store
-  written before this release has no `envelopes/` directory and reads exactly
+  to the record itself under `envelopes/<payload_hash>`. A store
+  written before 0.16.0 has no `envelopes/` directory and reads exactly
   as before; the layout marker stays `sanning.logstore/v1`.
 </Note>
 
@@ -155,15 +155,15 @@ The flags mean the same in both languages:
 | Flag | What it names |
 |---|---|
 | `--agent` | The agent's `agent_id`, as committed in each record. |
-| `--from` | Period start, inclusive. A date or an ISO instant. |
-| `--to` | Period end. A date names a whole day and is included; an ISO instant is exclusive. |
+| `--from` | Period start, a whole UTC day written `YYYY-MM-DD`, inclusive. A time is refused. |
+| `--to` | Period end, a whole UTC day written `YYYY-MM-DD`. That day is included. |
 | `--logs` | Your store root: the local directory holding `content/` and `records/`, or `s3://bucket` or `s3://bucket/prefix`. |
 | `--out` | Where to write the pack. A `.zip` suffix is added when absent. |
 
 **`--logs` is optional in the flag grammar and required in practice.** The
 verb needs your record objects to work out which events are this agent's:
 `subject.agent_id` lives in the record, and a minimum-disclosure envelope
-does not carry it. Without the store the command exits `2` and says so.
+does not carry it. Without the store the command exits `4`, could not run, and says so.
 
 The verb verifies the whole pack, bundle and disclosed logs, before it writes
 anything, so a pack that would fail at the auditor is never produced.
@@ -182,10 +182,10 @@ bundle: no stamped records for agent "claims-triage" in 2026-06-01 → 2026-06-3
 how many records in the window are anchored and waiting for a stamp. Those
 records exist, they are signed, and they are retained. Read the second line
 before treating the first as a failure. Both languages print that pair, and
-the command exits `3` (undetermined): run it again after the interval seals.
-When nothing in the window matches at all, it exits `1`.
+the command exits `2`: run it again after the interval seals.
+When nothing in the window matches at all, it exits `4` and writes nothing.
 
-The partial case exits `3` too, and for a different reason:
+The partial case exits `2` too, and for a different reason:
 
 ```
 bundle: 2 record(s) in 2026-06-01 → 2026-06-30 are anchored and retained but
@@ -287,8 +287,11 @@ because a credential in argv lands in shell history. A missing one is named
 individually rather than reported as "credentials are missing", so you know
 which to set.
 
-The reader credential is enough: `s3:GetObject` and `s3:ListBucket`, and
-nothing that writes. See [Set up the bucket](/guides/bucket).
+The reader credential is enough to build a pack: `s3:GetObject` and
+`s3:ListBucket`, and nothing that writes. With `SANNING_SIGNING_SEED` set,
+`bundle` also writes the pack's declaration to the same bucket, so that run needs
+write access, and a read-only credential is refused (exit 4). See
+[Set up the bucket](/guides/bucket).
 
 To read the same layout from your own code, use `S3LogStoreReader`
 (`from "@sanning/anchor/s3"`, `from sanning_anchor.s3 import S3LogStoreReader`). It

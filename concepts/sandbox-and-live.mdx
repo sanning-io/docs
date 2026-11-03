@@ -41,7 +41,7 @@ modes: the SDK calls, the record format, the log store, the pack and the verify 
 | Email | None sent | Unchanged |
 | Billing | Never billed | Billed by plan |
 | Verify page | Shows **Sandbox**, and says "Simulated stamp: sandbox, not evidence" | Shows the verdict |
-| Verify CLI | Prints `SANDBOX` and exits 5 | Exits 0 on a verified pack |
+| Verify CLI | Prints a Sandbox line and exits 3 | Exits 0 on a verified pack |
 
 The wire values in this table are the only place this documentation names them. Everywhere
 else it says Sandbox and Live.
@@ -95,8 +95,8 @@ A simulated stamp is Sanning's own computation. It supplies no independent time,
 reader can check it against anything outside Sanning, and the proof says so: "simulated
 stamp: sandbox, not evidence". The signed `environment` is inside the signed bytes, so
 nobody can relabel a Sandbox record as a Live one without breaking its signature. The
-kernel reads that value offline and prints `SANDBOX` instead of `VERIFIED`. No flag turns
-exit code 5 into 0.
+kernel reads that value offline, prints a Sandbox line and exits 3 instead of 0. No flag
+turns exit code 3 into 0.
 
 Verification stays offline in both modes, and Sanning is never in the trust path in
 either.
@@ -106,6 +106,6 @@ either.
     Switch the API key and produce evidence.
   </Card>
   <Card title="Test in CI" icon="flask-vial" href="/guides/test-in-ci">
-    Run the Sandbox from a pipeline and accept exit code 5.
+    Run the Sandbox from a pipeline and accept exit code 3.
   </Card>
 </CardGroup>
