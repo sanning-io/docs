@@ -1,72 +1,80 @@
 ---
 title: "Introduction"
-description: "Evidence your auditor can check without us"
+description: "Sanning records what your AI agents do, so that someone else can check it without trusting you or Sanning"
 ---
 
-Sanning records what your AI agents do, so a third party can check it later without
-taking your word for it, and without taking ours.
+Sanning records what your AI agents do, so that someone else can check it without
+trusting you or Sanning.
 
-Your agent hashes each step locally and sends Sanning a signed record of it. Sanning never
-receives the step itself. Sanning commits a stamp of those records to a public record, and
-anyone holding the resulting evidence pack can verify it offline with an open-source
-kernel.
+## Why it matters
 
-**Sanning is never in the trust path.** If the Sanning control plane is unreachable, your
-counterparty can still verify evidence you have already handed them. That independence is
-the point of the design, not a feature of it.
+When an agent acts for your business, someone asks later what it did: an auditor, a
+regulator, an insurer or a counterparty. A log is your own word. Evidence from Sanning
+is something they can check for themselves.
 
-## The lifecycle
+## How it works
 
-Three verbs, in order.
+1. **Capture.** An adapter hooks into your agent's framework, so each step of a run
+   becomes a record.
+2. **Sign.** Your agent signs each record in your process, with a key that only you
+   hold. The content stays with you.
+3. **Anchor.** Every few minutes, Sanning seals your new records on a public record, so
+   any change to a record is evident.
+4. **Verify.** You give a reviewer an evidence pack. They check it offline, with
+   open-source code. They need no account.
 
-<Steps>
-  <Step title="Anchor">
-    Your agent commits to each step as it happens. One record per step, signed by a key
-    you hold.
-  </Step>
-  <Step title="Read">
-    You resolve your own records later, through the API or the console.
-  </Step>
-  <Step title="Verify">
-    Your counterparty checks a pack you hand them, offline, against the open kernel.
-  </Step>
-</Steps>
+<img src="/images/diagrams/overview.png" alt="Your agent captures each step and signs it with a key that only you hold. Sanning seals new records every few minutes and puts a stamp on a public record. You give an evidence pack to a reviewer, who verifies it offline and checks the stamp on the public record." className="block dark:hidden" />
+<img src="/images/diagrams/overview-dark.png" alt="Your agent captures each step and signs it with a key that only you hold. Sanning seals new records every few minutes and puts a stamp on a public record. You give an evidence pack to a reviewer, who verifies it offline and checks the stamp on the public record." className="hidden dark:block" />
 
-## What Sanning receives, and what it does not
+## What your agent records
 
-This distinction decides how you write your integration, so it comes first rather than
-later.
+Your agent records its work in an open spec,
+[`sanning.agent/1`](https://github.com/sanning-io/specs/blob/main/specs/agent-events.md). The
+spec gives each kind of step a fixed shape, so the records answer the questions that a
+reviewer asks:
 
-| Sanning receives | Sanning never receives |
+| A reviewer asks | Your agent records |
 |---|---|
-| A signed envelope for each record | Your agent's signing key |
-| Record ids, times and outcomes | The step's content |
-| The case id and the other ids, in clear | Hashes, lengths or paths of content |
+| What did the agent do, and in what order? | Each model call, tool call and retrieval, from its start to its end |
+| What did it decide? | A decision, from a tool that you name as a decision |
+| Who approved it? | The request for approval, and the answer |
+| What went to another organization? | The hand-off, signed by each side |
+| How did it end? | The outcome of each step, any errors, and the end of the run |
 
-Sanning is content-blind in Private mode, the data mode Sanning offers: it does not receive the content an agent produced, and it receives ids, times and outcomes. Ids reach Sanning in
-clear, so keep personal data out of them. See
-[What crosses the boundary](/concepts/how-it-works#what-crosses-the-boundary). For what a verified pack proves, and what it does
-not, see [What a pack proves](/concepts/what-a-pack-proves).
+Each record is signed as it happens and stamped within minutes. So the answers are
+evidence, not a story that you rebuild from logs when someone asks. The spec is open,
+so any verifier can check that each record follows it. For every type and field, see
+[Record types](/reference/record-types).
 
-<Card title="Quickstart" icon="rocket" href="/quickstart">
-  Anchor your first record in the Sandbox and verify it, in about ten minutes.
-</Card>
+## Who you trust
 
-## Try it in the Sandbox first
+Nobody in the middle. Sanning is never in the trust path: a reviewer checks the
+signatures and the public record, not Sanning. Sanning receives the signed envelope,
+the record type and the ids. It never receives your signing key or your content. If
+Sanning goes offline, evidence that you already gave out still verifies.
 
-The Sandbox runs the whole path with a Sandbox API key: records are signed for real,
-stamps are simulated, and nothing reaches the public record. A Sandbox pack verifies as
-Sandbox, not as evidence. See [Sandbox and live](/concepts/sandbox-and-live).
+## What a reviewer gets
 
-## Who this is for
+An evidence pack: the records, their stamps, and the content that you choose to
+disclose. They check it and get one result: Verified, Failed or Incomplete.
 
-If you are building an agent and someone will later ask you to prove what it did, start
-with the [Quickstart](/quickstart).
+A Verified result proves who signed each record, that nobody changed it, and that a
+stamp covers it. It does not prove that the agent was right. The people who review the
+evidence decide that.
 
-If you have been handed an evidence pack and asked to check it, you do not need an
-account. Open [verify.sanning.io](https://verify.sanning.io) and drop the pack on it, or
-run the open kernel yourself:
+## Start
 
-```bash
-npx @sanning/proof verify bundle.json --logs logs/
-```
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get an API key and install the SDK.
+  </Card>
+  <Card title="LangChain and LangGraph" icon="link" href="/guides/langchain">
+    Record every run of your agent.
+  </Card>
+  <Card title="Build and verify evidence" icon="file-check" href="/guides/evidence">
+    Make an evidence pack and check it.
+  </Card>
+  <Card title="Someone gave you evidence?" icon="circle-check" href="/guides/evidence#verify-an-evidence-pack">
+    Verify it. You need no account.
+  </Card>
+</CardGroup>

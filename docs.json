@@ -44,74 +44,150 @@
   "navigation": {
     "groups": [
       {
-        "group": "Getting started",
+        "group": "Get started",
         "pages": [
           "index",
-          "quickstart"
-        ]
-      },
-      {
-        "group": "Concepts",
-        "pages": [
-          "concepts/how-it-works",
-          "concepts/trust-boundary",
-          "concepts/witness",
-          "concepts/sandbox-and-live",
-          "concepts/limits",
-          "concepts/hide-and-reveal-fields",
-          "concepts/what-a-pack-proves"
-        ]
-      },
-      {
-        "group": "Guides",
-        "pages": [
-          "guides/anchor",
-          "guides/what-to-record",
+          "quickstart",
           "guides/langchain",
-          "guides/vercel",
-          "guides/file-records",
-          "guides/handoff",
-          "guides/handoff-case",
-          "guides/log-store",
-          "guides/bucket",
-          "guides/keys-and-scopes",
-          "guides/enrollment",
-          "guides/go-live",
-          "guides/test-in-ci"
-        ]
-      },
-      {
-        "group": "Verify",
-        "pages": [
-          "verify/browser",
-          "verify/cli",
-          "verify/what-a-verdict-means"
+          "guides/own-adapter",
+          "guides/evidence"
         ]
       },
       {
         "group": "Reference",
         "pages": [
-          "reference/event-types",
-          "reference/specs-and-conformance",
-          "reference/glossary",
+          "reference/record-types",
+          "reference/api-keys",
           "reference/cli",
-          "reference/scopes",
-          "reference/errors",
-          "reference/rate-limits-and-ceilings",
-          "reference/wire-formats",
-          "reference/a2a-mapping"
+          "reference/errors"
         ]
       }
     ]
   },
   "redirects": [
     {
+      "source": "/concepts/how-it-works",
+      "destination": "/"
+    },
+    {
+      "source": "/concepts/trust-boundary",
+      "destination": "/"
+    },
+    {
+      "source": "/concepts/witness",
+      "destination": "/guides/evidence"
+    },
+    {
+      "source": "/concepts/sandbox-and-live",
+      "destination": "/reference/api-keys"
+    },
+    {
+      "source": "/concepts/limits",
+      "destination": "/guides/evidence"
+    },
+    {
+      "source": "/concepts/hide-and-reveal-fields",
+      "destination": "/guides/langchain"
+    },
+    {
+      "source": "/concepts/what-a-pack-proves",
+      "destination": "/guides/evidence"
+    },
+    {
+      "source": "/guides/anchor",
+      "destination": "/guides/own-adapter"
+    },
+    {
+      "source": "/guides/what-to-record",
+      "destination": "/guides/langchain"
+    },
+    {
+      "source": "/guides/vercel",
+      "destination": "/guides/own-adapter"
+    },
+    {
+      "source": "/guides/file-records",
+      "destination": "/guides/langchain"
+    },
+    {
+      "source": "/guides/handoff",
+      "destination": "/guides/langchain"
+    },
+    {
+      "source": "/guides/handoff-case",
+      "destination": "/guides/evidence"
+    },
+    {
+      "source": "/guides/log-store",
+      "destination": "/guides/evidence"
+    },
+    {
+      "source": "/guides/bucket",
+      "destination": "/guides/evidence"
+    },
+    {
+      "source": "/guides/keys-and-scopes",
+      "destination": "/reference/api-keys"
+    },
+    {
+      "source": "/guides/enrollment",
+      "destination": "/reference/api-keys"
+    },
+    {
+      "source": "/guides/go-live",
+      "destination": "/quickstart"
+    },
+    {
+      "source": "/guides/test-in-ci",
+      "destination": "/reference/api-keys"
+    },
+    {
+      "source": "/verify/browser",
+      "destination": "/guides/evidence"
+    },
+    {
+      "source": "/verify/cli",
+      "destination": "/guides/evidence"
+    },
+    {
+      "source": "/verify/what-a-verdict-means",
+      "destination": "/guides/evidence"
+    },
+    {
+      "source": "/reference/event-types",
+      "destination": "/reference/record-types"
+    },
+    {
+      "source": "/reference/specs-and-conformance",
+      "destination": "/reference/record-types"
+    },
+    {
+      "source": "/reference/glossary",
+      "destination": "/"
+    },
+    {
+      "source": "/reference/scopes",
+      "destination": "/reference/api-keys"
+    },
+    {
+      "source": "/reference/rate-limits-and-ceilings",
+      "destination": "/reference/errors"
+    },
+    {
+      "source": "/reference/wire-formats",
+      "destination": "/reference/record-types"
+    },
+    {
+      "source": "/reference/a2a-mapping",
+      "destination": "/reference/record-types"
+    },
+    {
       "source": "/guides/enrolment",
-      "destination": "/guides/enrollment"
+      "destination": "/reference/api-keys"
     },
     {
       "source": "/guides/environments",
-      "destination": "/concepts/sandbox-and-live"
+      "destination": "/reference/api-keys"
     }
   ],
   "contextual": {

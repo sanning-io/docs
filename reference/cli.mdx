@@ -1,5 +1,5 @@
 ---
-title: "Command line"
+title: "CLI"
 description: "The two commands, their flags, and their exit codes"
 ---
 
@@ -50,7 +50,7 @@ them, and neither passes by agreeing with the other.
 | `--logs` | In practice | Your store root: the local directory holding `content/` and `records/`, or `s3://bucket` or `s3://bucket/prefix` |
 | `--out` | Yes | Where to write the zip |
 | `--allow-unstamped` | No | Assemble even when records in the period are not yet stamped. Takes no value |
-| `--case` | No | From 0.15.0. Select the records whose own `context.case_id` is this case, and declare the pack about it. See [Hand over and verify a case](/guides/handoff-case#bundle-one-pack-per-agent) |
+| `--case` | No | From 0.15.0. Select the records whose own `context.case_id` is this case, and declare the pack about it. See [Build an evidence pack for a case](/guides/evidence#for-a-case) |
 
 <Note>
   `--logs` is optional to the parser and required in practice. The command reads your
@@ -68,7 +68,7 @@ the pack's own statement of what it holds, and seals the pack with that key. Wit
 declaration. With it set, `bundle` refuses a window holding a record that names no case,
 and a window holding more than one case. With an `s3://` log store, it writes the
 declaration to the bucket the pack was read from. See
-[Hand over and verify a case](/guides/handoff-case#bundle-one-pack-per-agent).
+[Build an evidence pack for a case](/guides/evidence#for-a-case).
 
 **`--agent` is checked twice.** The records route the command reads from filters by this
 name on the server, and the command also refuses if a record it gets back names a
@@ -142,7 +142,7 @@ the same words:
 | 4 | could not run | A bad flag, a missing file, or an input that is not a pack or case at all |
 
 Exit 3 is the Sandbox: the pack verified, and its stamp is simulated. See
-[Sandbox and live](/concepts/sandbox-and-live).
+[Sandbox and Live](/reference/api-keys#sandbox-and-live).
 
 ### Text output
 
@@ -218,7 +218,7 @@ and reads `failed` where it used to read `verified` with nothing to compare
 against. No item on the public record is affected.
 
 `sanning-proof` on PyPI is the same kernel and ships the same `verify` command. See
-[Verify at the command line](/verify/cli).
+[Verify an evidence pack](/guides/evidence#verify-an-evidence-pack).
 
 ## case
 
@@ -238,7 +238,7 @@ moves nothing. `--files`, from 0.14.0, works
 the same way `verify` uses it: files handed in beside the case are matched
 against every party's records, never by name, and a path can be a folder from
 0.17.0. See
-[Hand over and verify a case](/guides/handoff-case#read-the-case-at-the-command-line).
+[Build an evidence pack for a case](/guides/evidence#for-a-case).
 
 **From 0.17.0, `case` also matches the files that sit outside every pack, with no
 flag.** Each regular file in the `.zip` or in the folder `unzip` makes of it is hashed

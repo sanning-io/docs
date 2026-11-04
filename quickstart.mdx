@@ -1,45 +1,44 @@
 ---
 title: "Quickstart"
-description: "Anchor a step in the sandbox, hand over a pack, and verify it without Sanning"
+description: "Get an API key and a signing seed, install the SDK, and choose how to record your agent"
 ---
 
-This takes you from an organization on `console.sanning.io` to an evidence pack a
-third party can check offline. Everything here runs in the Sanning sandbox: stamps are
-simulated, nothing reaches the public record, and nothing is billed. Budget about ten
-minutes. When you are ready for real evidence, [Go live](/guides/go-live).
+This page gets you ready to record an agent. You make two secrets, install the SDK,
+and then choose how to record. It takes about five minutes.
 
-## Prerequisites
+## Before you start
 
-Before you begin, you must have:
+You need:
 
 - Python 3.11 or later, or Node.js 22 or later.
-- A terminal.
-- An organization on `console.sanning.io`. Access starts with a conversation
-  with the Sanning team.
+- An organization on `console.sanning.io`. Sanning is in early access, so there is no
+  sign-up form. [Contact the team](mailto:TODO-ACCESS-LINK) for an API key.
 
-## Create a sandbox API key
+## Get an API key
 
 1. Sign in to `console.sanning.io`.
-2. Open the account menu and select **Switch to sandbox**. A strip across the top
-   of the console says you are in the sandbox.
-3. Open **Settings, API keys** and select **Create key**.
-4. Name the key and leave **Verify** unchecked. Every key carries the three anchor
-   scopes (`agent:enroll`, `anchor:write` and `anchor:read`), which cover enrolling the
-   agent, anchoring and building a pack. You do not select scopes one at a time. See
-   [API keys and scopes](/guides/keys-and-scopes).
-5. Copy the key. The console shows it once.
+2. Open **Settings, API keys** and select **Create key**. Only an owner or admin can
+   create one.
+3. Name the key, and leave **Verify** unchecked. The key can anchor records and build
+   evidence packs.
+4. Copy the key. The console shows it once.
 
-On a new Live account, the first step on the **Agents** page is **Start in the
-sandbox**. It does the same switch.
+The API key authenticates your organization to Sanning. It never signs a record. For
+the two kinds of API key and what each one can do, see
+[API keys and signing keys](/reference/api-keys).
 
-A Sandbox API key makes your records Sandbox records. You set nothing else. See
-[Sandbox and live](/concepts/sandbox-and-live).
+<Note>
+  **To test first, use the Sandbox.** In the console, open the account menu and select
+  **Switch to sandbox**, then make an API key in the same way. Your code does not
+  change: the SDK reads the API key and marks every record Sandbox. A Sandbox evidence
+  pack verifies, but it says Sandbox and is not evidence. See
+  [Sandbox and Live](/reference/api-keys#sandbox-and-live).
+</Note>
 
 ## Make a signing seed
 
-Your agent signs its records with an Ed25519 key. Sanning never receives it. You
-generate its 32-byte seed once and keep it, because a new seed on the next run reads
-as an unauthorized identity rotation and fails.
+Your agent signs its records with an Ed25519 key. You make its 32-byte seed once, and
+keep it. Sanning never receives it.
 
 <CodeGroup>
 
@@ -57,8 +56,12 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 </CodeGroup>
 
-Store the output in your secret store as `SANNING_SIGNING_SEED`, and your API key as
-`SANNING_API_KEY`. For this quickstart, export both in your shell:
+Keep the same seed for the life of the agent. A new seed on a later run reads as a
+change of identity that nobody authorized, and the check fails.
+
+Store the seed as `SANNING_SIGNING_SEED` and the API key as `SANNING_API_KEY`, in the
+secret store that your service already uses. To follow the guides from a terminal,
+export both:
 
 ```bash
 export SANNING_SIGNING_SEED=SEED
@@ -67,11 +70,12 @@ export SANNING_API_KEY=API_KEY
 
 Replace the following:
 
-- `SEED` with the 64 hex characters you generated.
-- `API_KEY` with the Sandbox API key you copied.
+- `SEED` with the 64 hex characters that you made.
+- `API_KEY` with the API key that you copied.
 
-The API key authenticates your organization. The seed is your agent's identity. They
-are different secrets.
+Sanning enrolls the seed's public key on your agent's first record. There is no
+separate registration step: the agent then shows on the **Agents** page of the
+console.
 
 ## Install the SDK
 
@@ -87,248 +91,16 @@ npm install @sanning/anchor
 
 </CodeGroup>
 
-Tracing a LangChain agent in Python? Install the extra instead, and follow the
-LangChain branch at the next step:
+## Choose how you record
 
-```bash
-pip install "sanning-anchor[langchain]"
-```
-
-## Anchor a step
-
-The agent signs each step with the seed and hashes the content locally. Sanning
-never receives the seed or the content. A plain `anchor()` call builds an `event`
-record. The records of an agent's work, such as a model call, a tool call or a
-decision, are `agent.*` records, and the SDK refuses to build one through plain
-`anchor()`. An adapter writes them, or you build them with the agent record builder
-in [Anchor from your agent](/guides/anchor#record-a-decision).
-
-<CodeGroup>
-
-```python Python
-import json
-import os
-
-from sanning_anchor import Anchorer, FsLogStore, LocalEd25519Signer
-
-anchorer = Anchorer(
-    api_key=os.environ["SANNING_API_KEY"],
-    subject={"type": "agent", "agent_id": "claims-triage"},
-    signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
-    # Your store, on your disk. The SDK writes here before it anchors, and a
-    # store failure means no anchor. The pack step reads this directory.
-    log_store=FsLogStore("./logstore"),
-)
-
-result = anchorer.anchor(
-    content=json.dumps({"claim": "CLM-4417", "action": "referred"}).encode(),
-)
-print(result.event_id)
-
-anchorer.close()
-```
-
-```ts TypeScript
-import {
-  createAnchorer,
-  FsLogStore,
-  LocalEd25519Signer,
-} from "@sanning/anchor";
-
-const apiKey = process.env.SANNING_API_KEY;
-const seedHex = process.env.SANNING_SIGNING_SEED;
-if (!apiKey || !seedHex) {
-  throw new Error("set SANNING_API_KEY and SANNING_SIGNING_SEED");
-}
-
-const anchorer = createAnchorer({
-  apiKey,
-  subject: { type: "agent", agent_id: "claims-triage" },
-  signer: LocalEd25519Signer.fromSeedHex(seedHex),
-  // Your store, on your disk. The SDK writes here before it anchors, and a
-  // store failure means no anchor. The pack step reads this directory.
-  logStore: new FsLogStore("./logstore"),
-});
-
-const result = await anchorer.anchor({
-  content: JSON.stringify({ claim: "CLM-4417", action: "referred" }),
-});
-console.log(result.eventId);
-
-await anchorer.close();
-```
-
-</CodeGroup>
-
-Replace `claims-triage` with a name for this agent. Keep it stable: it is how the agent
-appears on the **Agents** page.
-
-The content is hashed locally. Sanning receives a signed envelope, never the bytes. It
-receives ids, times and outcomes, and no hash of the content either. The ids, including
-the case id, reach Sanning in clear. The SDK
-enrolls your signing key with your organization before the first anchor, so the agent
-appears on the **Agents** page without a separate registration step.
-
-There is no `environment` argument. The Sandbox API key makes the SDK sign
-`environment: "dev"` into each record, and a sandbox accepts nothing else.
-
-## Or trace a LangChain agent
-
-The same `anchorer`, with no `anchor()` calls of your own. One callback handler
-anchors every chain, model, tool and retriever step, plus every file a tool
-produces.
-
-```python
-from sanning_anchor import AnchorCallbackHandler
-
-with AnchorCallbackHandler(anchorer, raise_on_gaps=True) as handler:
-    agent.invoke(inputs, config={"callbacks": [handler]})
-
-# The handler never closes the anchorer: do it when the process is done.
-anchorer.close()
-```
-
-Everything after this point is identical: the same log store, the same wait for
-the witness, the same pack.
-
-Two things decide whether this is correct, so they sit here rather than in a
-guide:
-
-- **Use the `with` block.** Leaving it out anchors what it can and walks past
-  what it cannot, and you find out when an auditor asks. `raise_on_gaps=True`
-  stops the agent on a hole in the trail instead.
-- **The whole step is committed**, prompts, outputs, tool input and output. It
-  is hashed locally and stays with you. For what Sanning receives, see
-  [What to record](/guides/what-to-record).
-
-For the event types, see [Event types](/reference/event-types). For worked examples, see
-[Trace a LangChain agent](/guides/langchain).
-
-## Wait for the stamp
-
-Sanning stamps your records on an interval, not one transaction per event. In the
-sandbox a stamp seals within about a minute, and the stamp is simulated: it never
-reaches the public record.
-
-A pack does not exist the moment you anchor. Until the interval containing your records
-is sealed, the pack command tells you so:
-
-```
-bundle: no stamped records for agent claims-triage in 2026-10-26 → 2026-10-26
-```
-
-That message means not yet, rather than you have no evidence. Wait a minute and run it
-again.
-
-## Hand over a pack
-
-A pack is one zip: `bundle.json`, plus a `logs/` folder holding the bytes you chose to
-disclose.
-
-<CodeGroup>
-
-```bash Python
-sanning-anchor bundle \
-  --agent claims-triage \
-  --from 2026-10-26 \
-  --to 2026-10-26 \
-  --logs ./logstore \
-  --out pack.zip
-```
-
-```bash TypeScript
-npx @sanning/anchor bundle \
-  --agent claims-triage \
-  --from 2026-10-26 \
-  --to 2026-10-26 \
-  --logs ./logstore \
-  --out pack.zip
-```
-
-</CodeGroup>
-
-Replace the following:
-
-- The dates with the day you anchored. A date-only bound names a whole day.
-- `./logstore` with the root of your log store, the directory holding `content/` and
-  `records/`.
-
-`--logs` is required in practice. The command reads your record objects to work out
-which events belong to this agent, because a minimum-disclosure envelope does not carry
-that name.
-
-The command reads your records back from the index, fetches each inclusion proof and the
-stamp that witnessed it, pulls the disclosed bytes from your own store, and verifies the
-result before writing anything. If the pack does not verify, nothing is written.
-
-Once the pack writes, `bundle` reports it to Sanning with the API key it already holds:
-your agent, the environment, the window, the record count, the SHA-256 of `bundle.json`,
-and the SDK name and version. It never sends the pack itself. Find it later under
-**Evidence** in the console.
-
-## Verify it without Sanning
-
-Give `pack.zip` to whoever asked. They have two ways to check it, and neither needs an
-account.
-
-In a browser, they open [verify.sanning.io](https://verify.sanning.io) and drop the file
-on the page. The page runs the open kernel in their browser.
-
-At a command line:
-
-<CodeGroup>
-
-```bash Python
-unzip pack.zip -d pack
-cd pack
-pip install sanning-proof
-sanning-proof verify bundle.json --logs logs/
-echo "exit code: $?"
-```
-
-```bash TypeScript
-unzip pack.zip -d pack
-cd pack
-npx @sanning/proof verify bundle.json --logs logs/
-echo "exit code: $?"
-```
-
-</CodeGroup>
-
-Same verbs, same flags, same exit codes. Your auditor picks whichever runtime they
-already have, and needs neither an account nor a network.
-
-Every check passes, and the kernel adds a Sandbox line and exits 3 instead of 0:
-
-```
-Verified
-Note: this pack does not say what it holds, so whether it is complete is unknown.
-Sandbox: these records are sandbox records, not production evidence.
-Witness: Not checked: no lookup was run
-exit code: 3
-```
-
-Exit code 3 means Sandbox. The kernel checked the signature, the inclusion proof and the
-disclosed bytes, and it refuses to give a Sandbox pack the exit code of production
-evidence. The browser page shows
-**Sandbox** the same way. If you change one byte of a log beside the pack, the kernel
-reads the pack as Incomplete and exits 2, because the bytes no longer match what was
-signed.
-
-## What you proved
-
-You ran the whole path: an agent signed a record, Sanning stamped it, and a reader checked
-the pack with an open-source kernel and no call to Sanning. The stamp was simulated, so
-the pack is a rehearsal and not evidence.
+An adapter records your agent's runs for you. You add it once, where your agent runs,
+and it records every step.
 
 <CardGroup cols={2}>
-  <Card title="What to record" icon="list" href="/guides/what-to-record">
-    Which event records which moment, and what Sanning receives.
+  <Card title="LangChain and LangGraph" icon="link" href="/guides/langchain">
+    Record every run with one callback handler, in Python or TypeScript.
   </Card>
-  <Card title="Go live" icon="rocket" href="/guides/go-live">
-    Switch to a Live API key and produce evidence that reaches the public record.
-  </Card>
-  <Card title="Sandbox and live" icon="flask" href="/concepts/sandbox-and-live">
-    What changes between the two, side by side.
+  <Card title="Your own adapter" icon="plug" href="/guides/own-adapter">
+    For an agent on any other framework.
   </Card>
 </CardGroup>

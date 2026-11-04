@@ -1,0 +1,432 @@
+---
+title: "Record types"
+description: "Every record type and field in the spec sanning.agent/1, and what each one commits to"
+---
+
+
+This page is the single place for event names. Every record an agent writes has one of
+the 19 `agent.*` types in the following tables, and no other `agent.*` name exists. A
+verifier reads a name it does not know as breaking the vocabulary: the pack reads
+`failed` with the reason kind `nonconforming`, shown as "Failed: a record does not
+follow the rules". Names compare exactly: `AGENT.TOOL_CALL.STARTED` is not in the set.
+
+The vocabulary is `sanning.agent/1`. The normative text is
+[`agent-events.md`](https://github.com/sanning-io/specs/blob/main/specs/agent-events.md) in
+`sanning-io/specs`, and this page follows its sections 3, 5, 6 and 9.3. For which
+moment writes which type, see [What the adapter records](/guides/langchain#what-the-adapter-records).
+
+## The 19 types
+
+An operation (a step, a model call, a tool call, a retrieval) is two records: a
+`started` record before it runs and an `ended` record after. An approval is a
+`requested` record and a `resolved` record, and a hand-off is a `sent` record and a
+`received` record.
+
+| Kind | Types | Written when |
+|---|---|---|
+| Run | `agent.run_opened`, `agent.run_closed` | An invocation starts, and the adapter closes it. |
+| Step | `agent.step.started`, `agent.step.ended`, `agent.step.occurred` | A framework step starts and ends: a graph node, a chain, the invocation's root. `agent.step.occurred` is one record for a moment the framework reports as a single event. |
+| Model call | `agent.model_call.started`, `agent.model_call.ended` | Before the request, and after the response or the failure. |
+| Tool call | `agent.tool_call.started`, `agent.tool_call.ended` | Before the tool runs, and when it returns or fails. |
+| Retrieval | `agent.retrieval.started`, `agent.retrieval.ended` | Before the query, and after the documents return. |
+| Approval | `agent.approval.requested`, `agent.approval.resolved` | An action waits for a human, a policy or a model, and the answer arrives. |
+| Hand-off | `agent.handoff.sent`, `agent.handoff.received` | One agent sends a message to another, and the other receives it. |
+| Decision | `agent.decision` | The agent states a business outcome. |
+| Custom | `agent.custom` | An event the customer named, even when an adapter relays it. |
+| File | `agent.file` | A tool produces or reads a file. One record per file. |
+| Error | `agent.error` | An error outside any operation, such as a callback that failed. |
+
+An error inside an operation is not an `agent.error`. It is that operation's `ended`
+record with `outcome.status` set to `failed`.
+
+An adapter writes `agent.custom` only for an event the customer named, even when the
+adapter relays it, such as a LangChain `dispatch_custom_event`. It never writes it for a
+tool call, which is an `agent.tool_call.*` pair, and never for a moment the framework
+reports itself, which is an `agent.step.occurred` record.
+
+`agent.step.occurred` is one record and not an operation: it has no start, no end and no
+outcome. Its `run.run_id` is the operation it occurred inside, or the invocation's root.
+It requires `run.source_type`, the framework's own name for the event, as lowercase
+dotted segments that start with a letter and run to at most 64 characters, such as
+`langchain.agent_action`. It carries none of the fields of an operation: `outcome`,
+`run.started_event_id`, `run.observed_started_at`, and the tool and model fields read as
+`failed` with the reason `unknown_field`.
+
+Seven record types sit outside this vocabulary: `event`, `checkpoint`, `declaration`,
+`runner.run_opened`, `runner.run_closed`, `runner.egress` and `runner.relay`. The names
+used before the vocabulary, such as `langchain.tool_start` or `handoff.sent`, and any
+name a builder invents, are not in the set.
+
+## What the SDK builds
+
+Plain `anchor()` builds an `event` record, or a `checkpoint` or `declaration`. The SDK
+refuses to sign an `agent.*` type there. An `agent.*` record comes from an adapter or
+from the agent record builder, which checks the record against the schema first. See
+[Your own adapter](/guides/own-adapter). The SDK also refuses a type
+outside the set, such as `claims.decision`, because a verifier would fail the record as
+`nonconforming`.
+
+## What each type commits to
+
+Every type except the two hand-off types carries `event.content_hash`: the SHA-256 of the
+JCS (RFC 8785) bytes of a content object. Where a framework step produces the record,
+the content object is what the framework handed the adapter, never rewritten. Where no
+step produces it, the content object is a fixed object whose members are always present,
+with `null` where the adapter has no value.
+
+| Type | Content hash commits to |
+|---|---|
+| `agent.run_opened` | The fixed object `{"authority": {"expires_at", "principal", "scope"}, "input"}`. |
+| `agent.run_closed` | The empty object `{}`. |
+| `agent.step.started`, `agent.step.ended` | The step's inputs on started. Its outputs or error on ended. |
+| `agent.step.occurred` | The event as the framework handed it to the adapter. |
+| `agent.model_call.started`, `agent.model_call.ended` | The request on started. The response, streamed output included, or the error on ended. |
+| `agent.tool_call.started`, `agent.tool_call.ended` | The arguments on started. The result or error on ended. |
+| `agent.retrieval.started`, `agent.retrieval.ended` | The query on started. The documents on ended. |
+| `agent.approval.requested` | The action under review, as the framework handed it over. |
+| `agent.approval.resolved` | The fixed object `{"edited_action", "notes", "response", "reviewer"}`. |
+| `agent.handoff.sent`, `agent.handoff.received` | No content hash. `event.message_hash` commits to the JCS bytes of the message, as sent or as held. |
+| `agent.decision` | The fixed object `{"name", "value"}`, as you handed them to the SDK. |
+| `agent.custom` | The fixed object `{"name", "value"}`, as the adapter handed them to the SDK. |
+| `agent.file` | The file's own bytes, so `sha256sum` of the file is `event.content_hash`. A file that could not be read commits to `{}`. |
+| `agent.error` | The fixed object `{"message", "type"}`. |
+
+The invocation's output is the content of its root step's `agent.step.ended` record.
+`agent.run_opened` commits the input, and the root step commits the output.
+
+## Clear fields, hash-only fields and ids
+
+A record has three kinds of field:
+
+- **Clear fields** the record shows: names, counts, outcomes, model and token numbers.
+- **Hash-only fields** the record commits to through `event.content_hash` and does not
+  show.
+- **Ids**, which are always clear and are never hashed.
+
+The following table lists the hash-only fields, which are the ones you can reveal, and
+the hidable fields, which are the clear fields you can withhold.
+
+| Type | Hash-only fields | Hidable fields |
+|---|---|---|
+| `agent.run_opened` | `authority.principal` | `run.name` |
+| `agent.step.started`, `agent.step.ended`, `agent.step.occurred` | | `run.name` |
+| `agent.model_call.started` | `gen_ai.input.messages`, `gen_ai.system_instructions` | `run.name`, `gen_ai.prompt.name` |
+| `agent.model_call.ended` | `gen_ai.output.messages` | `run.name` |
+| `agent.tool_call.started` | `gen_ai.tool.call.arguments` | `run.name`, `gen_ai.tool.name` |
+| `agent.tool_call.ended` | `gen_ai.tool.call.result` | `run.name`, `gen_ai.tool.name` |
+| `agent.retrieval.started` | `gen_ai.retrieval.query.text` | `run.name` |
+| `agent.retrieval.ended` | `gen_ai.retrieval.documents` | `run.name` |
+| `agent.approval.requested` | `approval.action` | |
+| `agent.approval.resolved` | `approval.reviewer`, `approval.notes`, `approval.edited_action` | |
+| `agent.decision` | `decision.value` | |
+| `agent.custom` | `custom.value` | |
+| `agent.file` | | `artifact.name`, `artifact.path`, `artifact.source`, `artifact.destination` |
+| `agent.error` | `exception.message` | |
+
+`agent.run_closed` and the two hand-off types have neither. For the controls that move a
+field across the line, see [Hide, reveal and scrub fields](/reference/record-types#hide-reveal-and-scrub-fields).
+
+## Fields every record carries
+
+These fields appear on every `agent.*` record.
+
+| Field | Meaning |
+|---|---|
+| `run.run_id` | The operation this record belongs to. A start and its end carry the same value. |
+| `run.parent_run_id` | The operation this one runs inside, or `null` at the root. |
+| `run.root_run_id` | The invocation. Every record of one invocation carries one value. |
+| `run.seq` | The record's position in the invocation's chain, starting at `0`. |
+| `run.prev_event_id` | The previous record's `event_id`, or `null` on the first record. |
+| `otel.scope.name`, `otel.scope.version` | The published package and version that wrote the record. |
+| `extras.event_schema` | The vocabulary version, `sanning.agent/1`. |
+| `context.salt` | A random value, fresh for each record. See [The salt](#the-salt). |
+
+Every `ended` record also carries `outcome.status` (`completed`, `failed`,
+`interrupted` or `skipped`) and `run.started_event_id`, the `event_id` of the record that began the
+operation. An end names its start by that `event_id`, so a verifier pairs the two even
+when a framework reuses a run id.
+
+Every object in a record is closed. A member the vocabulary does not name fails the
+record as `nonconforming`, so an extra field is added to the vocabulary and never carried beside
+it.
+
+## The salt
+
+Every record the SDK builds carries `context.salt`: 32 lowercase hex characters (128
+random bits), fresh for each record. The salt stops anyone who holds only the envelope
+from confirming a guessed short value against its hash. The SDK builds the salt, and no
+builder option sets it. Sanning does not receive it. A verifier checks only that it has
+the right form: a missing salt on an `agent.*` record, or a salt in any other form on any
+record, fails the record as `nonconforming`.
+
+## Name a decision for what is decided
+
+An `agent.decision` has a name and a value. Name the decision for what is decided, and
+put the result in the value: the name `credit_verdict` with the value `declined`. Do not
+write the name `credit_declined`. A name that holds one result stops a reader comparing
+decisions. A name is a short code you fix in advance, one per question the agent
+answers. It is never text built from the case.
+
+## How a verifier reads a record that breaks the vocabulary
+
+A record that is signed and intact but breaks the vocabulary makes the pack `failed`
+with the reason kind `nonconforming`, shown as "Failed: a record does not follow the
+rules", and the command line exits 1. Examples are a type outside the
+closed set, a missing or extra field, and a salt that is not 32 lowercase hex characters.
+This differs from the reason kind `changed`, where a signature or a hash does not
+match. A `nonconforming` record is the producer's error, such as an adapter bug. Nothing
+is proven altered.
+
+## Check an integration
+
+The [conformance suite](/reference/record-types#specifications-and-conformance) is the way to check that your
+integration writes valid records. The SDK also refuses to sign a record that breaks the
+schema, and the adapter reports a record it could not write instead of dropping it. The
+anchorer lists each refused record, by event id, type, reason and pointer, in
+`recordingStatus().refused` (`recording_status().refused` in Python). It never lists a
+value from the record.
+
+## Specifications and conformance
+
+The agent record format is specified in the open. You can read the text, run the
+reference reader, and check your own integration against the same cases the Sanning SDKs
+pass.
+
+### The specifications
+
+- [`agent-events.md`](https://github.com/sanning-io/specs/blob/main/specs/agent-events.md):
+  the `sanning.agent/1` vocabulary. It defines the 19 types, the fields each carries, and
+  how a verifier reads a record.
+- [Schemas](https://github.com/sanning-io/specs/tree/main/schemas/sanning.agent/1): the JSON Schema for
+  each type.
+- [`sanning-io/specs`](https://github.com/sanning-io/specs): the repository that holds
+  both, with the conformance cases and the reference reader.
+
+The same repository holds [`specs/events.md`](https://github.com/sanning-io/specs/blob/main/specs/events.md),
+the `sanning.events/v2` profile that signs and carries each record. See
+[Wire formats](/reference/record-types#wire-formats).
+
+### Check an integration with the conformance suite
+
+Every example in the specification is a case in the `conformance/cases/` folder. A case
+directory holds `record.json`, `held.json` where the case needs other records, and
+`expected.json`, which gives the verdict, the reason and the field path a verifier must
+produce. The format is in
+[`conformance/README.md`](https://github.com/sanning-io/specs/blob/main/conformance/README.md).
+
+To check an integration, do the following:
+
+1. Clone `sanning-io/specs`. You need Node.js 22 or later and no account or network.
+2. If you write a verifier, read every case with it and compare the output with
+   `expected.json`.
+3. If you write an SDK or an adapter, sign the record in every case that is valid, refuse
+   every case that is not, and for each case that has a `sent.json`, send the fields in it.
+4. Run `CI=true npm install` and `npm test` to run the reference reader over the suite.
+5. State the commit of `sanning-io/specs` that your implementation passed against.
+
+The suite cannot check what an adapter hashes, whether it scrubs only credentials, or
+whether it counts hand-off parts correctly, because it has no input a framework hands an
+adapter. Test those by reading the content object your adapter hashed against the rules
+in [Hide, reveal and scrub fields](/reference/record-types#hide-reveal-and-scrub-fields).
+
+For the types, see [Record types](/reference/record-types).
+
+## Wire formats
+
+The record formats are specified in the open, in the
+[`sanning-io/specs`](https://github.com/sanning-io/specs) repository. Those documents are
+normative. This page tells you which one answers which question.
+
+### Which one answers what
+
+| Specification | Answers |
+|---|---|
+| [`specs/agent-events.md`](https://github.com/sanning-io/specs/blob/main/specs/agent-events.md) | The `sanning.agent/1` vocabulary: the 19 record types, every field, what each commits to by hash, what Sanning receives in each data mode, how hand-offs pair, and how a verifier reads one record |
+| [`specs/events.md`](https://github.com/sanning-io/specs/blob/main/specs/events.md) | The `sanning.events/v2` profile: the signed envelope, the event record and its sections, chains, the record salt and the interval stamp |
+
+The format of an evidence pack, how a holder obtains an inclusion proof, and the verdicts
+over a pack are specified in a later release. Until then, the kernel in `@sanning/proof`
+and `sanning-proof` is the reference for them, and
+[Read the result](/guides/evidence#read-the-result) gives the plain reading.
+
+A record signed `environment: "dev"` is Sandbox evidence: the kernel reports a pack that
+holds one as Sandbox, with exit code 3. See [Sandbox and Live](/reference/api-keys#sandbox-and-live).
+
+### The parts worth reading first
+
+**`events.md` section 2** requires a reader to ignore an optional envelope member it does not
+know. That rule keeps every record verifiable as the format grows.
+
+**`agent-events.md` section 10** says how a verifier reads one record: each check, the
+verdict it gives and the reason. If you are deciding how much weight to put on a
+`verified` result, read that section rather than this site's summary of it.
+
+## Hand-offs over A2A
+
+This page maps the message structure of the Agent2Agent (A2A) protocol,
+version 1.0.0, onto the Sanning hand-off record. It is for a developer whose
+agents already exchange A2A messages and who wants to know what a hand-off
+record says about one.
+
+The hand-off record uses its own names with its own definitions. This table is
+a mapping between two sets of names. It is not a claim that Sanning implements
+or supports the A2A protocol.
+
+<Note>
+  **Dated mapping.** Read on 2026-09-23 from the A2A specification at version
+  1.0.0: the
+  [A2A 1.0.0 specification](https://a2a-protocol.org/v1.0.0/specification/),
+  and its normative Protocol Buffers definition,
+  [`specification/a2a.proto` at the `v1.0.0` tag](https://github.com/a2aproject/A2A/blob/v1.0.0/specification/a2a.proto),
+  whose commit is dated 2026-03-12. A later A2A version can change any row, and
+  this page does not follow it until it is re-read.
+</Note>
+
+The Sanning side of each row holds for `@sanning/anchor` and `sanning-anchor`
+0.21.1. See
+[Hand work to another organization](/guides/langchain#hand-work-to-another-organization).
+
+### How an A2A message becomes a record
+
+Pass the A2A `Message` object, in its JSON form, as the `message` argument to
+`send`. The `agent.handoff.sent` record commits to SHA-256 over that object's
+canonical form (JCS, RFC 8785), in `event.message_hash`. The receiver commits to
+the object it received in the same way, and the two hashes match only if the
+objects are equal.
+
+So every A2A field is inside one commitment. None of them is copied into a
+field of its own, and a reader checks them by comparing the hash, not by
+reading them out of the record.
+
+For example, this A2A 1.0.0 message, sent through both SDKs, produced the same
+`message_hash` in each (`623664a4…a132`), and re-serializing it with different
+whitespace on the way did not change the hash:
+
+```json
+{
+  "messageId": "9f0c7a52-3b1e-4d6a-8c2f-5e7b1a9d0c34",
+  "contextId": "ctx-5d1e9a",
+  "role": "ROLE_AGENT",
+  "parts": [
+    { "text": "Assessment: approve at tier 2." },
+    { "data": { "score": 712 }, "mediaType": "application/json" }
+  ]
+}
+```
+
+### The message fields
+
+The following table covers each field of the A2A 1.0.0 `Message`, by its JSON
+name:
+
+| A2A 1.0.0 field | In the Sanning record | How the two relate |
+|---|---|---|
+| `messageId` | Inside `event.message_hash` only | A2A says the message creator creates it. Sanning names a message by its hash, not by an id, so no record field carries it. |
+| `contextId` | Closest to `context.case_id` | Both group related messages. `case_id` is yours to choose, at most 128 characters matching `^[A-Za-z0-9_.:-]+$`, and must be opaque because it is committed permanently and indexed. A2A lets the server agent generate a `contextId`. Reuse one as `case_id` only when it meets those rules. |
+| `taskId` | Inside `event.message_hash` only | A2A has the server agent generate it. No record field carries it. |
+| `referenceTaskIds` | Inside `event.message_hash` only | `context.in_reply_to` is not its counterpart: it names one earlier message by that message's `message_hash`, and names no task. |
+| `role` | Inside `event.message_hash` only | A2A's `ROLE_USER` and `ROLE_AGENT` say client or server. Which side of a hand-off wrote a record is its record type, `agent.handoff.sent` or `agent.handoff.received`. |
+| `parts` | Inside `event.message_hash` only | Each part is committed as JSON inside the message object. The next table covers them. |
+| `metadata` | Inside `event.message_hash` only | Not the record's own `metadata`, which is yours and which no verifier reads. |
+| `extensions` | Inside `event.message_hash` only | Committed as it appears. |
+
+### The part fields
+
+In A2A 1.0.0 a `Part` carries one of `text`, `raw`, `url` or `data`, and may
+carry `mediaType`, `filename` and `metadata` beside it. The following table
+says what the commitment covers for each:
+
+| A2A 1.0.0 part field | What the commitment covers |
+|---|---|
+| `text` | The string. |
+| `data` | The JSON value. |
+| `raw` | The base64 string as it sits in the message, so a changed file changes `message_hash`. |
+| `url` | **The URL string only.** The file it points to is not committed, and nothing checks it. |
+| `mediaType` | The string. It is not `event.content_type`, which names what the whole committed message is (`application/json` by default). |
+| `filename`, `metadata` | The values, as they appear. |
+
+A2A 1.0.0 defines no content hash for a part. To commit a file that travels
+beside the message rather than inside it, put a Sanning file descriptor in the
+message instead of a `url` part: `filePart` (`file_part` in Python) builds one
+that carries the file's SHA-256 and length. The
+[hand-off section](/guides/langchain#hand-work-to-another-organization) says what `receive` does and does
+not check about it.
+
+<Warning>
+  The commitment covers the base64 string itself, not the bytes it decodes to.
+  A proto-JSON intermediary that re-encodes a `raw` part, with different
+  padding, a different alphabet, or line breaks, respells that string without
+  changing what it decodes to. The receiver reads the respelled message as
+  altered, because its bytes differ from what the sender committed to, even
+  though the underlying file did not change.
+</Warning>
+
+### Record fields with no A2A counterpart
+
+The following fields exist in the hand-off record and have no counterpart in
+the A2A 1.0.0 `Message`:
+
+| Record field | What it holds |
+|---|---|
+| `event.counterparty_public_key` | The Ed25519 key on the other side: the intended receiver on a sent record, the sender on a received one. A2A 1.0.0 defines signatures for Agent Cards and not for messages. |
+| `event.sequence` | The sender's number for this message within the case, starting at 1. |
+| `event.outcome` | On a received record only: `accepted`, `rejected` or `failed`, for what the receiving agent did with the message. |
+| `event.content_type` | What the committed bytes are, `application/json` by default. |
+| `event.message_bytes_hash` | The hash of the bytes as they crossed the transport. A diagnostic only: nothing pairs or grades on it. |
+| `context.in_reply_to` | The `message_hash` of the message this one answers. |
+| `context.protocol` | A marker for a reader, saying which protocol's names the mapping follows. Both SDKs write `a2a/1.0.0` by default, whatever the message is; pass `protocol` to write another. It is never a claim of protocol support. |
+
+## Hide, reveal and scrub fields
+
+Each record keeps some fields in clear and commits to others by hash. This page covers
+the controls that change that for one field, the credential scrub, and the conversions
+an adapter applies before it hashes content. For what Sanning receives, see
+[Who you trust](/#who-you-trust).
+
+### Hide and reveal a field
+
+Two controls move one field across the line between clear and hash-only. Each is listed
+inside the signed record, so a verifier can tell a withheld field from a missing one.
+The fields a type can reveal or hide are listed in
+[Clear fields, hash-only fields and ids](/reference/record-types#clear-fields-hash-only-fields-and-ids).
+
+- **Reveal** a hash-only field to carry it in clear, for example tool arguments for an
+  auditor. The field appears under its own name and its path is listed in
+  `context.revealed`. Revealing a field changes the record you keep and hand to a
+  verifier. Sanning does not receive it.
+- **Hide** a clear field to withhold it, for example a tool name. The field is absent,
+  and `context.hidden` maps its path to the SHA-256 of the JCS bytes of its value. The
+  agent can disclose the value later, and a verifier confirms it against that hash.
+
+A hidden field keeps the hash of its value. Anyone who holds a hidden field's hash and
+guesses a short value, such as a tool name, can confirm the guess. The record's salt does
+not change this: it protects the hash of the whole record in the envelope, not the
+hashes inside the record. Ids are never hidden.
+
+### Credential scrubbing
+
+An adapter can scrub the content object before it hashes it. The scrub walks the object
+at every depth, and wherever a member's key contains `api_key`, `access_token`,
+`authorization`, `bearer`, `secret`, `password` or `credential` (ASCII letters, any
+case, with `_` or `-` optional in the first two), it replaces that member's whole value
+with the string `"[scrubbed]"`. It matches keys only, never values, and renames nothing.
+
+An adapter that scrubs writes `context.content_scrubbed: true`, whether or not it
+replaced anything, because the hash then commits to the object after the scrub. A
+verifier shows that fact. Hand-off messages and files are never scrubbed.
+
+### Conversions and dates
+
+The content object is what the framework handed the adapter. Where a value has no JSON
+form, the adapter uses the framework's own JSON form of it. Where the framework has
+none, these are the only conversions:
+
+- An error is `{"message", "type"}`, with its class name as `type`.
+- A date and time is an RFC 3339 UTC string with a four-digit year. A date and time with
+  no UTC offset names no instant, and the adapter refuses it by name.
+- A calendar date with no time is `YYYY-MM-DD`.
+- Bytes are a base64 string.
+- A number that is not finite is the string JavaScript prints for it.
+
+Leaving out a member, renaming one or re-serializing the JSON changes the hash, so a
+verifier holding the object can no longer confirm it.

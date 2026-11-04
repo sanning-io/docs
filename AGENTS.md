@@ -19,10 +19,12 @@ The brand is defined once, in [`sanning-io/sanning-design-system`](https://githu
 
 ## Terminology
 
-- The lifecycle is **anchor → read → verify**. The write path is "the anchor front" at `/anchor`; never "Turbo" on a customer-facing surface.
+- The product's steps are **Capture, Sign, Anchor, Verify**, the same words as the website. They explain the product on the Introduction; they do not name sidebar groups. The write path is "the anchor front" at `/anchor`; never "Turbo" on a customer-facing surface.
 - The signing party is the **agent**, not the producer. Packages publish under the Sanning npm org (`@sanning/*`) and as `sanning-*` on PyPI.
 - The control plane is **not in the trust path**. Say so wherever issuance, roster, metering, or billing are described.
-- The two modes are **Sandbox** and **Live** in prose, and an **API key**, never a bare "key". The wire values (`sanning_test_`, `sanning_prod_`, `environment: "dev"` and `"production"`) appear in tables and reference, not in sentences. Every sample uses a Sandbox API key, except [Go live](guides/go-live.mdx) and the reference. Never name a chain: say "the public record".
+- The two modes are **Sandbox** and **Live** in prose, and an **API key**, never a bare "key". The wire values (`sanning_test_`, `sanning_prod_`, `environment: "dev"` and `"production"`) appear in tables and reference, not in sentences. Guides are written for production, with a Live API key. The Sandbox is one note in the [Quickstart](quickstart.mdx) and a section in [API keys and signing keys](reference/api-keys.mdx). Never name a chain: say "the public record".
+- Say **evidence pack** for the file a reviewer gets, and "evidence" in titles, as the website and the console do. Say **result** for Verified, Failed or Incomplete, and **reviewer** for the person who checks evidence.
+- The docs are one path: Introduction, Quickstart, an adapter guide, Build and verify evidence, then Reference. A concept is a section on the page where a reader needs it, not a page of its own. Samples record through an adapter, never with `anchor()` calls placed through an agent's code.
 - Company: Sanning Inc. GitHub org: `sanning-io`. Production console: `console.sanning.io`.
 
 ## Style preferences

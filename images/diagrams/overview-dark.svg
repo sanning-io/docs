@@ -1,0 +1,47 @@
+<svg viewBox="0 0 760 250" xmlns="http://www.w3.org/2000/svg" role="img"
+   aria-label="How Sanning works. Your agent captures each step and signs it in your process. Sanning seals new records every few minutes and puts a stamp on a public record. You give an evidence pack to a reviewer. The reviewer verifies it offline and checks the stamp on the public record, without asking Sanning.">
+<style>
+  .lbl  { font-family:"Geist",sans-serif; font-size:12px; font-weight:500; fill:#F5F5F2; }
+  .sub  { font-family:"Geist Mono",monospace; font-size:9px; letter-spacing:.03em; fill:#A3A9B1; }
+  .zone { font-family:"Geist Mono",monospace; font-size:8.6px; letter-spacing:.13em; fill:#8A9098; }
+  .step { font-family:"Geist Mono",monospace; font-size:9px; letter-spacing:.07em; fill:#7D8CFF; }
+  .acc  { font-family:"Geist",sans-serif; font-size:12px; font-weight:500; fill:#7D8CFF; }
+</style>
+<rect x="0" y="0" width="760" height="250" fill="#0E1118"/>
+<rect x="10" y="10" width="230" height="96" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="zone" x="20" y="26" text-anchor="start">YOUR SYSTEMS</text>
+<text class="lbl" x="24" y="58" text-anchor="start">Your agent</text>
+<text class="sub" x="24" y="70" text-anchor="start">captures each step, and signs it</text>
+<text class="sub" x="24" y="81" text-anchor="start">with a key that only you hold</text>
+<rect x="280" y="10" width="200" height="96" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="zone" x="290" y="26" text-anchor="start">SANNING</text>
+<text class="lbl" x="294" y="58" text-anchor="start">Anchors</text>
+<text class="sub" x="294" y="70" text-anchor="start">seals new records every</text>
+<text class="sub" x="294" y="81" text-anchor="start">few minutes</text>
+<rect x="520" y="10" width="230" height="96" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="zone" x="530" y="26" text-anchor="start">PUBLIC RECORD</text>
+<rect x="534" y="36" width="202" height="52" fill="none" stroke="#7D8CFF" stroke-width="1"/>
+<text class="acc" x="546" y="58" text-anchor="start">The stamp</text>
+<text class="sub" x="546" y="70" text-anchor="start">shows when the records existed</text>
+<polyline points="240,58 275.0,58.0" fill="none" stroke="#F5F5F2" stroke-width="1"/>
+<polygon points="280,58 274.0,61.0 274.0,55.0" fill="#F5F5F2"/>
+<text class="sub" x="260" y="50" text-anchor="middle">records</text>
+<polyline points="480,58 515.0,58.0" fill="none" stroke="#F5F5F2" stroke-width="1"/>
+<polygon points="520,58 514.0,61.0 514.0,55.0" fill="#F5F5F2"/>
+<text class="sub" x="500" y="50" text-anchor="middle">stamp</text>
+<rect x="10" y="144" width="230" height="96" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="zone" x="20" y="160" text-anchor="start">YOU</text>
+<text class="lbl" x="24" y="192" text-anchor="start">Evidence pack</text>
+<text class="sub" x="24" y="204" text-anchor="start">the records, their stamps and</text>
+<text class="sub" x="24" y="215" text-anchor="start">the content you disclose</text>
+<rect x="280" y="144" width="200" height="96" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="zone" x="290" y="160" text-anchor="start">THE REVIEWER</text>
+<text class="lbl" x="294" y="192" text-anchor="start">Verifies offline</text>
+<text class="sub" x="294" y="204" text-anchor="start">open-source code, no account</text>
+<polyline points="240,192 275.0,192.0" fill="none" stroke="#F5F5F2" stroke-width="1"/>
+<polygon points="280,192 274.0,195.0 274.0,189.0" fill="#F5F5F2"/>
+<text class="sub" x="260" y="184" text-anchor="middle">gives</text>
+<polyline points="480,192 635,192 635.0,111.0" fill="none" stroke="#F5F5F2" stroke-width="1" stroke-dasharray="3 3"/>
+<polygon points="635,106 638.0,112.0 632.0,112.0" fill="#F5F5F2"/>
+<text class="sub" x="560" y="184" text-anchor="middle">checks the stamp</text>
+</svg>

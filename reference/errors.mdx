@@ -1,7 +1,8 @@
 ---
-title: "Errors"
-description: "What each message means and what to do about it"
+title: "Errors and limits"
+description: "What each error means and what to do, and the rate limits and ceilings"
 ---
+
 
 Sanning's errors fall into three groups, and telling them apart saves the most time.
 
@@ -20,7 +21,7 @@ These resolve on their own. Retry rather than debugging.
     waiting for a stamp, a second line names how many.
 
     Wait for the interval to close and run the command again. See
-    [The witness](/concepts/witness).
+    [Wait for the stamp](/guides/evidence#wait-for-the-stamp).
   </Accordion>
   <Accordion title="N record(s) in ... are anchored and retained but not yet stamped">
     Some records in the period are stamped and some are not, so a pack built now would
@@ -30,7 +31,7 @@ These resolve on their own. Retry rather than debugging.
 
     Wait for the interval covering them to seal and run the command again. To hand over
     the stamped records anyway, pass `--allow-unstamped`, and say in the cover note how
-    many were left out. See [The witness](/concepts/witness).
+    many were left out. See [Wait for the stamp](/guides/evidence#wait-for-the-stamp).
   </Accordion>
   <Accordion title="the envelope route returned no envelope">
     A record anchored seconds ago is not readable through the read routes yet. Placement
@@ -56,7 +57,7 @@ These resolve on their own. Retry rather than debugging.
     through `POST /api/v1/admin/keys`, which is not bound to the two-scope-set rule
     `POST /api/v1/user/keys` enforces. Check what the key was minted with.
 
-    See [API keys and scopes](/guides/keys-and-scopes).
+    See [API keys and signing keys](/reference/api-keys).
   </Accordion>
   <Accordion title="--logs was not given, so this verb cannot read your log store">
     `--logs` is required in practice. The command reads your record objects to work out
@@ -71,7 +72,7 @@ These resolve on their own. Retry rather than debugging.
     The message names the ones that are missing.
 
     There is no flag for them: a credential in argv lands in shell history. See
-    [Keep what you anchored](/guides/log-store).
+    [Keep the content](/guides/evidence#keep-the-content).
   </Accordion>
   <Accordion title="bundle: missing required flag(s): --from, --to">
     The pack covers a period and you must name it. `--agent`, `--from`, `--to` and `--out`
@@ -102,7 +103,7 @@ These resolve on their own. Retry rather than debugging.
 
     Pass the case id on every record in the case when you anchor it (`caseId` in
     TypeScript, `case_id` in Python), then run `bundle` again. See
-    [Name the case on every record](/guides/handoff-case#name-the-case-on-every-record).
+    [Give each piece of work a case id](/guides/langchain#give-each-piece-of-work-a-case-id).
   </Accordion>
   <Accordion title="this pack would declare itself about case ..., and N selected record(s) name N other case(s)">
     From 0.15.0. `bundle` without `--case`, with `SANNING_SIGNING_SEED` set, found
@@ -119,7 +120,7 @@ These resolve on their own. Retry rather than debugging.
     You handed the kernel a zip. `PK` is the archive's own signature.
 
     Extract it and point at `bundle.json` inside. See
-    [Verify at the command line](/verify/cli).
+    [Verify an evidence pack](/guides/evidence#verify-an-evidence-pack).
   </Accordion>
 </AccordionGroup>
 
@@ -141,7 +142,7 @@ These resolve on their own. Retry rather than debugging.
     Recovering keeps the lineage: an owner or admin pins a new key for the name from
     **Settings, Signing keys** in the console, then the agent completes the re-key by
     restarting with that key. See
-    [Re-key a revoked name](/guides/enrollment#re-key-a-revoked-name).
+    [Re-key a revoked name](/reference/api-keys#re-key-a-revoked-name).
   </Accordion>
   <Accordion title="AGENT_ID_KEY_MISMATCH">
     Your API key is bound to a different `agent_id` than the one in the request, and a key
@@ -202,14 +203,14 @@ These resolve on their own. Retry rather than debugging.
 
     Configure a log store, and do not pass a `file:` `payloadRef`. For Live, keep the
     store in S3-compatible storage. See
-    [Keep what you anchored](/guides/log-store) and [Go live](/guides/go-live).
+    [Keep the content](/guides/evidence#keep-the-content) and [Quickstart](/quickstart).
   </Accordion>
   <Accordion title="a store failure means no anchor">
     The SDK writes your bytes to your log store before anchoring, and a store failure
     stops the anchor. There is no best-effort mode on this path.
 
     Anchoring a commitment to bytes you cannot produce is the one state that cannot be
-    repaired afterwards. See [Keep what you anchored](/guides/log-store).
+    repaired afterwards. See [Keep the content](/guides/evidence#keep-the-content).
   </Accordion>
 </AccordionGroup>
 
@@ -217,7 +218,7 @@ These resolve on their own. Retry rather than debugging.
 
 These appear when an API key reaches the wrong mode, or when you hit a Sandbox ceiling.
 They are separate from the three groups because the fix is about modes, not about the
-call. See [Sandbox and live](/concepts/sandbox-and-live).
+call. See [Sandbox and Live](/reference/api-keys#sandbox-and-live).
 
 <AccordionGroup>
   <Accordion title="SANDBOX_KEY_ON_LIVE (401)">
@@ -248,7 +249,7 @@ call. See [Sandbox and live](/concepts/sandbox-and-live).
     For a ceiling that a Reset frees, `details.reset` points at **Settings, Sandbox,
     Reset the sandbox**. For `keys`, revoke an API key instead, because a Reset keeps
     API keys. Every ceiling and its fix is in
-    [Rate limits and ceilings](/reference/rate-limits-and-ceilings).
+    [Limits](/reference/errors#limits).
   </Accordion>
   <Accordion title="EMAIL_NOT_VERIFIED (403)">
     Live enters the Sandbox only for a member whose email address is verified.
@@ -267,4 +268,47 @@ call. See [Sandbox and live](/concepts/sandbox-and-live).
 ## Verdicts are not errors
 
 `incomplete` is an answer, not a failure. A check that could not run is reported as not
-proven, and the kernel exits 2, not 1. See [What a verdict means](/verify/what-a-verdict-means).
+proven, and the kernel exits 2, not 1. See [Read the result](/guides/evidence#read-the-result).
+
+## Limits
+
+Each mode limits how fast you can call and how much you can hold. The Sandbox has fixed
+numbers, the same for every organization. Live limits follow your plan.
+
+### Sandbox ceilings
+
+Every Sandbox organization gets these numbers, whatever plan it holds in Live. They are
+not settings: nobody can raise one for you.
+
+| `details.limit` | Ceiling | Status | What clears it |
+|---|---|---|---|
+| `rate` | 5 requests per second, and 300 per minute, per organization | 429 | Wait for `Retry-After` |
+| `keys` | 10 active API keys | 403 | Revoke a key. A Reset keeps API keys |
+| `agents` | 25 active agents | 403 | Reset the sandbox, which decommissions every agent |
+| `records` | 10,000 records held | 403 | Reset the sandbox |
+| `bytes` | 500 MB of stored envelopes held (500,000,000 bytes) | 403 | Reset the sandbox |
+| `reset` | One Reset every 5 minutes per organization | 429 | Wait for `Retry-After` |
+| `deployment` | 50 GB of stored envelopes across every Sandbox organization together (50,000,000,000 bytes) | 403 | Reset the sandbox, which frees your share |
+
+Every refusal is the error `SANDBOX_LIMIT_REACHED`. `details.limit` names the ceiling and
+`details.value` states its number. The 429 refusals carry a `Retry-After` header in
+seconds. The 403 refusals do not clear by waiting, so repeating the request cannot
+succeed until you free something.
+
+Where a Reset frees the ceiling, `details.reset` names the route and the console path:
+**Settings, Sandbox, Reset the sandbox**. See [Errors](/reference/errors#sandbox-errors).
+
+A resend of a record the organization already holds is never refused for `records`,
+`bytes` or `deployment`: it stores nothing new.
+
+The Sandbox has no monthly quota and no overage, and is never billed.
+
+### Live limits
+
+Live limits come from your plan: the request rate, the number of API keys and agents, and
+the monthly usage allowances. A request over the rate limit answers 429
+`RATE_LIMIT_EXCEEDED`. A request over a monthly allowance that your plan caps answers 429
+`QUOTA_EXCEEDED`. Ask the Sanning team for the numbers on your plan.
+
+Live has no purge and no Reset, so the `records`, `bytes` and `deployment` ceilings
+exist only in the Sandbox.
