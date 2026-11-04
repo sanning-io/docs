@@ -78,33 +78,9 @@ In TypeScript, an adapter is a separate package. In Python, it ships inside `san
 
 ## Set up your log store
 
-A log store is your own storage for the content of each record. Sanning gets only hashes, so you keep the content, and you need it to build an evidence pack. A Live record with no log store is refused with `ProductionConfigError` before it is signed.
+A log store is your own S3 bucket for the content of each record. Sanning gets only hashes, so the content stays with you, and you need it to build an evidence pack. In Live, the SDK does not record without a log store.
 
-Use an S3 bucket. S3-compatible stores also work: `S3ObjectStore` takes an `endpoint` option. Object Lock support varies between stores. If a store has none, the SDK warns you and creates a plain bucket.
-
-1. Give the agent's credential the actions it needs. The SDK creates the bucket on the agent's first record, with versioning and Object Lock in governance mode for 365 days. If the bucket exists already, the SDK uses it and does not change it. Replace `BUCKET` with the name of your bucket.
-   - For the agent that records, on `arn:aws:s3:::BUCKET`: `s3:CreateBucket`, `s3:PutBucketVersioning`, `s3:PutBucketObjectLockConfiguration`, `s3:ListBucket`, `s3:GetBucketVersioning` and `s3:GetBucketObjectLockConfiguration`. On `arn:aws:s3:::BUCKET/*`: `s3:PutObject`. The first three create the bucket. The three reads let the SDK check that the bucket exists and is protected. Without them, the SDK warns that it cannot check.
-   - For `bundle`: `s3:GetObject` and `s3:PutObject` on `arn:aws:s3:::BUCKET/*`, and `s3:ListBucket` on `arn:aws:s3:::BUCKET`.
-   - No credential needs `s3:DeleteObject`.
-
-   After the agent's first record, you can remove `s3:CreateBucket`, `s3:PutBucketVersioning` and `s3:PutBucketObjectLockConfiguration` from its credential.
-
-2. If the bucket is not in `us-east-1`, create it yourself before the agent's first record. The SDK creates a bucket only in `us-east-1`. With the AWS CLI, the first command creates the bucket with Object Lock, which also turns on versioning. The second sets the default retention:
-
-   ```bash
-   aws s3api create-bucket --bucket BUCKET --region REGION \
-     --create-bucket-configuration LocationConstraint=REGION \
-     --object-lock-enabled-for-bucket
-   aws s3api put-object-lock-configuration --bucket BUCKET \
-     --object-lock-configuration '{"ObjectLockEnabled":"Enabled","Rule":{"DefaultRetention":{"Mode":"GOVERNANCE","Days":365}}}'
-   ```
-
-   Replace the following:
-
-   - `BUCKET`: the name of your bucket.
-   - `REGION`: the AWS Region of the bucket, such as `eu-west-1`.
-
-3. Put the bucket name and its Region in environment variables, like the API key and the seed:
+1. Choose a bucket name, and put it and its Region in environment variables:
 
    ```bash
    export SANNING_LOG_BUCKET=BUCKET
@@ -113,8 +89,78 @@ Use an S3 bucket. S3-compatible stores also work: `S3ObjectStore` takes an `endp
 
    Replace the following:
 
-   - `BUCKET`: the name of your bucket.
-   - `REGION`: the AWS Region of the bucket, such as `us-east-1`.
+   - `BUCKET`: the name you choose for your bucket.
+   - `REGION`: the AWS Region for the bucket, such as `us-east-1`.
+
+2. If the agent runs on AWS with a role, skip this step. Otherwise, set the storage keys as environment variables:
+
+   ```bash
+   export AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
+   export AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
+   ```
+
+   Replace the following:
+
+   - `ACCESS_KEY_ID`: the access key ID of your storage keys.
+   - `SECRET_ACCESS_KEY`: the secret access key of your storage keys.
+
+   The keys must be able to create and write to the bucket. For the list, see [The exact AWS permissions](#the-exact-aws-permissions). Both SDKs look for keys the way AWS tools do: environment variables, then the shared config file, then an instance or task role.
+
+Without keys, the first record fails with a `RetentionError`, and nothing is sent to Sanning. The message ends with `Could not load credentials from any providers` in TypeScript and `NoCredentialsError: Unable to locate credentials` in Python. A direct `anchor` call throws the error. The LangChain adapter logs `step not anchored` for each step instead, and the agent keeps running with gaps in its trail.
+
+On the agent's first record, the SDK creates the bucket with versioning and Object Lock in governance mode for 365 days. In that mode, nobody can delete or overwrite a stored version during that time unless they hold the AWS permission `s3:BypassGovernanceRetention`. A user who holds it can still remove a version. If the bucket exists already, the SDK uses it and does not change it.
+
+<Note>
+  The SDK can create the bucket only in `us-east-1`. For another Region, create the bucket before the agent's first record, as in [A bucket in another Region](#a-bucket-in-another-region).
+</Note>
+
+<AccordionGroup>
+  <Accordion title="A bucket in another Region">
+    With the AWS CLI, the first command creates the bucket with Object Lock, which also turns on versioning. The second sets the default retention:
+
+    ```bash
+    aws s3api create-bucket --bucket BUCKET --region REGION \
+      --create-bucket-configuration LocationConstraint=REGION \
+      --object-lock-enabled-for-bucket
+    aws s3api put-object-lock-configuration --bucket BUCKET \
+      --object-lock-configuration '{"ObjectLockEnabled":"Enabled","Rule":{"DefaultRetention":{"Mode":"GOVERNANCE","Days":365}}}'
+    ```
+
+    Replace the following:
+
+    - `BUCKET`: the name of your bucket.
+    - `REGION`: the AWS Region of the bucket, such as `eu-west-1`.
+  </Accordion>
+
+  <Accordion title="The exact AWS permissions">
+    Replace `BUCKET` with the name of your bucket.
+
+    For the agent that records, on `arn:aws:s3:::BUCKET`: `s3:CreateBucket`, `s3:PutBucketVersioning`, `s3:PutBucketObjectLockConfiguration`, `s3:ListBucket`, `s3:GetBucketVersioning` and `s3:GetBucketObjectLockConfiguration`. On `arn:aws:s3:::BUCKET/*`: `s3:PutObject`. The first three create the bucket. The three reads let the SDK check that the bucket exists and is protected. Without them, the SDK warns that it cannot check.
+
+    After the agent's first record, you can remove `s3:CreateBucket`, `s3:PutBucketVersioning` and `s3:PutBucketObjectLockConfiguration` from its credential.
+
+    No credential needs `s3:DeleteObject`.
+  </Accordion>
+
+  <Accordion title="Other S3-compatible stores">
+    A service with an S3-compatible API, such as Cloudflare R2 or MinIO, works with the same samples. Set its address and its keys in environment variables. Both SDKs read `AWS_ENDPOINT_URL_S3`, so "Create the anchorer" does not change:
+
+    ```bash
+    export AWS_ENDPOINT_URL_S3=ENDPOINT
+    export AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
+    export AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
+    ```
+
+    Replace the following:
+
+    - `ENDPOINT`: the address of the service's S3 API, from its documentation.
+    - `ACCESS_KEY_ID` and `SECRET_ACCESS_KEY`: the service's keys.
+
+    Set `SANNING_LOG_BUCKET` and `AWS_REGION` as in step 1. For `AWS_REGION`, use the Region name that the service documents.
+
+    Many such services do not support Object Lock. The SDK then warns and creates a plain bucket, so the content is not protected from deletion.
+  </Accordion>
+</AccordionGroup>
 
 ## Create the anchorer
 

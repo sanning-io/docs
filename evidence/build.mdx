@@ -76,10 +76,12 @@ Replace the following:
 - `API_KEY` with the Live API key from the Quickstart. It already has the scope `anchor:read` that `bundle` needs.
 - `SEED` with the seed of the agent in `--agent`. With the seed, `bundle` signs a declaration, which is the pack's own statement of which records it holds, so that the reviewer can check the pack against it. Without the seed, the pack carries no declaration.
 - `ENDPOINT` with the address of your S3 service, such as `https://s3.us-east-1.amazonaws.com`. Add `SANNING_S3_REGION` if the bucket is not in `us-east-1`.
-- `ACCESS_KEY_ID` and `SECRET_ACCESS_KEY` with credentials that hold the `bundle` permissions from [Set up your log store](/quickstart#set-up-your-log-store).
+- `ACCESS_KEY_ID` and `SECRET_ACCESS_KEY` with credentials that hold the `bundle` permissions in the next paragraph.
 - `claims-triage` with the agent ID of your agent.
 - `case-4b19de` with your case ID.
 - `s3://evidence-claims` with the S3 URL of your log store: `s3://BUCKET`, or `s3://BUCKET/PREFIX` for a prefix inside it.
+
+The `bundle` credentials need `s3:GetObject` and `s3:PutObject` on `arn:aws:s3:::BUCKET/*`, and `s3:ListBucket` on `arn:aws:s3:::BUCKET`. Replace `BUCKET` with the name of your bucket.
 
 A case pack takes no dates. It holds every record of the case that this agent recorded, however long the case ran. The command keeps a record only when its own signed case ID is the one you name, so a record that carries no case ID is not found. This is why every run must record with a case ID.
 
