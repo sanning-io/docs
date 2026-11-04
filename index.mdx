@@ -5,11 +5,25 @@ description: "What Sanning is, how a step of your agent becomes evidence, and th
 
 This page explains what Sanning does, how it works, and the seven ideas that the rest of these docs build on.
 
-Sanning records what your AI agents do, so that someone else can check it without trusting you or Sanning. Each step of an agent becomes a signed record. Sanning seals your records on a public record. Later, you build an evidence pack for a case and hand it to a reviewer, who verifies it on their own machine.
+Sanning records what your AI agents do, so that someone else can check it without trusting you or Sanning. Each step of an agent becomes a signed record. Sanning seals your records into a stamp, and publishes the stamp to the public record, a permanent record that Sanning does not control. Later, you build an evidence pack for a case and hand it to a reviewer, the person who checks it. The reviewer verifies it on their own machine.
 
 ## Why it matters
 
 Your agents act for you. Later, someone asks you to prove what they did: an auditor, a regulator, an insurer or a counterparty. A log that you control does not prove it to them, because you could have changed it. Sanning gives them something they can check for themselves.
+
+## Core ideas
+
+| Idea | What it is |
+|---|---|
+| Record | One step of your agent, signed with the agent's signing key. A record holds hashes of your content, never the content. |
+| Signing key | The key your agent signs every record with. It is the agent's identity. You make it from a seed that only you keep. |
+| Run | One execution of an agent, from its first record to its closing record. The adapter, the code that records your agent's steps, opens the run, and it closes the run when you call `close()`. |
+| Case | The matter the work is for, such as a claim or a loan. Your agents put its ID on every record, across runs and agents. |
+| Stamp | At the end of each interval, a period of 10 minutes, Sanning seals the records of that interval into one stamp and publishes the stamp to the public record. |
+| Evidence pack (a pack, for short) | The zip you build and hand over: Sanning's records and stamp proofs, with your own content beside them. You can build one for a case. |
+| Verdict | The answer of the [verifier](/evidence/verify#what-the-verifier-checks), the program that checks an evidence pack: Verified, Failed or Incomplete. |
+
+Each record carries its case ID permanently, and nobody can change or withdraw it. Use an ID that means nothing outside your systems, such as `case-4b19de`, and keep names and other personal data out of it.
 
 ## How it works
 
@@ -17,57 +31,23 @@ Your agents act for you. Later, someone asks you to prove what they did: an audi
 <img src="/images/diagrams/how-it-works-dark.svg" alt="Your agent and its adapter capture each step. The content goes to your own log store. Only signed hashes go to Sanning, which seals the records into a stamp on the public record at each interval. You build the evidence pack from Sanning's records and stamp proofs and your own content, and hand it to the reviewer. The reviewer verifies it on their own machine, checks the stamps on the public record, and does not need Sanning." className="hidden dark:block" />
 
 1. Capture. An [adapter](/adapters) watches your agent's framework and turns each step into a record. The content of each step goes to your own log store, which is storage that you control.
-2. Sign. Your agent signs each record with its signing key. Sanning receives the signed record. It holds hashes of your content, never the content.
-3. Anchor. At the end of each interval, Sanning seals your new records into one stamp and publishes the stamp to the public record.
-4. Verify. You build an evidence pack for a case and give it to a reviewer. They check it on their own machine and need no account. The command line check needs no Sanning server. The verify page looks up the stamps through Sanning's read front by default. See [Verify an evidence pack](/evidence/verify).
+2. Sign. Your agent signs each record with its signing key. Sanning receives the signed record. The record holds hashes of your content, never the content.
+3. Anchor. Every 10 minutes, at the end of an interval, Sanning seals the records of that interval into one stamp and publishes the stamp to the public record.
+4. Verify. You build an evidence pack for a case and give it to a reviewer. The reviewer checks it on their own machine and needs no account. See [Verify an evidence pack](/evidence/verify).
 
-## Install
+## How Sanning works with your agents
 
-To record your agents, you install the SDK and an adapter. A reviewer needs only the verifier. You need Node.js 22 or later, or Python 3.11 or later.
+You record your agents with an SDK, the package that signs each record and sends it to Sanning. Sanning has SDKs for TypeScript and JavaScript and for Python. An [adapter](/adapters) connects the SDK to your agent framework, so that you write no records by hand. The [Quickstart](/quickstart) has the install commands.
 
-<CodeGroup>
-
-```bash TypeScript
-# Record: the SDK and the LangChain adapter
-npm install @sanning/anchor @sanning/anchor-langchain @langchain/core
-
-# Verify: the verifier
-npm install @sanning/proof
-```
-
-```bash Python
-# Record: the SDK and the LangChain adapter
-pip install "sanning-anchor[langchain]"
-
-# Verify: the verifier
-pip install sanning-proof
-```
-
-</CodeGroup>
-
-Before your agent can record anything, you need an API key and a seed for its signing key. The [Quickstart](/quickstart) sets both up.
-
-## Core ideas
-
-| Idea | What it is |
-|---|---|
-| Record | One step of your agent, signed by the agent's key. It holds hashes of your content, never the content. |
-| Signing key | The key your agent signs every record with. It is the agent's identity. You make it from a seed that only you keep. |
-| Run | One execution of an agent, from its first record to its closing record. The adapter opens and closes it. |
-| Case | The matter the work is for, such as a claim or a loan. Your agents put its ID on every record, across runs and agents. |
-| Stamp | At the end of each interval (10 minutes), Sanning seals your new records into one stamp and publishes it to the public record. |
-| Evidence pack | The zip you build and hand over: Sanning's records and stamp proofs, with your own content beside them. You can build one for a case. |
-| Verdict | The verifier's answer: Verified, Failed or Incomplete. |
-
-The ID of a case is committed with each record and cannot be changed or withdrawn, so use an opaque ID such as `case-4b19de`, and keep names and other personal data out of it.
+MCP and OpenTelemetry (OTEL) ingest APIs are on the roadmap.
 
 ## How trust works
 
-Your content stays in your log store. Sanning gets signed records that hold hashes, never the content.
+Your content stays in your log store, and Sanning receives only the signed records.
 
-The stamp on the public record fixes when each record existed. The public record is the independent witness, and Sanning is not. If anyone changes a record later, you or Sanning, the check fails.
+The public record is an independent witness: it confirms when each record existed, and Sanning does not control it. If anyone changes a record later, you or Sanning, the check fails.
 
-You build the evidence pack from two halves: Sanning's records and stamp proofs, and your own content. A reviewer needs the pack and nothing from Sanning. The verifier runs on their machine and checks the pack by itself. To also confirm each stamp on the public record, the reviewer points the verifier at a public gateway. By default the report says the witness is not checked.
+You build the evidence pack from two halves: Sanning's records and stamp proofs, and your own content. A reviewer needs the pack and nothing from Sanning. The verifier runs on their machine and checks the pack by itself. To also confirm each stamp on the public record, the reviewer gives the verifier the address of a public gateway, a web server that serves the public record. Without that lookup, the report says `Witness: Not checked`. The command line check uses no Sanning server. The verify page looks up the stamps through a Sanning server by default.
 
 A Verified verdict says that the records are the ones your agent signed, that none has changed since, and that stamps cover them. It does not say that the agent decided well, or that what it recorded is true. The people who review the case decide that. For what the verifier checks, see [Verify an evidence pack](/evidence/verify).
 
@@ -86,7 +66,7 @@ A Verified verdict says that the records are the ones your agent signed, that no
   <Card title="Merkle trees, RFC 9162" icon="sitemap" href="https://www.rfc-editor.org/rfc/rfc9162">
     Seals many records into one stamp, and proves that a record is in it.
   </Card>
-  <Card title="Sanning agent record format" icon="file-lines">
+  <Card title="Sanning's record format" icon="file-lines">
     Every adapter writes this format and the verifier checks it, so records from agents on different frameworks read the same way.
   </Card>
 </CardGroup>

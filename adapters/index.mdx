@@ -1,9 +1,9 @@
 ---
-title: "Use an existing adapter"
+title: "Using adapters"
 description: "An adapter turns each step of your agent into a signed record, so you write no records by hand"
 ---
 
-An adapter connects your agent framework to Sanning. This page explains what an adapter does, lists the adapters that exist, and gives the practices that every adapter needs from you.
+An adapter connects your agent framework to Sanning. This page explains what an adapter is, lists the adapters that exist, and gives the practices every adapter needs from you.
 
 <Note>
   To test, use a Sandbox API key, and see [Test in the Sandbox](/sandbox).
@@ -11,11 +11,11 @@ An adapter connects your agent framework to Sanning. This page explains what an 
 
 ## How adapters work
 
-An adapter watches your framework while your agent runs. For each step, it builds a [record](/#core-ideas) in Sanning's record format, signs it with your agent's signing key, and sends it to Sanning. The record holds hashes of the step's content, never the content. The adapter writes the content to a log store that you own, so that you can bring it back when someone must check the evidence.
+An adapter watches your framework while your agent runs. For each step, it builds a record (defined in the [Introduction](/#core-ideas)) in Sanning's record format, signs it with your agent's signing key, and sends it to Sanning. The record holds hashes of the step's content, never the content. The adapter writes the content to a log store that you own, so that you can add it to the evidence pack when someone must check the evidence.
 
-The adapter also opens and closes each run, and it puts the case ID that you give it on every record. You write no records by hand. The verifier checks every record against the same record format, and the adapter is what writes records in that format.
+The adapter opens each run, and it closes the run when you call `close()`. It puts the case ID that you give it on every record. You write no records by hand. The adapter writes every record in Sanning's record format, which is the format the verifier checks.
 
-The table shows how LangChain events become record types. The names in the first column are the ones the verify page shows. The second column is the type that is signed into the record.
+The table shows how LangChain events become record types. The Record column holds the names that the [verify page](https://verify.sanning.io) shows. The Type column holds the type that is signed into the record.
 
 | What happens in your agent | Record | Type |
 |---|---|---|
@@ -32,6 +32,13 @@ The table shows how LangChain events become record types. The names in the first
 
 The first record of each run also lists what the adapter does not capture. A reviewer then knows what is missing, and that it is missing on purpose.
 
+Every adapter follows the same rules, which the verifier checks:
+
+- A step that takes time, such as a tool call, is two records: one when it starts and one when it ends.
+- Each record points to the record before it, with a sequence number, so that a missing or reordered record shows.
+- Each run opens with a record, and it ends with a closing record that says how the run ended and which records it holds.
+- Every record carries the case ID.
+
 ## The adapters
 
 <CardGroup cols={2}>
@@ -45,14 +52,14 @@ The first record of each run also lists what the adapter does not capture. A rev
 
 ## Good practices
 
-These five hold for every adapter. The [LangChain and LangGraph guide](/adapters/langchain) shows each one beside the code that does it.
+These five practices apply to every adapter. The [LangChain and LangGraph guide](/adapters/langchain) shows each one beside the code that does it.
 
 - State each decision in a named tool call, and name the decision for what was decided. Use `claim_verdict` with the value `declined`, not `claim_declined`.
-- Give every run its case ID, and keep the ID opaque: no names and no personal data.
+- Give every run its case ID, and use an ID that means nothing outside your systems: no names and no personal data.
 - Close each run, and state how it ended.
-- Turn on approvals, so that a person's answer becomes a record.
-- Check for gaps when the run closes. Where a step must not run unrecorded, stop the agent when a record is lost.
+- Configure approvals, so that a person's answer becomes a record.
+- Check for gaps when the run closes. A gap is a step whose record was lost. Where a step must not run unrecorded, stop the agent when a record is lost.
 
-## Your framework is not here?
+## If your framework is not listed
 
-[Request an adapter](#request-an-adapter-placeholder), or [build your own](/adapters/build-your-own). The guide for building your own is coming soon.
+[Request an adapter](#request-an-adapter-placeholder), or see [Build your own adapter](/adapters/build-your-own). The guide for building your own is coming soon.

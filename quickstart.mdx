@@ -1,9 +1,9 @@
 ---
 title: "Quickstart"
-description: "Make a Live API key and a seed for your agent's signing key, install the SDK, and pick how to record your agent"
+description: "Make a Live API key and a seed for your agent's signing key, set up a log store, create the anchorer, and pick how to record your agent"
 ---
 
-This page sets up what your agent needs to record for production: a Live API key, a seed for its signing key, and the SDK. It takes about five minutes. You need Node.js 22 or later, or Python 3.11 or later.
+This page sets up what your agent needs to record for production: a Live API key, a seed for its signing key, the SDK (the package that signs records and sends them to Sanning), a log store, and an anchorer. Live is the mode that records real evidence. The Sandbox is the mode for testing. You need Node.js 22 or later, or Python 3.11 or later.
 
 <Note>
   To test, use a Sandbox API key, and see [Test in the Sandbox](/sandbox).
@@ -13,16 +13,16 @@ This page sets up what your agent needs to record for production: a Live API key
 
 An API key proves to Sanning which organization your agent records for. It never signs a record.
 
-1. Sign in to `console.sanning.io`. If a strip across the top says Sandbox, select **Switch to live**.
+1. Sign in to [console.sanning.io](https://console.sanning.io). If a strip across the top says Sandbox, select **Switch to live**.
 2. Open **Settings**, then **API keys**, and select **Create key**. Only an owner or admin can create one.
-3. Name the key and leave **Verify** unchecked. A key without Verify can record and read.
+3. Name the key and leave **Verify** unchecked: your agent only records and reads.
 4. Copy the key. The console shows it once.
 
 A Live API key starts with `sanning_prod_`.
 
 ## Make a seed for the signing key
 
-Your agent signs every record with its signing key, an Ed25519 key. You make the key from a 32-byte seed. You make the seed once, you keep it, and Sanning never receives it.
+Your agent signs every record with its signing key, an Ed25519 key. You make the key from a 32-byte seed. You make the seed once. You keep it, and Sanning never receives it.
 
 <CodeGroup>
 
@@ -40,7 +40,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 </CodeGroup>
 
-Keep the same seed for the life of the agent. A different seed is a different agent. Sanning enrolls the signing key on your agent's first record, so you do not register it anywhere.
+Use one seed for each agent ID. To change it later, rotate the signing key: Sanning accepts a new key only when the old key signs the change. If a seed leaks, an owner or admin revokes the key in the console and re-keys the agent. Sanning enrolls the signing key on your agent's first record, so you do not register it anywhere.
 
 ## Store both as environment variables
 
@@ -72,14 +72,98 @@ pip install sanning-anchor
 
 </CodeGroup>
 
-An adapter is a separate package. Each adapter guide shows how to install its own.
+In TypeScript, an adapter is a separate package. In Python, it ships inside `sanning-anchor`. Each adapter guide shows how to install its own.
+
+## Set up your log store
+
+A log store is your own storage for the content of each record. Sanning gets only hashes, so you keep the content, and you need it to build an evidence pack. A Live record with no log store is refused with `ProductionConfigError` before it is signed.
+
+Use an S3 bucket. S3-compatible stores also work: `S3ObjectStore` takes an `endpoint` option, or a client that you build. Object Lock support varies between stores. If a store has none, the SDK warns you and creates a plain bucket.
+
+1. Install the S3 client.
+
+   <CodeGroup>
+
+   ```bash TypeScript
+   npm install @aws-sdk/client-s3
+   ```
+
+   ```bash Python
+   pip install "sanning-anchor[s3]"
+   ```
+
+   </CodeGroup>
+
+2. Choose who creates the bucket. If the bucket does not exist, the SDK creates it on first use, with versioning and Object Lock in governance mode for 365 days. Object Lock can only be switched on when a bucket is created, so a bucket that exists without it cannot be fixed: make a new one.
+3. Give each credential only the actions it needs. Replace `BUCKET` with the name of your bucket.
+   - To create the bucket, once and not from the agent: `s3:CreateBucket`, `s3:PutBucketVersioning`, `s3:PutObjectLockConfiguration`, `s3:GetBucketVersioning`, `s3:GetObjectLockConfiguration` and `s3:ListBucket` on `arn:aws:s3:::BUCKET`.
+   - For the agent that records: `s3:PutObject` on `arn:aws:s3:::BUCKET/*`, and `s3:ListBucket`, `s3:GetBucketVersioning` and `s3:GetObjectLockConfiguration` on `arn:aws:s3:::BUCKET`. The three reads let the SDK check that the bucket is protected. Without them, the SDK warns that it cannot check.
+   - For `bundle`: `s3:GetObject` and `s3:PutObject` on `arn:aws:s3:::BUCKET/*`, and `s3:ListBucket` on `arn:aws:s3:::BUCKET`.
+   - No credential needs `s3:DeleteObject`.
+4. Put the bucket name in an environment variable, like the API key and the seed:
+
+   ```bash
+   export SANNING_LOG_BUCKET=BUCKET
+   ```
+
+   Replace `BUCKET` with the name of your bucket.
+
+<Warning>
+  The location of each record's content is signed into the record, and a signed record cannot be changed. Sanning can read the location, and so can every reviewer who gets a pack. Bucket names and object keys often carry the names of customers, agents or models. Choose bucket names and prefixes that you are content to have them read.
+</Warning>
+
+## Create the anchorer
+
+The anchorer signs your records and sends them to Sanning. It needs your API key, your seed, an agent ID and your log store. Every adapter uses this anchorer.
+
+<CodeGroup>
+
+```ts TypeScript
+import { createAnchorer, LocalEd25519Signer, ObjectLogStore } from "@sanning/anchor";
+import { S3ObjectStore } from "@sanning/anchor/s3";
+import { S3Client } from "@aws-sdk/client-s3";
+
+const logStore = new ObjectLogStore(
+  new S3ObjectStore({
+    bucket: process.env.SANNING_LOG_BUCKET!,
+    client: new S3Client({}),
+  }),
+);
+
+const anchorer = createAnchorer({
+  signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED!),
+  subject: { type: "agent", agent_id: "claims-triage" },
+  apiKey: process.env.SANNING_API_KEY!,
+  logStore,
+});
+```
+
+```python Python
+import os
+
+from sanning_anchor import Anchorer, LocalEd25519Signer, ObjectLogStore
+from sanning_anchor.s3 import S3ObjectStore
+
+log_store = ObjectLogStore(S3ObjectStore(bucket=os.environ["SANNING_LOG_BUCKET"]))
+
+anchorer = Anchorer(
+    signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
+    subject={"type": "agent", "agent_id": "claims-triage"},
+    api_key=os.environ["SANNING_API_KEY"],
+    log_store=log_store,
+)
+```
+
+</CodeGroup>
+
+Replace `claims-triage` with the agent ID of your agent. Keep it stable: it is how the agent shows on the **Agents** page.
 
 ## Pick your path
 
 An adapter records your agent's steps for you. You add it once, where your agent runs.
 
 <CardGroup cols={2}>
-  <Card title="Use an existing adapter" icon="plug" href="/adapters">
+  <Card title="Using adapters" icon="plug" href="/adapters">
     Add our adapter to your agent, and every step becomes a record. The example uses LangChain.
   </Card>
   <Card title="Build your own adapter (Soon)" href="/adapters/build-your-own">

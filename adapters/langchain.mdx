@@ -3,15 +3,15 @@ title: "LangChain and LangGraph"
 description: "Record every run of a LangChain or LangGraph agent for one case, with its decisions and approvals, in TypeScript or Python"
 ---
 
-This page adds the Sanning adapter to a LangChain or LangGraph agent, so that each run records its steps, decisions and approvals for one case. You end with records in the console and a stamp on the public record.
+This page shows how to add the Sanning adapter to a LangChain or LangGraph agent, so that each run records its steps, decisions and approvals for one case. You end with records in the console. Sanning stamps them on the public record at the end of the interval.
 
 <Note>
   To test, use a Sandbox API key, and see [Test in the Sandbox](/sandbox).
 </Note>
 
-Before you start, do the [Quickstart](/quickstart): you need a Live API key and a seed for your agent's signing key, both in environment variables. The API key needs the scopes `agent:enroll` and `anchor:write`. To build an evidence pack with the same API key later, it also needs `anchor:read`.
+Before you start, do the [Quickstart](/quickstart): you need a Live API key and a seed for your agent's signing key, both in environment variables. The API key from the Quickstart already has the scopes the adapter needs (`agent:enroll` and `anchor:write`) and the scope that `bundle` needs later (`anchor:read`).
 
-The example agent in this page has no model, so you need no model API key. It has three nodes: one asks for a tool call, one runs the tool, and one pauses for a person to approve. To use your own agent, keep the Sanning parts and replace the graph.
+The example agent on this page has no model, so you need no key from a model provider. It has three nodes: one asks for a tool call, one runs the tool, and one pauses for a person to approve. To use your own agent, keep the Sanning parts and replace the graph.
 
 <Steps>
   <Step title="Install the adapter">
@@ -31,7 +31,7 @@ The example agent in this page has no model, so you need no model API key. It ha
   </Step>
 
   <Step title="Start with an agent">
-    The graph below makes one tool call that states a verdict, and then pauses for approval. The tool, `record_conclusion`, is how the agent states its decision, and the `review` node is where a person approves.
+    The following graph makes one tool call that states a decision, and then pauses for approval. The tool, `record_conclusion`, is how the agent states its decision, and the `review` node is where a person approves.
 
     <CodeGroup>
 
@@ -123,19 +123,28 @@ The example agent in this page has no model, so you need no model API key. It ha
   <Step title="Add the adapter, with a case ID">
     Make an anchorer, which signs your records and sends them to Sanning, and make the handler that you pass to LangChain as a callback.
 
-    The case ID is the matter that the work is for. Give it to the handler, and every record of the run carries it, so that you can build one evidence pack for the whole case later. The ID is signed into each record and reaches Sanning in clear, and it is permanent. Keep it opaque: no names, no paths, no personal data. If you need to find a case by customer, keep that link in your own systems.
+    The case ID is the matter that the work is for. Give it to the handler, and every record of the run carries it, so that you can build one evidence pack for the whole case later. Each record carries its case ID permanently, and nobody can change or withdraw it. The ID reaches Sanning as plain text. Use an ID that means nothing outside your systems: no names, no paths, no personal data. If you need to find a case by customer, keep that link in your own systems.
 
     <CodeGroup>
 
     ```ts TypeScript
-    import { createAnchorer, FsLogStore, LocalEd25519Signer } from "@sanning/anchor";
+    import { createAnchorer, LocalEd25519Signer, ObjectLogStore } from "@sanning/anchor";
+    import { S3ObjectStore } from "@sanning/anchor/s3";
     import { anchorCallbacks } from "@sanning/anchor-langchain";
+    import { S3Client } from "@aws-sdk/client-s3";
+
+    const logStore = new ObjectLogStore(
+      new S3ObjectStore({
+        bucket: process.env.SANNING_LOG_BUCKET!,
+        client: new S3Client({}),
+      }),
+    );
 
     const anchorer = createAnchorer({
       signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED!),
       subject: { type: "agent", agent_id: "claims-triage" },
       apiKey: process.env.SANNING_API_KEY!,
-      logStore: new FsLogStore("./logstore"),
+      logStore,
     });
 
     const caseId = "case-4b19de";
@@ -145,13 +154,21 @@ The example agent in this page has no model, so you need no model API key. It ha
     ```python Python
     import os
 
-    from sanning_anchor import Anchorer, AnchorCallbackHandler, FsLogStore, LocalEd25519Signer
+    from sanning_anchor import (
+        Anchorer,
+        AnchorCallbackHandler,
+        LocalEd25519Signer,
+        ObjectLogStore,
+    )
+    from sanning_anchor.s3 import S3ObjectStore
+
+    log_store = ObjectLogStore(S3ObjectStore(bucket=os.environ["SANNING_LOG_BUCKET"]))
 
     anchorer = Anchorer(
         signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
         subject={"type": "agent", "agent_id": "claims-triage"},
         api_key=os.environ["SANNING_API_KEY"],
-        log_store=FsLogStore("./logstore"),
+        log_store=log_store,
     )
 
     case_id = "case-4b19de"
@@ -160,15 +177,15 @@ The example agent in this page has no model, so you need no model API key. It ha
 
     </CodeGroup>
 
-    Replace `claims-triage` with the agent ID of your agent, and keep it stable: it is how the agent shows on the **Agents** page. Replace `case-4b19de` with the ID of the case from your own system. An ID is 1 to 128 characters of letters, digits, `_`, `.`, `:` and `-`.
+    Replace `claims-triage` with the agent ID, the name that identifies your agent to Sanning, and keep it stable: it is how the agent shows on the **Agents** page. Replace `case-4b19de` with the ID of the case from your own system. A case ID is 1 to 128 characters of letters, digits, `_`, `.`, `:` and `-`.
 
-    The log store keeps the content of each step on your own disk, and Sanning never receives it. With a Live API key, every record needs a log store. For a store that outlives one machine, see [Keep the content](/evidence/build#keep-your-content).
+    The anchorer and the log store are the ones you set up in the Quickstart: see [Set up your log store](/quickstart#set-up-your-log-store) and [Create the anchorer](/quickstart#create-the-anchorer). The log store keeps the content of each step in your S3 bucket, and Sanning never receives it. With a Live API key, every record needs a log store. For why you keep the content, see [Keep your content](/evidence/build#keep-your-content).
 
-    The environment (Sandbox or Live) comes from the prefix of your API key, so you set nothing else.
+    The mode (Sandbox or Live) comes from the start of your API key, so you set nothing else.
   </Step>
 
   <Step title="Record decisions from a named tool">
-    A framework sees tool calls, not decisions. So put each decision in a tool, and name that tool to the adapter. When the tool ends without an error, the adapter writes a Decision record with the name that you give it. The value is what the tool returned, and it is hashed with the record like any other content.
+    A framework records tool calls, and it cannot tell which call is a decision. Put each decision in a tool, and name that tool to the adapter. When the tool ends without an error, the adapter writes a Decision record with the name that you give it. The value is what the tool returned, and it is hashed with the record like any other content.
 
     Name the decision for what was decided, and put the outcome in the value. The name `claim_verdict` with the value `declined` is right. The name `claim_declined` is not: a name that holds one outcome stops a reviewer from comparing decisions.
 
@@ -193,7 +210,7 @@ The example agent in this page has no model, so you need no model API key. It ha
 
     </CodeGroup>
 
-    Pass the tool object. The handler refuses a tool that does not exist, a tool named twice, and a name that is not a label, when you construct it. A call that ends with an error writes no decision.
+    Pass the tool object. The handler refuses a tool that does not exist, a tool named twice, and a name that is not a valid label (1 to 128 characters, with no control characters), when you construct it. A call that ends with an error writes no decision.
   </Step>
 
   <Step title="Record approvals">
@@ -231,15 +248,15 @@ The example agent in this page has no model, so you need no model API key. It ha
 
     </CodeGroup>
 
-    `actor` is `human`, `policy` or `model`. `verdict` returns `approved`, `rejected` or `edited`, and it must raise an error for a value that is no answer. Only a LangGraph resume command answers a pending approval.
+    `actor` is `human`, `policy` or `model`. `verdict` returns `approved`, `rejected` or `edited`, and it must raise an error for a value that is not an answer. Only a LangGraph resume command answers a pending approval.
 
-    The two records are in different runs, and a LangGraph `thread_id` ties them together. A `thread_id` is 1 to 128 characters of letters, digits, `_`, `.`, `:` and `-`. Use an opaque one: the adapter refuses every record of a run whose `thread_id` is an email address, for example.
+    The two records are in different runs, and a LangGraph `thread_id` ties them together. A `thread_id` is 1 to 128 characters of letters, digits, `_`, `.`, `:` and `-`. Use an ID that means nothing outside your systems: the adapter refuses every record of a run whose `thread_id` is an email address, for example.
 
     The request waits in the process until the run resumes. If the answer can arrive in another process, pass a store that outlives the first process as `approvals.pending` (`pending` in Python). Without `approvals`, the adapter records no approvals, and the first record of each run says so.
   </Step>
 
   <Step title="Close the run, and check for gaps">
-    A run with no closing record cannot show how it ended, and a reader cannot tell it from a process that died. So close the run in every case, and state how it ended. The adapter also writes what it watched LangChain do. If the two disagree, a reviewer sees both.
+    A run with no closing record cannot show how it ended, and a reader cannot tell it from a process that died. The closing record holds the outcome you state and the outcome the adapter observed. If they differ, a reviewer sees both. You must close the run in every case.
 
     The closing record also lists the records that the run wrote. A step that could not be recorded is a gap, and `close()` reports it. Check for gaps when you close, because the agent keeps running by default when a record is lost.
 
@@ -304,7 +321,7 @@ The example agent in this page has no model, so you need no model API key. It ha
   </Step>
 
   <Step title="Run it, and see the records">
-    Put the pieces in one file: `agent.mts` for TypeScript or `agent.py` for Python. The [whole file](#the-whole-file) is at the end of this page. Check that `SANNING_API_KEY` and `SANNING_SIGNING_SEED` are set, then run it.
+    Put the pieces in one file: `agent.mts` for TypeScript or `agent.py` for Python. The [whole file](#the-whole-file) is at the end of this page. Check that `SANNING_API_KEY`, `SANNING_SIGNING_SEED` and `SANNING_LOG_BUCKET` are set, then run it.
 
     <CodeGroup>
 
@@ -320,15 +337,15 @@ The example agent in this page has no model, so you need no model API key. It ha
 
     {/* OUTPUT FROM REAL RUN: the last line the script prints, "Recorded case case-4b19de.", and nothing else when the trail is complete */}
 
-    Open the [console](https://console.sanning.io) and go to **Records**. Each row is a record from your run: the run starts, the steps and the tool call run, the decision is stated, and the approval is requested and then resolved. The run ends with a closing record. The columns are Received, Agent, Kind and Signed by. A **Witness** strip above the table shows the block time of the latest stamp.
+    Open the [console](https://console.sanning.io) and go to **Records**. Each row is a record from your run: the run starts, the steps and the tool call run, the decision is stated, and the approval is requested and then resolved. The run ends with a closing record. The columns are Received, Agent, Kind and Signed by. A **Witness** strip at the top of the table shows the block time of the latest stamp, which is the time the public record confirmed it.
 
-    The page does not mark each record as stamped. At the end of each interval, Sanning seals your new records into one stamp and publishes it to the public record. On a Live API key, that takes up to about 10 minutes. To know whether your records are stamped, run `bundle`, as in [Build an evidence pack](/evidence/build#wait-for-the-stamp).
+    The page does not mark each record as stamped. Sanning seals the records of each 10-minute interval, and the proofs are ready about a minute later. The public record can take longer to confirm a stamp, sometimes hours. To know whether your records are stamped, run `bundle`, as in [Build an evidence pack](/evidence/build#wait-for-the-stamp).
   </Step>
 </Steps>
 
 ## If a step must not run unrecorded
 
-By default, recording never takes the agent down. If a step must not run unless its record is kept, build the anchorer with `failClosed`. The handler then waits for each step's records and stops the agent when one is lost, before the next step runs. A tool whose start record is lost does not run.
+By default, a lost record does not stop the agent. If a step must not run unless its record is kept, build the anchorer with `failClosed`. The handler then waits for each step's records and stops the agent when one is lost, before the next step runs. A tool whose start record is lost does not run.
 
 <CodeGroup>
 
@@ -337,7 +354,7 @@ const anchorer = createAnchorer({
   signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED!),
   subject: { type: "agent", agent_id: "claims-triage" },
   apiKey: process.env.SANNING_API_KEY!,
-  logStore: new FsLogStore("./logstore"),
+  logStore,
   failClosed: true,
 });
 ```
@@ -347,18 +364,18 @@ anchorer = Anchorer(
     signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
     subject={"type": "agent", "agent_id": "claims-triage"},
     api_key=os.environ["SANNING_API_KEY"],
-    log_store=FsLogStore("./logstore"),
+    log_store=log_store,
     fail_closed=True,
 )
 ```
 
 </CodeGroup>
 
-A stopped handler stays stopped. Make one handler for each case, and share one anchorer between them.
+After a handler stops the agent, it refuses every later step. Make one handler for each case, and share one anchorer between them.
 
 ## What the adapter cannot record
 
-The first record of each run lists what the adapter cannot capture. For example, it lists approvals when you do not pass `approvals`, and decisions when you name no decision tool. A reviewer then knows what is missing. The record types, and which LangChain event writes each, are in [Use an existing adapter](/adapters#how-adapters-work).
+For example, the first record of each run lists approvals when you do not pass `approvals`, and decisions when you name no decision tool. The record types, and which LangChain event writes each, are in [Using adapters](/adapters#how-adapters-work).
 
 ## The whole file
 
@@ -366,8 +383,10 @@ The first record of each run lists what the adapter cannot capture. For example,
   <Accordion title="TypeScript: agent.mts">
 
   ```ts
-  import { createAnchorer, FsLogStore, LocalEd25519Signer } from "@sanning/anchor";
+  import { createAnchorer, LocalEd25519Signer, ObjectLogStore } from "@sanning/anchor";
+  import { S3ObjectStore } from "@sanning/anchor/s3";
   import { anchorCallbacks } from "@sanning/anchor-langchain";
+  import { S3Client } from "@aws-sdk/client-s3";
   import { awaitAllCallbacks } from "@langchain/core/callbacks/promises";
   import { AIMessage } from "@langchain/core/messages";
   import { tool } from "@langchain/core/tools";
@@ -411,11 +430,18 @@ The first record of each run lists what the adapter cannot capture. For example,
     .addEdge("review", END)
     .compile({ checkpointer: new MemorySaver() });
 
+  const logStore = new ObjectLogStore(
+    new S3ObjectStore({
+      bucket: process.env.SANNING_LOG_BUCKET!,
+      client: new S3Client({}),
+    }),
+  );
+
   const anchorer = createAnchorer({
     signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED!),
     subject: { type: "agent", agent_id: "claims-triage" },
     apiKey: process.env.SANNING_API_KEY!,
-    logStore: new FsLogStore("./logstore"),
+    logStore,
   });
 
   const caseId = "case-4b19de";
@@ -474,9 +500,10 @@ The first record of each run lists what the adapter cannot capture. For example,
       AnchorCallbackHandler,
       ApprovalOptions,
       DecisionTool,
-      FsLogStore,
       LocalEd25519Signer,
+      ObjectLogStore,
   )
+  from sanning_anchor.s3 import S3ObjectStore
 
 
   @tool
@@ -507,11 +534,13 @@ The first record of each run lists what the adapter cannot capture. For example,
       .compile(checkpointer=MemorySaver())
   )
 
+  log_store = ObjectLogStore(S3ObjectStore(bucket=os.environ["SANNING_LOG_BUCKET"]))
+
   anchorer = Anchorer(
       signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
       subject={"type": "agent", "agent_id": "claims-triage"},
       api_key=os.environ["SANNING_API_KEY"],
-      log_store=FsLogStore("./logstore"),
+      log_store=log_store,
   )
 
   case_id = "case-4b19de"
