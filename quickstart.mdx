@@ -94,23 +94,39 @@ Use an S3 bucket. S3-compatible stores also work: `S3ObjectStore` takes an `endp
 
    </CodeGroup>
 
-2. Choose who creates the bucket. If the bucket does not exist, the SDK creates it on first use, with versioning and Object Lock in governance mode for 365 days. Object Lock can only be switched on when a bucket is created, so a bucket that exists without it cannot be fixed: make a new one.
-3. Give each credential only the actions it needs. Replace `BUCKET` with the name of your bucket.
-   - To create the bucket, once and not from the agent: `s3:CreateBucket`, `s3:PutBucketVersioning`, `s3:PutObjectLockConfiguration`, `s3:GetBucketVersioning`, `s3:GetObjectLockConfiguration` and `s3:ListBucket` on `arn:aws:s3:::BUCKET`.
-   - For the agent that records: `s3:PutObject` on `arn:aws:s3:::BUCKET/*`, and `s3:ListBucket`, `s3:GetBucketVersioning` and `s3:GetObjectLockConfiguration` on `arn:aws:s3:::BUCKET`. The three reads let the SDK check that the bucket is protected. Without them, the SDK warns that it cannot check.
+2. Give the agent's credential the actions it needs. The SDK creates the bucket on the agent's first record, with versioning and Object Lock in governance mode for 365 days. If the bucket exists already, the SDK uses it and does not change it. Replace `BUCKET` with the name of your bucket.
+   - For the agent that records, on `arn:aws:s3:::BUCKET`: `s3:CreateBucket`, `s3:PutBucketVersioning`, `s3:PutBucketObjectLockConfiguration`, `s3:ListBucket`, `s3:GetBucketVersioning` and `s3:GetBucketObjectLockConfiguration`. On `arn:aws:s3:::BUCKET/*`: `s3:PutObject`. The first three create the bucket. The three reads let the SDK check that the bucket exists and is protected. Without them, the SDK warns that it cannot check.
    - For `bundle`: `s3:GetObject` and `s3:PutObject` on `arn:aws:s3:::BUCKET/*`, and `s3:ListBucket` on `arn:aws:s3:::BUCKET`.
    - No credential needs `s3:DeleteObject`.
-4. Put the bucket name in an environment variable, like the API key and the seed:
+
+   After the agent's first record, you can remove `s3:CreateBucket`, `s3:PutBucketVersioning` and `s3:PutBucketObjectLockConfiguration` from its credential.
+
+3. If the bucket is not in `us-east-1`, create it yourself before the agent's first record. The SDK creates a bucket only in `us-east-1`. With the AWS CLI, the first command creates the bucket with Object Lock, which also turns on versioning. The second sets the default retention:
+
+   ```bash
+   aws s3api create-bucket --bucket BUCKET --region REGION \
+     --create-bucket-configuration LocationConstraint=REGION \
+     --object-lock-enabled-for-bucket
+   aws s3api put-object-lock-configuration --bucket BUCKET \
+     --object-lock-configuration '{"ObjectLockEnabled":"Enabled","Rule":{"DefaultRetention":{"Mode":"GOVERNANCE","Days":365}}}'
+   ```
+
+   Replace the following:
+
+   - `BUCKET`: the name of your bucket.
+   - `REGION`: the AWS Region of the bucket, such as `eu-west-1`.
+
+4. Put the bucket name and its Region in environment variables, like the API key and the seed:
 
    ```bash
    export SANNING_LOG_BUCKET=BUCKET
+   export AWS_REGION=REGION
    ```
 
-   Replace `BUCKET` with the name of your bucket.
+   Replace the following:
 
-<Warning>
-  The location of each record's content is signed into the record, and a signed record cannot be changed. Sanning can read the location, and so can every reviewer who gets a pack. Bucket names and object keys often carry the names of customers, agents or models. Choose bucket names and prefixes that you are content to have them read.
-</Warning>
+   - `BUCKET`: the name of your bucket.
+   - `REGION`: the AWS Region of the bucket, such as `us-east-1`.
 
 ## Create the anchorer
 
@@ -144,7 +160,12 @@ import os
 from sanning_anchor import Anchorer, LocalEd25519Signer, ObjectLogStore
 from sanning_anchor.s3 import S3ObjectStore
 
-log_store = ObjectLogStore(S3ObjectStore(bucket=os.environ["SANNING_LOG_BUCKET"]))
+log_store = ObjectLogStore(
+    S3ObjectStore(
+        bucket=os.environ["SANNING_LOG_BUCKET"],
+        region=os.environ["AWS_REGION"],
+    )
+)
 
 anchorer = Anchorer(
     signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
@@ -156,7 +177,7 @@ anchorer = Anchorer(
 
 </CodeGroup>
 
-Replace `claims-triage` with the agent ID of your agent. Keep it stable: it is how the agent shows on the **Agents** page.
+Both samples read the Region of the bucket from `AWS_REGION`. Replace `claims-triage` with the agent ID of your agent. Keep it stable: it is how the agent shows on the **Agents** page.
 
 ## Pick your path
 

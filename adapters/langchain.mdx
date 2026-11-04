@@ -162,7 +162,12 @@ The example agent on this page has no model, so you need no key from a model pro
     )
     from sanning_anchor.s3 import S3ObjectStore
 
-    log_store = ObjectLogStore(S3ObjectStore(bucket=os.environ["SANNING_LOG_BUCKET"]))
+    log_store = ObjectLogStore(
+        S3ObjectStore(
+            bucket=os.environ["SANNING_LOG_BUCKET"],
+            region=os.environ["AWS_REGION"],
+        )
+    )
 
     anchorer = Anchorer(
         signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
@@ -534,7 +539,12 @@ For example, the first record of each run lists approvals when you do not pass `
       .compile(checkpointer=MemorySaver())
   )
 
-  log_store = ObjectLogStore(S3ObjectStore(bucket=os.environ["SANNING_LOG_BUCKET"]))
+  log_store = ObjectLogStore(
+      S3ObjectStore(
+          bucket=os.environ["SANNING_LOG_BUCKET"],
+          region=os.environ["AWS_REGION"],
+      )
+  )
 
   anchorer = Anchorer(
       signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
