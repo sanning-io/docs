@@ -94,7 +94,7 @@ These resolve on their own. Retry rather than debugging.
     command prints `bundle: no stamped records for agent "…"` with this reason, and exits 4.
 
     Check the spelling against the console's **Agents** page. `--agent` takes the name you
-    anchored under, not a display name you renamed it to later.
+    anchored under, not its display name.
   </Accordion>
   <Accordion title="N record(s) ... carry no context.case_id">
     From 0.15.0. `bundle --case` with `SANNING_SIGNING_SEED` set found records in the
@@ -140,8 +140,9 @@ These resolve on their own. Retry rather than debugging.
     re-enrolled by anyone, including whoever holds the old key.
 
     Recovering keeps the lineage: an owner or admin pins a new key for the name from
-    **Settings, Signing keys** in the console, then the agent completes the re-key by
-    restarting with that key. See
+    **Settings, Signing keys** in the console, as 64 hex characters, then the agent
+    completes the re-key by restarting with that key. A pin that is not claimed lapses
+    after 7 days. See
     [Re-key a revoked name](/reference/api-keys#re-key-a-revoked-name).
   </Accordion>
   <Accordion title="AGENT_ID_KEY_MISMATCH">
@@ -163,14 +164,14 @@ These resolve on their own. Retry rather than debugging.
   <Accordion title="AGENT_ROTATION_UNAUTHORIZED">
     This agent already has an active signing key, and rotating it needs
     `previous_signature`, the same challenge signed by the outgoing key. If that key is
-    lost, an owner or admin recovers the agent by pinning a new key from **Settings,
+    lost, an owner or admin revokes the agent's key, then pins a new key from **Settings,
     Signing keys**, which the agent then claims by restarting with it.
   </Accordion>
   <Accordion title="AGENT_REKEY_REQUIRED">
     The signature verifies, but this agent has no active signing key left to rotate: its
     only live key is still draining from an earlier rotation. The SDK will not rotate off
-    a draining key, so an owner or admin pins a new key for the agent from **Settings,
-    Signing keys** instead, and the agent claims it on its next restart.
+    a draining key, so an owner or admin revokes the agent's key and pins a new key from
+    **Settings, Signing keys** instead, and the agent claims it on its next restart.
   </Accordion>
   <Accordion title="SIGNING_KEY_ALREADY_ENROLLED">
     This public key is already enrolled somewhere in Sanning, under this name or

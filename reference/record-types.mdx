@@ -61,8 +61,8 @@ name a builder invents, are not in the set.
 
 Plain `anchor()` builds an `event` record, or a `checkpoint` or `declaration`. The SDK
 refuses to sign an `agent.*` type there. An `agent.*` record comes from an adapter or
-from the agent record builder, which checks the record against the schema first. See
-[Your own adapter](/guides/own-adapter). The SDK also refuses a type
+from the agent record builder, which checks the record against the schema first. The SDK
+also refuses a type
 outside the set, such as `claims.decision`, because a verifier would fail the record as
 `nonconforming`.
 

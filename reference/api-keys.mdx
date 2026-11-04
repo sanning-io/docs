@@ -124,9 +124,9 @@ anchorer = Anchorer(
 
 A rotation is never inferred from a refusal. That is what stops a leaked
 organization key taking over an identity that is already producing evidence.
-If the retiring key is genuinely lost, an owner or admin pins a new key for
-the agent from **Settings, Signing keys** in the console, and the agent
-completes the re-key on its next boot. See
+If the retiring key is genuinely lost, an owner or admin revokes the agent's key, then
+pins a new key for the agent from **Settings, Signing keys** in the console, and the
+agent completes the re-key on its next boot. See
 [Re-key a revoked name](/reference/api-keys#re-key-a-revoked-name).
 
 ## Enroll at deploy time instead
@@ -171,7 +171,8 @@ Then build the anchorer with `autoEnroll: false` in TypeScript, or
 
 `subject.agent_id` is sealed inside every signed record. It is history, it
 never changes, and it cannot contain spaces. A display name lives on the
-console's **Agents** page, accepts any text, and a rename shows up straight away.
+console's **Agents** page and accepts any text. The console cannot rename an agent: pass
+a new display name, and the next enrollment updates it.
 
 They default to agreeing. Pass `displayName` to `createAnchorer` in
 TypeScript, or `display_name` on the anchorer in Python, when you want a
@@ -256,16 +257,14 @@ what every key can do, so one organization API key covers every agent in your
 organization.
 
 Re-enrolling the same key on a later boot is a no-op, so it can run every time your
-service starts. See
-[API keys and signing keys](/reference/api-keys) for what a key carries, and
-[Your own adapter](/guides/own-adapter) for the call itself.
+service starts.
 
 ### Sandbox and live identities
 
 The Sandbox and Live are separate. An agent that enrolls in the Sandbox does not exist in
 Live, and a signing key enrolled in one is not enrolled in the other. Going live means a
 fresh enrollment: a new signing seed, a Live API key, and a first anchor against Live. See
-[Quickstart](/quickstart).
+[Move from the Sandbox to Live](/reference/api-keys#move-from-the-sandbox-to-live).
 
 ### One key, one agent name, forever
 
@@ -317,8 +316,9 @@ recovering it takes both a console step and a runtime one.
    the first time (`openssl rand -hex 32` produces a seed; derive the public
    half from it).
 2. In **Settings, Signing keys**, an owner or admin selects **Re-key** on the
-   revoked name and pins that public key. This step only reserves the key: it
-   does not yet let the name anchor.
+   revoked name and pastes the public key, as 64 hex characters. This step only
+   reserves the key: it does not yet let the name anchor. A pin that is not
+   claimed lapses after 7 days.
 3. Restart the agent with the new seed. On its first anchor, the SDK's
    enrollment proves possession of the pinned key to the control plane, which
    completes the re-key and lets the name anchor again.
@@ -337,8 +337,8 @@ stamps are simulated and never reach the public record. Live publishes stamps to
 public record and produces evidence. You choose the mode with the API key you use, and
 you change nothing else.
 
-This page compares the two. To move an agent from one to the other, see
-[Quickstart](/quickstart).
+This section compares the two. To move an agent from one to the other, see
+[Move from the Sandbox to Live](#move-from-the-sandbox-to-live).
 
 ### One host, and the API key decides
 
@@ -369,7 +369,7 @@ modes: the SDK calls, the record format, the log store, the pack and the verify 
 | Reset | Deletes your Sandbox data on request | None. Records cannot be withdrawn |
 | Email | None sent | Unchanged |
 | Billing | Never billed | Billed by plan |
-| Verify page | Shows **Sandbox**, and says "Simulated stamp: sandbox, not evidence" | Shows the verdict |
+| Verify page | Shows the result, with a Sandbox line | Shows the result |
 | Verify CLI | Prints a Sandbox line and exits 3 | Exits 0 on a verified pack |
 
 The wire values in this table are the only place this documentation names them. Everywhere
@@ -418,11 +418,24 @@ an agent its own `agent_id`, such as `claims-triage-dev`: Sandbox and Live ident
 separate, as [How an agent enrolls](/reference/api-keys#sandbox-and-live-identities)
 explains.
 
+### Move from the Sandbox to Live
+
+Your code does not change: the SDK reads the API key. Three things do:
+
+1. Make a Live API key, in Live under **Settings, API keys**.
+2. Make a new signing seed for Live. A key that is enrolled in the Sandbox is not enrolled
+   in Live, so the agent enrolls again on its first Live record.
+3. Give the anchorer a log store. On a Live API key, the SDK refuses to sign a record
+   without one.
+
+Then build an evidence pack and check that it reads Verified and exits 0, with no Sandbox
+line. See [Build and verify evidence](/guides/evidence).
+
 ### Why a Sandbox pack is never evidence
 
 A simulated stamp is Sanning's own computation. It supplies no independent time, so no
-reader can check it against anything outside Sanning, and the proof says so: "simulated
-stamp: sandbox, not evidence". The signed `environment` is inside the signed bytes, so
+reader can check it against anything outside Sanning. The console's record page says
+so: "simulated stamp: sandbox, not evidence". The signed `environment` is inside the signed bytes, so
 nobody can relabel a Sandbox record as a Live one without breaking its signature. The
 kernel reads that value offline, prints a Sandbox line and exits 3 instead of 0. No flag
 turns exit code 3 into 0.
@@ -431,8 +444,8 @@ Verification stays offline in both modes, and Sanning is never in the trust path
 either.
 
 <CardGroup cols={2}>
-  <Card title="Go live" icon="rocket" href="/quickstart">
-    Switch the API key and produce evidence.
+  <Card title="Move from the Sandbox to Live" icon="rocket" href="/reference/api-keys#move-from-the-sandbox-to-live">
+    A Live API key, a new signing seed, and a log store.
   </Card>
   <Card title="Test in CI" icon="flask-vial" href="/reference/api-keys#test-in-ci">
     Run the Sandbox from a pipeline and accept exit code 3.
@@ -482,8 +495,8 @@ signed as Live, and exit 1 or 2 means a check failed or could not finish. All th
 
 ### Wait for the stamp
 
-A Sandbox stamp seals within about a minute. Until it does, the pack reads
-Incomplete, and `bundle` exits 2. Once the stamp has sealed, `bundle` exits 3 for a
+A Sandbox stamp seals within about a minute. Until it does, `bundle` refuses with
+exit 2 and writes nothing. Once the stamp has sealed, `bundle` exits 3 for a
 Sandbox pack, the code `verify` gives it. Retry on 2 for a few minutes before you fail
 the job:
 

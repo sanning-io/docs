@@ -253,7 +253,8 @@ const sent = await handoff.send({
 await transport.send({ body: sent.wireBytes, sanning: sent.attachment });
 
 // The receiver, with its own anchorer, before its agent acts.
-const received = await handoff.receive({
+const receiver = createHandoff({ anchorer: receiverAnchorer, caseId: "case-5d1e9a" });
+const received = await receiver.receive({
   attachment: arrived.sanning,
   wireBytes: arrived.body,
   outcome: "accepted",
@@ -273,7 +274,8 @@ sent = handoff.send(
 transport.send(body=sent.wire_bytes, sanning=sent.attachment)
 
 # The receiver, with its own anchorer, before its agent acts.
-received = handoff.receive(
+receiver = create_handoff(anchorer=receiver_anchorer, case_id="case-5d1e9a")
+received = receiver.receive(
     attachment=arrived["sanning"],
     wire_bytes=arrived["body"],
     outcome="accepted",
@@ -288,6 +290,8 @@ Replace the following:
 - `RECEIVER_PUBLIC_KEY` and `SENDER_PUBLIC_KEY` with each agent's Ed25519 public key,
   64 hex characters.
 - `transport` with however your agents talk to each other.
+- `receiverAnchorer` (`receiver_anchorer` in Python) with the receiving agent's
+  anchorer, in its own organization.
 
 `receive` checks the sender's record with the open-source verifier, in your process,
 with no call to Sanning. Then it records what your agent did with the message:

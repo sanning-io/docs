@@ -53,8 +53,7 @@ row; do not read "received" as "witnessed" for a record whose interval has not c
 
 A stamp is a transaction on the public record, and your pack carries its
 transaction id, so your counterparty can fetch it from any gateway to that
-record without asking Sanning. The witness kind in the pack names it
-(`arweave`), and [Verify an evidence pack](/guides/evidence#verify-an-evidence-pack) shows how to re-fetch it.
+record without asking Sanning. The witness kind in the pack names it, and [Verify an evidence pack](/guides/evidence#verify-an-evidence-pack) shows how to re-fetch it.
 
 #### How it works
 
@@ -87,7 +86,7 @@ record without holding anyone else's.
 If you build a pack too early, the command tells you:
 
 ```
-bundle: no stamped records for agent claims-triage in 2026-09-01 → 2026-09-30
+bundle: no stamped records for agent "claims-triage" in 2026-09-01 → 2026-09-30
 ```
 
 That means **not yet**. It does not mean the records are missing. Wait for the interval to
@@ -123,7 +122,7 @@ chain, whatever the interval width.
 
 The Sandbox stamps records with a simulated witness. A stamp seals within about a minute,
 and it is never published to the public record. The pack is built the same way and
-verifies offline, and the kernel reports it as Sandbox, with exit code 3, not as
+verifies offline, and the verifier reports it as Sandbox, with exit code 3, not as
 production evidence. See [Sandbox and Live](/reference/api-keys#sandbox-and-live).
 
 #### What is published, and what is not
@@ -223,11 +222,16 @@ On the **Records** page of the console, select **Build evidence**. It gives you 
 `bundle` command to copy and run where your log store is. The console cannot build the
 evidence pack for you, because Sanning never holds your content.
 
-## Choose what to disclose
+## What it discloses
 
-The content stays in your log store, and an evidence pack carries only the content
-that you disclose. Its signed declaration says which content is withheld on purpose. A
-record whose content is withheld on purpose still reads Verified.
+The `bundle` command puts in the content of every record that it finds in your log
+store. With `SANNING_SIGNING_SEED` set, it also signs a declaration of what the evidence
+pack holds, and a record whose content is withheld on purpose, such as a hand-off
+record that commits only to a message's hash, still reads Verified. Without the seed,
+there is no declaration, and a record that discloses nothing reads Incomplete.
+
+To keep your step records out of an evidence pack for another organization, build it
+for the case with `--handoffs-only`.
 
 ## Keep the content
 
@@ -269,8 +273,12 @@ log_store = ObjectLogStore(S3ObjectStore(bucket="evidence-claims"))
 </CodeGroup>
 
 It is your bucket, and Sanning never sees it. On first use, the store checks the bucket
-once and reports what it could not establish. `--logs` takes the same store as an
-`s3://` URL, such as `s3://evidence-claims/claims-triage`.
+once and reports what it could not establish. A bucket that the store creates gets
+Object Lock in GOVERNANCE mode for 365 days by default.
+
+To build an evidence pack from the bucket, give `--logs` an `s3://` URL, such as
+`s3://evidence-claims`, and set `SANNING_S3_ENDPOINT`, `SANNING_S3_ACCESS_KEY_ID` and
+`SANNING_S3_SECRET_ACCESS_KEY` in the environment.
 
 <Warning>
   The location of the content is signed into each record, and stamps are permanent.
@@ -318,12 +326,12 @@ The first line is the result. It is one of three:
 | **Failed: do not rely on this evidence.** | A check found that something changed. Or, if it says "a record does not follow the rules", a record breaks the spec |
 | **Incomplete: not everything could be checked.** | Nothing failed, and at least one check could not run |
 
-After the first line come one line for each problem, and one line that starts `Next:`
-and says what to do. Then the result can add these lines:
+After the first line come one line for each problem and, when there is something to do,
+one line that starts `Next:` and says what. Then come these lines:
 
 - `Note:` for something to know that does not change the result.
 - `Sandbox:` when the records were made with a Sandbox API key.
-- `Witness:` to say whether the stamp was checked on the public record.
+- `Witness:` always, to say whether the stamp was checked on the public record.
 
 The exit codes are 0 Verified, 1 Failed, 2 Incomplete, 3 Verified with Sandbox records,
 and 4 when the check could not run. For the `--json` output, see
@@ -331,7 +339,8 @@ and 4 when the check could not run. For the `--json` output, see
 
 ## What Verified proves
 
-The verifier checks six claims, and each claim is proven, disproven or not proven:
+The verifier checks six claims. Each claim is proven, disproven or not proven, or not
+in scope when nothing in the evidence pack is about it:
 
 | Claim | The verifier asks |
 |---|---|
@@ -385,7 +394,7 @@ that the reviewer's
 record matches the assessor's; it says nothing about whether the reviewer
 acted on the recommendation, whether the recommendation was right, whether the
 data behind it was correct, or whether the model was fit for the task. Those
-are conclusions for the people reviewing the work. Sanning is content-blind in Private mode: it
+are conclusions for the people reviewing the work. Sanning is content-blind: it
 holds commitments, never the content, so it cannot vouch for the content
 either.
 
@@ -395,7 +404,7 @@ A pair across two organizations proves that two keys each signed their own
 side. It does not prove that two independent parties hold those keys.
 
 Pairing matches on keys and hashes and never on which account a record came
-from, so a pair verifies across packs from two organizations. The kernel flags
+from, so a pair verifies across packs from two organizations. The verifier flags
 one key signing both sides of a hand-off. It cannot tell two keys held by one
 party from two keys held by two, because binding a key to an organization
 happens outside the evidence. An agent's identity informs a reader and never
@@ -490,9 +499,9 @@ different answer later:
 
 ## Sandbox evidence
 
-An evidence pack built from Sandbox records passes every check, and the result adds
-the line "Sandbox: these records are sandbox records, not production evidence." It
-exits 3, not 0. The Sandbox stamp is simulated, so no public record holds it. Use a
+An evidence pack of Sandbox records that passes every check reads Verified, adds the
+line "Sandbox: these records are sandbox records, not production evidence.", and exits
+3, not 0. One that fails or is incomplete exits 1 or 2, as a Live one does. The Sandbox stamp is simulated, so no public record holds it. Use a
 Sandbox evidence pack to test. Do not rely on it as evidence. No flag turns exit
 code 3 into 0.
 
