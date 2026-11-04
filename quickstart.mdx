@@ -1,44 +1,28 @@
 ---
 title: "Quickstart"
-description: "Get an API key and a signing seed, install the SDK, and choose how to record your agent"
+description: "Make a Live API key and a seed for your agent's signing key, install the SDK, and pick how to record your agent"
 ---
 
-This page gets you ready to record an agent. You make two secrets, install the SDK,
-and then choose how to record. It takes about five minutes.
-
-## Before you start
-
-You need:
-
-- Python 3.11 or later, or Node.js 22 or later.
-- An organization on `console.sanning.io`. Sanning is in early access, so there is no
-  sign-up form. [Contact the team](mailto:TODO-ACCESS-LINK) for an API key.
-
-## Get an API key
-
-1. Sign in to `console.sanning.io`.
-2. Open **Settings, API keys** and select **Create key**. Only an owner or admin can
-   create one.
-3. Name the key, and leave **Verify** unchecked. The key can anchor records and build
-   evidence packs.
-4. Copy the key. The console shows it once.
-
-The API key authenticates your organization to Sanning. It never signs a record. For
-the two kinds of API key and what each one can do, see
-[API keys and signing keys](/reference/api-keys).
+This page sets up what your agent needs to record for production: a Live API key, a seed for its signing key, and the SDK. It takes about five minutes. You need Node.js 22 or later, or Python 3.11 or later.
 
 <Note>
-  **To test first, use the Sandbox.** In the console, open the account menu and select
-  **Switch to sandbox**, then make an API key in the same way. Your code does not
-  change: the SDK reads the API key and marks every record Sandbox. A Sandbox evidence
-  pack verifies, but it says Sandbox and is not evidence. See
-  [Sandbox and Live](/reference/api-keys#sandbox-and-live).
+  To test first, use a Sandbox API key. It records the same way, but nothing it records is evidence. See [Test in the Sandbox](/sandbox).
 </Note>
 
-## Make a signing seed
+## Make a Live API key
 
-Your agent signs its records with an Ed25519 key. You make its 32-byte seed once, and
-keep it. Sanning never receives it.
+An API key proves to Sanning which organization your agent records for. It never signs a record.
+
+1. Sign in to `console.sanning.io`. If a strip across the top says Sandbox, select **Switch to live**.
+2. Open **Settings**, then **API keys**, and select **Create key**. Only an owner or admin can create one.
+3. Name the key and leave **Verify** unchecked. A key without Verify can record and read.
+4. Copy the key. The console shows it once.
+
+A Live API key starts with `sanning_prod_`.
+
+## Make a seed for the signing key
+
+Your agent signs every record with its signing key, an Ed25519 key. You make the key from a 32-byte seed. You make the seed once, you keep it, and Sanning never receives it.
 
 <CodeGroup>
 
@@ -56,12 +40,11 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 </CodeGroup>
 
-Keep the same seed for the life of the agent. A new seed on a later run reads as a
-change of identity that nobody authorized, and the check fails.
+Keep the same seed for the life of the agent. A different seed is a different agent. Sanning enrolls the signing key on your agent's first record, so you do not register it anywhere.
 
-Store the seed as `SANNING_SIGNING_SEED` and the API key as `SANNING_API_KEY`, in the
-secret store that your service already uses. To follow the guides from a terminal,
-export both:
+## Store both as environment variables
+
+Put the seed and the API key in the secret store that your service already uses. The adapter guides read them from `SANNING_SIGNING_SEED` and `SANNING_API_KEY`. To follow along from a terminal, export both:
 
 ```bash
 export SANNING_SIGNING_SEED=SEED
@@ -71,36 +54,37 @@ export SANNING_API_KEY=API_KEY
 Replace the following:
 
 - `SEED` with the 64 hex characters that you made.
-- `API_KEY` with the API key that you copied.
+- `API_KEY` with the Live API key that you copied.
 
-Sanning enrolls the seed's public key on your agent's first record. There is no
-separate registration step: the agent then shows on the **Agents** page of the
-console.
+Never commit either value to your code.
 
 ## Install the SDK
 
 <CodeGroup>
 
-```bash Python
-pip install sanning-anchor
-```
-
 ```bash TypeScript
 npm install @sanning/anchor
 ```
 
+```bash Python
+pip install sanning-anchor
+```
+
 </CodeGroup>
 
-## Choose how you record
+An adapter is a separate package. Each adapter guide shows how to install its own.
 
-An adapter records your agent's runs for you. You add it once, where your agent runs,
-and it records every step.
+## Pick your path
+
+An adapter records your agent's steps for you. You add it once, where your agent runs.
 
 <CardGroup cols={2}>
-  <Card title="LangChain and LangGraph" icon="link" href="/guides/langchain">
-    Record every run with one callback handler, in Python or TypeScript.
+  <Card title="Use an existing adapter" icon="plug" href="/adapters/index">
+    Add our adapter to your agent, and every step becomes a record. The example uses LangChain.
   </Card>
-  <Card title="Your own adapter" icon="plug" href="/guides/own-adapter">
-    For an agent on any other framework.
+  <Card title="Build your own adapter (Soon)" href="/adapters/build-your-own">
+    For another framework or your own code. The guide is not ready yet.
   </Card>
 </CardGroup>
+
+Until the build guide is ready, you can [request an adapter](#request-an-adapter-placeholder) for your framework.

@@ -48,148 +48,32 @@
         "pages": [
           "index",
           "quickstart",
-          "guides/langchain",
-          "guides/own-adapter",
-          "guides/evidence"
+          "sandbox"
+        ]
+      },
+      {
+        "group": "Record your agents",
+        "pages": [
+          "adapters/index",
+          "adapters/langchain",
+          "adapters/build-your-own"
+        ]
+      },
+      {
+        "group": "Evidence",
+        "pages": [
+          "evidence/build",
+          "evidence/verify"
         ]
       },
       {
         "group": "Reference",
         "pages": [
-          "reference/record-types",
-          "reference/api-keys",
-          "reference/cli",
-          "reference/errors"
+          "reference/cli"
         ]
       }
     ]
   },
-  "redirects": [
-    {
-      "source": "/concepts/how-it-works",
-      "destination": "/"
-    },
-    {
-      "source": "/concepts/trust-boundary",
-      "destination": "/"
-    },
-    {
-      "source": "/concepts/witness",
-      "destination": "/guides/evidence"
-    },
-    {
-      "source": "/concepts/sandbox-and-live",
-      "destination": "/reference/api-keys"
-    },
-    {
-      "source": "/concepts/limits",
-      "destination": "/guides/evidence"
-    },
-    {
-      "source": "/concepts/hide-and-reveal-fields",
-      "destination": "/guides/langchain"
-    },
-    {
-      "source": "/concepts/what-a-pack-proves",
-      "destination": "/guides/evidence"
-    },
-    {
-      "source": "/guides/anchor",
-      "destination": "/guides/own-adapter"
-    },
-    {
-      "source": "/guides/what-to-record",
-      "destination": "/guides/langchain"
-    },
-    {
-      "source": "/guides/vercel",
-      "destination": "/guides/own-adapter"
-    },
-    {
-      "source": "/guides/file-records",
-      "destination": "/guides/langchain"
-    },
-    {
-      "source": "/guides/handoff",
-      "destination": "/guides/langchain"
-    },
-    {
-      "source": "/guides/handoff-case",
-      "destination": "/guides/evidence"
-    },
-    {
-      "source": "/guides/log-store",
-      "destination": "/guides/evidence"
-    },
-    {
-      "source": "/guides/bucket",
-      "destination": "/guides/evidence"
-    },
-    {
-      "source": "/guides/keys-and-scopes",
-      "destination": "/reference/api-keys"
-    },
-    {
-      "source": "/guides/enrollment",
-      "destination": "/reference/api-keys"
-    },
-    {
-      "source": "/guides/go-live",
-      "destination": "/quickstart"
-    },
-    {
-      "source": "/guides/test-in-ci",
-      "destination": "/reference/api-keys"
-    },
-    {
-      "source": "/verify/browser",
-      "destination": "/guides/evidence"
-    },
-    {
-      "source": "/verify/cli",
-      "destination": "/guides/evidence"
-    },
-    {
-      "source": "/verify/what-a-verdict-means",
-      "destination": "/guides/evidence"
-    },
-    {
-      "source": "/reference/event-types",
-      "destination": "/reference/record-types"
-    },
-    {
-      "source": "/reference/specs-and-conformance",
-      "destination": "/reference/record-types"
-    },
-    {
-      "source": "/reference/glossary",
-      "destination": "/"
-    },
-    {
-      "source": "/reference/scopes",
-      "destination": "/reference/api-keys"
-    },
-    {
-      "source": "/reference/rate-limits-and-ceilings",
-      "destination": "/reference/errors"
-    },
-    {
-      "source": "/reference/wire-formats",
-      "destination": "/reference/record-types"
-    },
-    {
-      "source": "/reference/a2a-mapping",
-      "destination": "/reference/record-types"
-    },
-    {
-      "source": "/guides/enrolment",
-      "destination": "/reference/api-keys"
-    },
-    {
-      "source": "/guides/environments",
-      "destination": "/reference/api-keys"
-    }
-  ],
   "contextual": {
     "options": [
       "copy",
