@@ -131,12 +131,11 @@ The example agent on this page has no model, so you need no key from a model pro
     import { createAnchorer, LocalEd25519Signer, ObjectLogStore } from "@sanning/anchor";
     import { S3ObjectStore } from "@sanning/anchor/s3";
     import { anchorCallbacks } from "@sanning/anchor-langchain";
-    import { S3Client } from "@aws-sdk/client-s3";
 
     const logStore = new ObjectLogStore(
       new S3ObjectStore({
         bucket: process.env.SANNING_LOG_BUCKET!,
-        client: new S3Client({}),
+        region: process.env.AWS_REGION!,
       }),
     );
 
@@ -391,7 +390,6 @@ For example, the first record of each run lists approvals when you do not pass `
   import { createAnchorer, LocalEd25519Signer, ObjectLogStore } from "@sanning/anchor";
   import { S3ObjectStore } from "@sanning/anchor/s3";
   import { anchorCallbacks } from "@sanning/anchor-langchain";
-  import { S3Client } from "@aws-sdk/client-s3";
   import { awaitAllCallbacks } from "@langchain/core/callbacks/promises";
   import { AIMessage } from "@langchain/core/messages";
   import { tool } from "@langchain/core/tools";
@@ -438,7 +436,7 @@ For example, the first record of each run lists approvals when you do not pass `
   const logStore = new ObjectLogStore(
     new S3ObjectStore({
       bucket: process.env.SANNING_LOG_BUCKET!,
-      client: new S3Client({}),
+      region: process.env.AWS_REGION!,
     }),
   );
 
