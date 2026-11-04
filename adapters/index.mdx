@@ -1,0 +1,54 @@
+---
+title: "Use an existing adapter"
+description: "An adapter turns each step of your agent into a signed record, so you write no records by hand"
+---
+
+An adapter connects your agent framework to Sanning. This page explains what an adapter does, lists the adapters that exist, and gives the practices that every adapter needs from you.
+
+## How adapters work
+
+An adapter watches your framework while your agent runs. For each step, it builds a [record](/#core-ideas) in Sanning's record format, signs it with your agent's signing key, and sends it to Sanning. The record holds hashes of the step's content, never the content. The adapter writes the content to a log store that you own, so that you can bring it back when someone must check the evidence.
+
+The adapter also opens and closes each run, and it puts the case ID that you give it on every record. You write no records by hand. The verifier checks every record against the same record format, and the adapter is what writes records in that format.
+
+The table shows how LangChain events become record types. The names in the first column are the ones the verify page shows. The second column is the type that is signed into the record.
+
+| What happens in your agent | Record | Type |
+|---|---|---|
+| A run starts | Run started | `agent.run_opened` |
+| A chain, a graph node or the root starts and ends | Step started, Step ended | `agent.step.started`, `agent.step.ended` |
+| A model call starts and ends | Model call started, Model call ended | `agent.model_call.started`, `agent.model_call.ended` |
+| A tool call starts and ends | Tool call started, Tool call ended | `agent.tool_call.started`, `agent.tool_call.ended` |
+| A retriever call starts and ends | Search started, Search ended | `agent.retrieval.started`, `agent.retrieval.ended` |
+| A tool that you named as a decision ends without an error | Decision | `agent.decision` |
+| A tool returns a file | File | `agent.file` |
+| A LangGraph `interrupt()` pauses the run, and its answer resumes it | Approval requested, Approval resolved | `agent.approval.requested`, `agent.approval.resolved` |
+| LangChain reports one moment as a single event, such as an agent action | Step | `agent.step.occurred` |
+| You close the run | Run ended | `agent.run_closed` |
+
+The first record of each run also lists what the adapter does not capture. A reviewer then knows what is missing, and that it is missing on purpose.
+
+## The adapters
+
+<CardGroup cols={2}>
+  <Card title="LangChain and LangGraph" icon="link" href="/adapters/langchain">
+    For agents in TypeScript or Python. Records chains, model calls, tool calls, retrievals, files, decisions and approvals.
+  </Card>
+  <Card title="More adapters" icon="plus" href="#request-an-adapter-placeholder">
+    More adapters are on the way. Tell us which framework you use.
+  </Card>
+</CardGroup>
+
+## Good practices
+
+These five hold for every adapter. The [LangChain and LangGraph guide](/adapters/langchain) shows each one beside the code that does it.
+
+- State each decision in a named tool call, and name the decision for what was decided. Use `claim_verdict` with the value `declined`, not `claim_declined`.
+- Give every run its case ID, and keep the ID opaque: no names and no personal data.
+- Close each run, and state how it ended.
+- Turn on approvals, so that a person's answer becomes a record.
+- Check for gaps when the run closes. Where a step must not run unrecorded, stop the agent when a record is lost.
+
+## Your framework is not here?
+
+[Request an adapter](#request-an-adapter-placeholder), or [build your own](/adapters/build-your-own). The guide for building your own is coming soon.

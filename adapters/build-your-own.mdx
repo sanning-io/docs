@@ -1,0 +1,26 @@
+---
+title: "Build your own adapter"
+description: "What an adapter must do for a framework that has none, and how to get one in the meantime"
+tag: "Soon"
+---
+
+This page says what an adapter for another framework must do. The guide to building one is not ready yet.
+
+## What an adapter must do
+
+An adapter turns your framework's events into records that the verifier accepts. For that, it must do the following:
+
+- Write each step as a record in Sanning's record format, using the record types in [Use an existing adapter](/adapters#how-adapters-work). An operation that takes time, such as a tool call, is two records: one when it starts and one when it ends.
+- Hash the content of each step in your process, sign the record with the agent's signing key, and keep the content in your log store. Sanning receives hashes, never the content.
+- Open each run with a record that says a closing record is coming, and close it with a record that says how it ended and which records it holds.
+- Link each record to the one before it, with a sequence number and a pointer to the previous record, so that a missing or reordered record shows.
+- Put the case ID on every record.
+- Say which record types it cannot write, in the run's first record.
+
+The verifier reads each of these. An adapter that leaves one out gives a reviewer less to check, and a record that does not follow the format fails the check.
+
+## A simpler way is coming
+
+A simpler way to build an adapter is coming in the SDK, and a full guide will follow it. Until then, [request an adapter](#request-an-adapter-placeholder) for your framework.
+
+The [LangChain and LangGraph adapter](/adapters/langchain) is the one that exists today.

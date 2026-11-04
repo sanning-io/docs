@@ -1,0 +1,111 @@
+---
+title: "Verify an evidence pack"
+description: "Check an evidence pack in your browser or at the command line, with no account, and read what the verdict proves"
+---
+
+This page is for the reviewer: it shows how to check an evidence pack that someone gave you, and what the verdict does and does not prove. You need no account, and you do not need Sanning.
+
+You need two things: the evidence pack, which is a zip file, and the public record that holds its stamps. The pack stays on your machine.
+
+## Check it in your browser
+
+Open [verify.sanning.io](https://verify.sanning.io) and drop the zip file on the page. The check runs in your browser. The pack is never uploaded. The only data that leaves your browser is the transaction ids of the stamps, which go to the gateways to the public record that the page shows, so that the page can look each stamp up.
+
+## Check it at the command line
+
+Unzip the pack, and run the verifier on `bundle.json`. `--logs` points at the folder that holds the content.
+
+<CodeGroup>
+
+```bash TypeScript
+unzip case-4b19de.zip -d pack
+npx @sanning/proof verify pack/bundle.json --logs pack/logs/
+```
+
+```bash Python
+unzip case-4b19de.zip -d pack
+pip install sanning-proof
+sanning-proof verify pack/bundle.json --logs pack/logs/
+```
+
+</CodeGroup>
+
+{/* OUTPUT FROM REAL RUN: the report that verify prints for a Verified pack, with its Witness line */}
+
+Both commands read the pack offline and give the same answer, with the same exit codes. To look each stamp up on the public record, add `--gateways` with the address of a gateway to it. Without `--gateways`, the report says on its `Witness:` line that the stamps were not checked, and the verdict does not move.
+
+```bash
+npx @sanning/proof verify pack/bundle.json --logs pack/logs/ --gateways GATEWAY_URL
+```
+
+To look each stamp up, replace `GATEWAY_URL` with the address of a gateway to the public record.
+
+A case file holds one pack for each agent. Read the packs together with `case`, which takes the zip file and prints one verdict for the case.
+
+```bash
+npx @sanning/proof case case-4b19de.zip
+```
+
+The flags are in [Command line](/reference/cli).
+
+## What the verifier checks
+
+The verifier is the program that you run to check a pack. Its core, the kernel, is the code that reads a pack and gives the verdict. The kernel ships in two versions: `@sanning/proof` for TypeScript and `sanning-proof` for Python. The verify page and both command lines run it. For the same pack, the two versions give the same answer.
+
+The kernel checks four things:
+
+- The signatures. Each record was signed by the key that it names, and each stamp is signed. The bytes of each record match what was signed, and so does the content that the pack holds for it.
+- The format. Each record follows the record format that it names, and a record type that the format does not define fails.
+- The runs. Each run's records are complete and in order: each record points to the one before it, and the run's closing record lists the records that the run wrote. A missing or reordered record shows.
+- The stamps. A stamp covers each record, and the stamp's proof is correct. When you look the stamps up, the public record must hold the same bytes, and it dates each stamp.
+
+Every one of these runs on your machine. The verifier reads the report as six claims: Signed, Unchanged, Witnessed, Complete, Agreed and Follows the rules. Each claim is proven, disproven or not proven, and one rule turns the six into the verdict.
+
+<img src="/images/diagrams/claims-to-verdict.png" alt="Six claims, read by one rule, give one of three results. Any claim disproven gives Failed, exit 1. Otherwise any claim not proven gives Incomplete, exit 2. Otherwise Verified, exit 0. Sandbox evidence that verifies exits 3, and is a label, not a result." className="block dark:hidden" />
+<img src="/images/diagrams/claims-to-verdict-dark.png" alt="Six claims, read by one rule, give one of three results. Any claim disproven gives Failed, exit 1. Otherwise any claim not proven gives Incomplete, exit 2. Otherwise Verified, exit 0. Sandbox evidence that verifies exits 3, and is a label, not a result." className="hidden dark:block" />
+
+| Claim | The verifier asks |
+|---|---|
+| Signed | Did the key that the pack or record names sign it? |
+| Unchanged | Do the bytes agree with what was signed? |
+| Witnessed | Does a stamp cover each record? |
+| Complete | Does the pack hold everything that its own signed declaration and its stamp say it holds? |
+| Agreed | Do the two sides of each hand-off agree? This applies only to evidence that holds hand-offs between agents. |
+| Follows the rules | Does each record follow the record format that it names? |
+
+## What each verdict means
+
+The first line of the report is the verdict.
+
+| Verdict | First line | Means | Exit code |
+|---|---|---|---|
+| Verified | `Verified` | Every claim that applies is proven. | 0 |
+| Failed | `Failed: do not rely on this evidence.` | A claim is disproven. For example, a record changed after it was signed, or the public record holds different bytes for a stamp. | 1 |
+| Failed | `Failed: a record does not follow the rules.` | A record breaks the record format. | 1 |
+| Incomplete | `Incomplete: not everything could be checked.` | Nothing is disproven, and at least one claim could not be checked. | 2 |
+
+Incomplete is not a failure. It means that the pack leaves something out, such as the content of a record, or a stamp that is not sealed yet. The report says which, and a `Next:` line says what to do. Ask the sender for what is missing.
+
+After the verdict come one line for each claim that is disproven or not proven, and a `Next:` line when there is something to do. The report can also hold these lines:
+
+- `Note:` for something to know that does not change the verdict.
+- `Sandbox:` when the records were made with a Sandbox API key.
+- `Witness:` always, to say whether the stamps were looked up on the public record. It reads `Confirmed on the public record`, `Not checked`, or `The public record holds different bytes`.
+
+A pack whose records were made with a Sandbox API key that otherwise verifies reads Verified, adds the line `Sandbox: these records are sandbox records, not production evidence.`, and exits with code 3. Its stamps are simulated and are not on the public record. Do not rely on it as evidence.
+
+A command that could not run, such as one given a file that is not a pack, exits with code 4. The exit codes are in [Command line](/reference/cli#exit-codes).
+
+## What Verified proves
+
+A Verified verdict proves that the records are the ones the agent signed with its key, that none changed after they were signed, that each record follows the record format, that each run's records are complete and in order, and that stamps cover the records. When you looked the stamps up, it also proves that the public record holds them. The public record is the independent witness: it fixes when the records existed. Neither the sender nor Sanning can change that afterward without the check failing.
+
+## What Verified does not prove
+
+A Verified verdict does not prove the following:
+
+- That the agent decided well, or that what the records say is true. A record proves what the agent recorded, not that it was right.
+- That the agent recorded every step. The first record of each run lists what the adapter cannot capture. Read it.
+- That the pack holds every run of the case. A pack holds a selection of records, and the declaration inside it is the sender's own statement of what it holds.
+- Who holds the signing key. A key proves that the same key signed the records, not who the person or organization behind it is.
+- That the agent followed a rule or a law. Those conclusions belong to the people who review the evidence.
