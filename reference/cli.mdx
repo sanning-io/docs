@@ -64,7 +64,6 @@ npx @sanning/anchor bundle \
 | `--out` | Yes | Where to write the zip. A `.zip` ending is added if it is missing. |
 | `--base-url` | No | The control plane to read from. The default is `https://api.sanning.io`, or the value of `SANNING_BASE_URL`. |
 | `--allow-unstamped` | No | Build the pack even when records in the period are recorded and not stamped yet. Takes no value. |
-| `--handoffs-only` | No | With `--case`, put only the case's hand-off records in the pack. Needs `SANNING_SIGNING_SEED`. |
 | `--report-file` | No | For a case file, and it can be given more than once: put this file under `report/` in the case file. No record commits to it. |
 
 `--logs` is optional to the parser and required in practice. The command reads your records from the log store to work out which of them belong to the agent, because a record that Sanning holds does not carry the agent ID.
