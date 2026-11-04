@@ -1,5 +1,5 @@
 <svg viewBox="0 0 760 330" xmlns="http://www.w3.org/2000/svg" role="img"
-   aria-label="The life of one case. Two agents work on one case over time. Every record in their three runs carries the case ID. A run ends with a closing record. At the end of each interval, Sanning seals the new records into a stamp on the public record. You build one evidence pack for the case, from the records and your own content. The reviewer checks the pack offline, against the stamps on the public record, and reads the verdict.">
+   aria-label="The life of one case. Two agents work on one case over time. Every record in their three runs carries the case ID. A run ends with a closing record. At the end of each interval, Sanning seals the new records into a stamp on the public record. You build one evidence pack for the case, from the records and your own content. The reviewer checks the pack on their own machine, checks the stamps on the public record, and reads the verdict.">
 <style>
   .lbl  { font-family:"Geist",sans-serif; font-size:12px; font-weight:500; fill:#F5F5F2; }
   .sub  { font-family:"Geist Mono",monospace; font-size:9px; letter-spacing:.03em; fill:#A3A9B1; }
@@ -62,7 +62,7 @@
 <text class="zone" x="580" y="196" text-anchor="start">THE REVIEWER</text>
 <rect x="580" y="200" width="160" height="52" fill="none" stroke="#7D8CFF" stroke-width="1"/>
 <text class="acc" x="592" y="222" text-anchor="start">Verdict</text>
-<text class="sub" x="592" y="236" text-anchor="start">checked offline</text>
+<text class="sub" x="592" y="236" text-anchor="start">checked on their machine</text>
 <polyline points="660,106 660.0,175.0" fill="none" stroke="#F5F5F2" stroke-width="1"/>
 <polygon points="660,180 657.0,174.0 663.0,174.0" fill="#F5F5F2"/>
 <text class="sub" x="668" y="148" text-anchor="start">hand over</text>

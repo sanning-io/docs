@@ -3,13 +3,13 @@ title: "Verify an evidence pack"
 description: "Check an evidence pack in your browser or at the command line, with no account, and read what the verdict proves"
 ---
 
-This page is for the reviewer: it shows how to check an evidence pack that someone gave you, and what the verdict does and does not prove. You need no account, and you do not need Sanning.
+This page is for the reviewer: it shows how to check an evidence pack that someone gave you, and what the verdict does and does not prove. You need no account. The command line check needs no Sanning server.
 
-You need two things: the evidence pack, which is a zip file, and the public record that holds its stamps. The pack stays on your machine.
+You need the evidence pack, which is a zip file. The pack stays on your machine. To also look each stamp up on the public record, you need the address of a public gateway.
 
 ## Check it in your browser
 
-Open [verify.sanning.io](https://verify.sanning.io) and drop the zip file on the page. The check runs in your browser. The pack is never uploaded. The only data that leaves your browser is the transaction ids of the stamps, which go to the gateways to the public record that the page shows, so that the page can look each stamp up.
+Open [verify.sanning.io](https://verify.sanning.io) and drop the zip file on the page. The check runs in your browser. The pack is never uploaded. The only data that leaves your browser is the transaction ids of the stamps. By default the page looks the stamps up through Sanning's read front, and it has no setting to change that. For a check with no Sanning server in it, use the command line with `--gateways` and a public gateway.
 
 ## Check it at the command line
 
@@ -32,13 +32,13 @@ sanning-proof verify pack/bundle.json --logs pack/logs/
 
 {/* OUTPUT FROM REAL RUN: the report that verify prints for a Verified pack, with its Witness line */}
 
-Both commands read the pack offline and give the same answer, with the same exit codes. To look each stamp up on the public record, add `--gateways` with the address of a gateway to it. Without `--gateways`, the report says on its `Witness:` line that the stamps were not checked, and the verdict does not move.
+Both commands read the pack offline and give the same answer, with the same exit codes. To look each stamp up on the public record, add `--gateways` with the address of a public gateway. Without `--gateways`, the report says `Witness: Not checked`, and the verdict does not move. The lookup is the one network call the verifier makes.
 
 ```bash
-npx @sanning/proof verify pack/bundle.json --logs pack/logs/ --gateways GATEWAY_URL
+npx @sanning/proof verify pack/bundle.json --logs pack/logs/ --gateways https://arweave.net
 ```
 
-To look each stamp up, replace `GATEWAY_URL` with the address of a gateway to the public record.
+This command asks the gateway for each stamp, and compares what it returns with the pack. You can name more than one gateway, separated by commas.
 
 A case file holds one pack for each agent. Read the packs together with `case`, which takes the zip file and prints one verdict for the case.
 
@@ -84,7 +84,7 @@ The first line of the report is the verdict.
 | Failed | `Failed: a record does not follow the rules.` | A record breaks the record format. | 1 |
 | Incomplete | `Incomplete: not everything could be checked.` | Nothing is disproven, and at least one claim could not be checked. | 2 |
 
-Incomplete is not a failure. It means that the pack leaves something out, such as the content of a record, or a stamp that is not sealed yet. The report says which, and a `Next:` line says what to do. Ask the sender for what is missing.
+An Incomplete verdict means that nothing is disproven and the pack leaves something out, such as the content of a record, or a stamp that is not sealed yet. The report says which, and a `Next:` line says what to do. Ask the sender for what is missing.
 
 After the verdict come one line for each claim that is disproven or not proven, and a `Next:` line when there is something to do. The report can also hold these lines:
 
@@ -98,7 +98,7 @@ A command that could not run, such as one given a file that is not a pack, exits
 
 ## What Verified proves
 
-A Verified verdict proves that the records are the ones the agent signed with its key, that none changed after they were signed, that each record follows the record format, that each run's records are complete and in order, and that stamps cover the records. When you looked the stamps up, it also proves that the public record holds them. The public record is the independent witness: it fixes when the records existed. Neither the sender nor Sanning can change that afterward without the check failing.
+A Verified verdict proves that the records are the ones the agent signed with its key, that none changed after they were signed, that each record follows the record format, that each run's records are complete and in order, and that stamps cover the records. It proves the independent time only if you looked the stamps up on the public record, with `--gateways` and a public gateway. Then it also proves that the public record holds them, and the public record is the independent witness: it fixes when the records existed. Neither the sender nor Sanning can change that afterward without the check failing. Without that lookup, the report says `Witness: Not checked`, and Verified does not prove when the records existed. The verify page looks the stamps up through Sanning's read front, so that lookup passes through a Sanning server.
 
 ## What Verified does not prove
 

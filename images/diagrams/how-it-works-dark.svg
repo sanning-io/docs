@@ -1,5 +1,5 @@
 <svg viewBox="0 0 840 400" xmlns="http://www.w3.org/2000/svg" role="img"
-   aria-label="How Sanning works. Your agent and its adapter capture each step. The content goes to your own log store. Only signed hashes go to Sanning, which seals the records into a stamp on the public record at each interval. You build the evidence pack from Sanning's records and stamp proofs and your own content, and hand it to the reviewer. The reviewer verifies it on their own machine against the public record and does not need Sanning.">
+   aria-label="How Sanning works. Your agent and its adapter capture each step. The content goes to your own log store. Only signed hashes go to Sanning, which seals the records into a stamp on the public record at each interval. You build the evidence pack from Sanning's records and stamp proofs and your own content, and hand it to the reviewer. The reviewer verifies it on their own machine and checks the stamps on the public record, and does not need Sanning.">
 <style>
   .lbl  { font-family:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; font-size:12px; font-weight:500; fill:#F5F5F2; }
   .sub  { font-family:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:9px; letter-spacing:.03em; fill:#A3A9B1; }
@@ -55,8 +55,7 @@
 <text class="zone" x="410" y="306" text-anchor="start">THE REVIEWER</text>
 <text class="step" x="414" y="336" text-anchor="start">4</text>
 <text class="lbl" x="428" y="336" text-anchor="start">Verifies</text>
-<text class="sub" x="428" y="348" text-anchor="start">on their own machine,</text>
-<text class="sub" x="428" y="359" text-anchor="start">against the public record</text>
+<text class="sub" x="428" y="348" text-anchor="start">on their own machine</text>
 <polyline points="226,352 395.0,352.0" fill="none" stroke="#F5F5F2" stroke-width="1"/>
 <polygon points="400,352 394.0,355.0 394.0,349.0" fill="#F5F5F2"/>
 <text class="sub" x="313" y="344" text-anchor="middle">hands over</text>

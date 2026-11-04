@@ -5,7 +5,7 @@ from lib import D
 ARIA = ("The life of one case. Two agents work on one case over time. Every record in their three runs "
         "carries the case ID. A run ends with a closing record. At the end of each interval, Sanning "
         "seals the new records into a stamp on the public record. You build one evidence pack for the "
-        "case, from the records and your own content. The reviewer checks the pack offline, against the "
+        "case, from the records and your own content. The reviewer checks the pack on their own machine, checks the "
         "stamps on the public record, and reads the verdict.")
 
 
@@ -60,7 +60,7 @@ def build(dark=False):
     d.zone(570, 180, 180, 90, "The reviewer")
     d.accent_box(580, 200, 160, 52)
     d.text(592, 222, "Verdict", 'acc')
-    d.text(592, 236, "checked offline")
+    d.text(592, 236, "checked on their machine")
     d.arrow([(660, 106), (660, 180)])
     d.text(668, 148, "hand over")
     d.arrow([(570, 226), (520, 226)], dashed=True)

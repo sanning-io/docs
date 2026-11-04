@@ -5,6 +5,10 @@ description: "An adapter turns each step of your agent into a signed record, so 
 
 An adapter connects your agent framework to Sanning. This page explains what an adapter does, lists the adapters that exist, and gives the practices that every adapter needs from you.
 
+<Note>
+  To test, use a Sandbox API key, and see [Test in the Sandbox](/sandbox).
+</Note>
+
 ## How adapters work
 
 An adapter watches your framework while your agent runs. For each step, it builds a [record](/#core-ideas) in Sanning's record format, signs it with your agent's signing key, and sends it to Sanning. The record holds hashes of the step's content, never the content. The adapter writes the content to a log store that you own, so that you can bring it back when someone must check the evidence.

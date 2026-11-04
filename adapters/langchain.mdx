@@ -5,9 +5,9 @@ description: "Record every run of a LangChain or LangGraph agent for one case, w
 
 This page adds the Sanning adapter to a LangChain or LangGraph agent, so that each run records its steps, decisions and approvals for one case. You end with records in the console and a stamp on the public record.
 
-<Tip>
-  To test, make a Sandbox API key and a new seed, and use them in place of the Live ones. Everything else on this page is the same. See [Test in the Sandbox](/sandbox).
-</Tip>
+<Note>
+  To test, use a Sandbox API key, and see [Test in the Sandbox](/sandbox).
+</Note>
 
 Before you start, do the [Quickstart](/quickstart): you need a Live API key and a seed for your agent's signing key, both in environment variables. The API key needs the scopes `agent:enroll` and `anchor:write`. To build an evidence pack with the same API key later, it also needs `anchor:read`.
 
@@ -160,7 +160,7 @@ The example agent in this page has no model, so you need no model API key. It ha
 
     </CodeGroup>
 
-    Replace `claims-triage` with a name for your agent, and keep the name stable: it is how the agent shows on the **Agents** page. Replace `case-4b19de` with the ID of the case from your own system. An ID is 1 to 128 characters of letters, digits, `_`, `.`, `:` and `-`.
+    Replace `claims-triage` with the agent ID of your agent, and keep it stable: it is how the agent shows on the **Agents** page. Replace `case-4b19de` with the ID of the case from your own system. An ID is 1 to 128 characters of letters, digits, `_`, `.`, `:` and `-`.
 
     The log store keeps the content of each step on your own disk, and Sanning never receives it. With a Live API key, every record needs a log store. For a store that outlives one machine, see [Keep the content](/evidence/build#keep-your-content).
 
@@ -274,7 +274,9 @@ The example agent in this page has no model, so you need no model API key. It ha
 
     // The handler never closes the anchorer. Close it when the process is done.
     await anchorer.close({ raiseOnGaps: false });
-    console.log(`Recorded case ${caseId}.`);
+    if (evidence.isComplete) {
+      console.log(`Recorded case ${caseId}.`);
+    }
     ```
 
     ```python Python
@@ -318,9 +320,9 @@ The example agent in this page has no model, so you need no model API key. It ha
 
     {/* OUTPUT FROM REAL RUN: the last line the script prints, "Recorded case case-4b19de.", and nothing else when the trail is complete */}
 
-    Open the [console](https://console.sanning.io) and go to **Records**. Each row is a record from your run: the run starts, the steps and the tool call run, the decision is stated, and the approval is requested and then resolved. The run ends with a closing record. Each row says whether Sanning has received the record, or the public record has witnessed it.
+    Open the [console](https://console.sanning.io) and go to **Records**. Each row is a record from your run: the run starts, the steps and the tool call run, the decision is stated, and the approval is requested and then resolved. The run ends with a closing record. The columns are Received, Agent, Kind and Signed by. A **Witness** strip above the table shows the block time of the latest stamp.
 
-    A stamp makes a record witnessed. At the end of each interval, Sanning seals your new records into one stamp and publishes it to the public record. On a Live API key, that takes a few minutes. When your records show as witnessed, you can build the evidence pack.
+    The page does not mark each record as stamped. At the end of each interval, Sanning seals your new records into one stamp and publishes it to the public record. On a Live API key, that takes up to about 10 minutes. To know whether your records are stamped, run `bundle`, as in [Build an evidence pack](/evidence/build#wait-for-the-stamp).
   </Step>
 </Steps>
 
@@ -449,7 +451,9 @@ The first record of each run lists what the adapter cannot capture. For example,
   }
 
   await anchorer.close({ raiseOnGaps: false });
-  console.log(`Recorded case ${caseId}.`);
+  if (evidence.isComplete) {
+    console.log(`Recorded case ${caseId}.`);
+  }
   ```
 
   </Accordion>

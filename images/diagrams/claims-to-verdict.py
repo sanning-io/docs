@@ -15,10 +15,10 @@ def build(dark=False):
     d.zone(10, 10, 230, 318, "Six claims")
     claims = [("Signed", "the named key signed it"),
               ("Unchanged", "bytes match what was signed"),
-              ("Witnessed", "a stamp covers it and verifies"),
+              ("Witnessed", "a stamp covers it"),
               ("Complete", "the pack holds all it declares"),
               ("Agreed", "both sides of a hand-off agree"),
-              ("Follows the rules", "follows the vocabulary it names")]
+              ("Follows the rules", "follows the record format")]
     for i, (a, b) in enumerate(claims):
         d.node(24, 54 + i*42, a, [b])
     d.text(24, 312, "each: proven, disproven, not proven")

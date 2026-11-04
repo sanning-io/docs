@@ -13,13 +13,13 @@ Your agents act for you. Later, someone asks you to prove what they did: an audi
 
 ## How it works
 
-<img src="/images/diagrams/how-it-works.svg" alt="Your agent and its adapter capture each step. The content goes to your own log store. Only signed hashes go to Sanning, which seals the records into a stamp on the public record at each interval. You build the evidence pack from Sanning's records and stamp proofs and your own content, and hand it to the reviewer. The reviewer verifies it on their own machine against the public record and does not need Sanning." className="block dark:hidden" />
-<img src="/images/diagrams/how-it-works-dark.svg" alt="Your agent and its adapter capture each step. The content goes to your own log store. Only signed hashes go to Sanning, which seals the records into a stamp on the public record at each interval. You build the evidence pack from Sanning's records and stamp proofs and your own content, and hand it to the reviewer. The reviewer verifies it on their own machine against the public record and does not need Sanning." className="hidden dark:block" />
+<img src="/images/diagrams/how-it-works.svg" alt="Your agent and its adapter capture each step. The content goes to your own log store. Only signed hashes go to Sanning, which seals the records into a stamp on the public record at each interval. You build the evidence pack from Sanning's records and stamp proofs and your own content, and hand it to the reviewer. The reviewer verifies it on their own machine, checks the stamps on the public record, and does not need Sanning." className="block dark:hidden" />
+<img src="/images/diagrams/how-it-works-dark.svg" alt="Your agent and its adapter capture each step. The content goes to your own log store. Only signed hashes go to Sanning, which seals the records into a stamp on the public record at each interval. You build the evidence pack from Sanning's records and stamp proofs and your own content, and hand it to the reviewer. The reviewer verifies it on their own machine, checks the stamps on the public record, and does not need Sanning." className="hidden dark:block" />
 
-1. Capture. An [adapter](/adapters/index) watches your agent's framework and turns each step into a record. The content of each step goes to your own log store, which is storage that you control.
+1. Capture. An [adapter](/adapters) watches your agent's framework and turns each step into a record. The content of each step goes to your own log store, which is storage that you control.
 2. Sign. Your agent signs each record with its signing key. Sanning receives the signed record. It holds hashes of your content, never the content.
 3. Anchor. At the end of each interval, Sanning seals your new records into one stamp and publishes the stamp to the public record.
-4. Verify. You build an evidence pack for a case and give it to a reviewer. They check it on their own machine. They need no account and no Sanning server.
+4. Verify. You build an evidence pack for a case and give it to a reviewer. They check it on their own machine and need no account. The command line check needs no Sanning server. The verify page looks up the stamps through Sanning's read front by default. See [Verify an evidence pack](/evidence/verify).
 
 ## Install
 
@@ -55,11 +55,11 @@ Before your agent can record anything, you need an API key and a seed for its si
 | Signing key | The key your agent signs every record with. It is the agent's identity. You make it from a seed that only you keep. |
 | Run | One execution of an agent, from its first record to its closing record. The adapter opens and closes it. |
 | Case | The matter the work is for, such as a claim or a loan. Your agents put its ID on every record, across runs and agents. |
-| Stamp | At the end of each interval, Sanning seals your new records into one stamp and publishes it to the public record. |
+| Stamp | At the end of each interval (10 minutes), Sanning seals your new records into one stamp and publishes it to the public record. |
 | Evidence pack | The zip you build and hand over: Sanning's records and stamp proofs, with your own content beside them. You can build one for a case. |
 | Verdict | The verifier's answer: Verified, Failed or Incomplete. |
 
-The case is the unit of the whole product. Your agents put the case ID on every record, and you build evidence for a case. The ID is committed with each record and cannot be changed or withdrawn, so use an opaque ID such as `case-4b19de`, and keep names and other personal data out of it.
+The ID of a case is committed with each record and cannot be changed or withdrawn, so use an opaque ID such as `case-4b19de`, and keep names and other personal data out of it.
 
 ## How trust works
 
@@ -67,7 +67,7 @@ Your content stays in your log store. Sanning gets signed records that hold hash
 
 The stamp on the public record fixes when each record existed. The public record is the independent witness, and Sanning is not. If anyone changes a record later, you or Sanning, the check fails.
 
-You build the evidence pack from two halves: Sanning's records and stamp proofs, and your own content. A reviewer needs the pack and nothing from Sanning. The verifier runs on their machine and checks the pack by itself. To also confirm each stamp on the public record, the reviewer points the verifier at the public record.
+You build the evidence pack from two halves: Sanning's records and stamp proofs, and your own content. A reviewer needs the pack and nothing from Sanning. The verifier runs on their machine and checks the pack by itself. To also confirm each stamp on the public record, the reviewer points the verifier at a public gateway. By default the report says the witness is not checked.
 
 A Verified verdict says that the records are the ones your agent signed, that none has changed since, and that stamps cover them. It does not say that the agent decided well, or that what it recorded is true. The people who review the case decide that. For what the verifier checks, see [Verify an evidence pack](/evidence/verify).
 

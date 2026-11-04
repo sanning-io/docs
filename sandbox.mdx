@@ -39,7 +39,7 @@ Store the Sandbox API key and its seed as `SANNING_API_KEY` and `SANNING_SIGNING
 
 ## Run your agent and read the result
 
-Add an adapter to your agent as in [Use an existing adapter](/adapters/index), and run it. Each step appears as a record in the console, under **Records**.
+Add an adapter to your agent as in [Use an existing adapter](/adapters), and run it. Each step appears as a record in the console, under **Records**.
 
 Then build an evidence pack for the case and verify it, as in [Build an evidence pack](/evidence/build) and [Verify an evidence pack](/evidence/verify). A Sandbox pack goes through the same steps as a Live one. The verifier checks the records and says Verified, and it marks the pack as Sandbox. On the command line, it exits with code 3 where a Live pack exits with 0. No flag changes that.
 
@@ -60,7 +60,7 @@ Every Sandbox organization has the same fixed limits:
 
 A request over a limit fails with `SANDBOX_LIMIT_REACHED`.
 
-To clear a Sandbox at once, an owner or admin opens **Settings**, then **Sandbox**, selects **Reset the sandbox** and types the organization's name. A reset deletes your records, stamps and packs, keeps your API keys and signing keys, and marks every agent decommissioned. You can reset once every 5 minutes. A reset never touches Live.
+To clear a Sandbox at once, an owner or admin opens **Settings**, then **Sandbox**, selects **Reset the sandbox** and types the organization's name. A reset deletes your records, stamps and pack reports, keeps your API keys and signing keys, and marks every agent decommissioned. You can reset once every 5 minutes. A reset never touches Live.
 
 ## Move to Live
 

@@ -5,9 +5,9 @@ description: "Build the evidence pack for one case from Sanning's records and yo
 
 This page builds the evidence pack for one case and hands it to a reviewer. Your agents already recorded the case through an [adapter](/adapters), with its case ID on every record.
 
-<Tip>
-  To test, use a Sandbox API key. The pack builds the same way, and the verifier labels it as a Sandbox pack. See [Test in the Sandbox](/sandbox).
-</Tip>
+<Note>
+  To test, use a Sandbox API key, and see [Test in the Sandbox](/sandbox).
+</Note>
 
 ## What an evidence pack holds
 
@@ -20,16 +20,16 @@ The pack is one zip file:
 
 A reviewer needs the pack and the public record. They do not need Sanning, an account or access to your systems.
 
-The diagram shows one case from the first record to the verdict. Two agents work on the case in three runs. Every record carries the case ID, and every run ends with a closing record. At the end of each interval, Sanning seals the new records into a stamp on the public record. You build one pack for the case, and the reviewer checks it offline against the stamps.
+The diagram shows one case from the first record to the verdict. Two agents work on the case in three runs. Every record carries the case ID, and every run ends with a closing record. At the end of each interval, Sanning seals the new records into a stamp on the public record. You build one pack for the case, and the reviewer checks it on their own machine and checks the stamps on the public record.
 
-<img src="/images/diagrams/case-life.png" alt="The life of one case. Two agents work on one case over time. Every record in their three runs carries the case ID, and each run ends with a closing record. At the end of each interval, Sanning seals the new records into a stamp on the public record. You build one evidence pack for the case, from the records and your own content. The reviewer checks the pack offline, against the stamps on the public record, and reads the verdict." className="block dark:hidden" />
-<img src="/images/diagrams/case-life-dark.png" alt="The life of one case. Two agents work on one case over time. Every record in their three runs carries the case ID, and each run ends with a closing record. At the end of each interval, Sanning seals the new records into a stamp on the public record. You build one evidence pack for the case, from the records and your own content. The reviewer checks the pack offline, against the stamps on the public record, and reads the verdict." className="hidden dark:block" />
+<img src="/images/diagrams/case-life.png" alt="The life of one case. Two agents work on one case over time. Every record in their three runs carries the case ID, and each run ends with a closing record. At the end of each interval, Sanning seals the new records into a stamp on the public record. You build one evidence pack for the case, from the records and your own content. The reviewer checks the pack on their own machine, checks the stamps on the public record, and reads the verdict." className="block dark:hidden" />
+<img src="/images/diagrams/case-life-dark.png" alt="The life of one case. Two agents work on one case over time. Every record in their three runs carries the case ID, and each run ends with a closing record. At the end of each interval, Sanning seals the new records into a stamp on the public record. You build one evidence pack for the case, from the records and your own content. The reviewer checks the pack on their own machine, checks the stamps on the public record, and reads the verdict." className="hidden dark:block" />
 
 ## Wait for the stamp
 
-A pack needs the stamp proofs, and a stamp exists only after the interval that holds your records is sealed. On a Live API key, that takes a few minutes after the last record. The **Records** page in the console shows a record as witnessed when its stamp is on the public record.
+A pack needs the stamp proofs, and a stamp exists only after the interval that holds your records is sealed. On a Live API key, that takes up to about 10 minutes after the last record.
 
-If you build too early, the command says there are no stamped records for the case, and it says how many records are recorded and still waiting for a stamp. It exits with code 2. That means not yet, and it does not mean that your records are missing. Wait, and run the command again.
+The **Records** page in the console lists each record that Sanning received, with its agent, kind and signer. A **Witness** strip above the list shows the block time of the latest stamp. The page does not mark a single record as stamped, so the test is `bundle` itself. When records are not stamped yet, `bundle` writes nothing, says how many records are recorded and waiting for a stamp, and exits with code 2. Your records are not missing. Wait for the next stamp, and run the command again.
 
 ## Build the pack
 
@@ -67,7 +67,7 @@ Replace the following:
 
 - `YOUR_LIVE_API_KEY` with a Live API key that has the scope `anchor:read`.
 - `YOUR_AGENT_SEED` with the seed of the agent in `--agent`. With the seed, `bundle` signs a declaration, which is the pack's own statement of which records it holds, so that the reviewer can check the pack against it. Without the seed, the pack carries no declaration.
-- `claims-triage` with the name that your agent records under.
+- `claims-triage` with the agent ID of your agent.
 - `case-4b19de` with your case ID.
 - `./logstore` with the root of your log store.
 

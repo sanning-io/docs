@@ -10,8 +10,8 @@ from lib import D
 ARIA = ("How Sanning works. Your agent and its adapter capture each step. The content goes to your own log "
         "store. Only signed hashes go to Sanning, which seals the records into a stamp on the public record "
         "at each interval. You build the evidence pack from Sanning's records and stamp proofs and your own "
-        "content, and hand it to the reviewer. The reviewer verifies it on their own machine against the "
-        "public record and does not need Sanning.")
+        "content, and hand it to the reviewer. The reviewer verifies it on their own machine and checks "
+        "the stamps on the public record, and does not need Sanning.")
 
 
 def build(dark=False):
@@ -52,7 +52,7 @@ def build(dark=False):
     d.text(358, 211, "stamp proofs")
 
     d.zone(400, 290, 240, 100, "The reviewer")
-    d.node(414, 336, "Verifies", ["on their own machine,", "against the public record"], num=4)
+    d.node(414, 336, "Verifies", ["on their own machine"], num=4)
     d.arrow([(226, 352), (400, 352)])
     d.text(313, 344, "hands over", anchor='middle')
     d.arrow([(640, 352), (730, 352), (730, 106)], dashed=True)

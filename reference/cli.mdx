@@ -56,7 +56,7 @@ npx @sanning/anchor bundle \
 
 | Flag | Required | Meaning |
 |---|---|---|
-| `--agent` | Yes | The agent whose records to gather, by the name it records under. Give it more than once, with `--case`, to write a case file. |
+| `--agent` | Yes | The agent ID of the agent whose records to gather. Give it more than once, with `--case`, to write a case file. |
 | `--case` | No | Select the records whose own signed case ID is this case, and declare the pack about it. A case pack takes no dates and holds every record of the case, however long it ran. |
 | `--from` | Without `--case` | The start of the period: a whole UTC day, written `YYYY-MM-DD`. A time is refused. |
 | `--to` | Without `--case` | The end of the period: a whole UTC day, written `YYYY-MM-DD`. That day is included. |
@@ -67,7 +67,7 @@ npx @sanning/anchor bundle \
 | `--handoffs-only` | No | With `--case`, put only the case's hand-off records in the pack. Needs `SANNING_SIGNING_SEED`. |
 | `--report-file` | No | For a case file, and it can be given more than once: put this file under `report/` in the case file. No record commits to it. |
 
-`--logs` is optional to the parser and required in practice. The command reads your records from the log store to work out which of them belong to the agent, because a record that Sanning holds does not carry the agent's name.
+`--logs` is optional to the parser and required in practice. The command reads your records from the log store to work out which of them belong to the agent, because a record that Sanning holds does not carry the agent ID.
 
 ### Environment variables
 
@@ -83,7 +83,7 @@ npx @sanning/anchor bundle \
 
 ### What bundle does
 
-- `--agent` is checked twice. The command filters by the name on the server, and it also refuses if a record that comes back names a different agent. A misspelled name stops with `the control plane does not recognize this agent`, and the command writes no pack.
+- `--agent` is checked twice. The command filters by the agent ID on the server, and it also refuses if a record that comes back names a different agent. A misspelled agent ID stops with `the control plane does not recognize this agent`, and the command writes no pack.
 - It refuses a period that mixes Sandbox and Live records for one agent, because a pack holds one environment.
 - With several `--agent`, it builds one pack for each agent and writes them together as a case file, under `packs/<agent>/`, beside an unsigned `contents.json` and a `HOW-TO-VERIFY.txt`. Every agent must have a pack, or the command writes nothing.
 - With `--from` and `--to`, and `--to` is today, the period ends at the end of the last sealed interval, so that every record in the pack has a stamp.
@@ -103,7 +103,7 @@ npx @sanning/anchor bundle \
 
 ### Pack reporting
 
-After `bundle` writes a pack, it tells Sanning that it did, with the same API key. The report holds the agent's name, the environment, the period, the record count, the SHA-256 of `bundle.json`, the SDK name and version, and the time the pack was built. It never holds the pack, a log, a record ID or a file name. You find it under **Evidence** in the console. Every run builds a new `bundle.json`, so every run is reported.
+After `bundle` writes a pack, it tells Sanning that it did, with the same API key. The report holds the agent ID, the environment, the period, the record count, the SHA-256 of `bundle.json`, the SDK name and version, and the time the pack was built. It never holds the pack, a log, a record ID or a file name. You find it under **Evidence** in the console. Every run builds a new `bundle.json`, so every run is reported.
 
 If the report fails, `bundle` prints one line with the pack's digest and still exits with the pack's code.
 
