@@ -9,7 +9,7 @@ This page shows how to add the Sanning adapter to a LangChain or LangGraph agent
   To test, use a Sandbox API key, and see [Test in the Sandbox](/sandbox).
 </Note>
 
-Before you start, do the [Quickstart](/quickstart): you need a Live API key and a seed for your agent's signing key, both in environment variables. The API key from the Quickstart already has the scopes the adapter needs (`agent:enroll` and `anchor:write`) and the scope that `bundle` needs later (`anchor:read`).
+Before you start, you need a Live API key, a seed for your agent's signing key, and an S3 bucket for your log store. The environment variables step links to how to make each one. A Live API key made as the [Quickstart](/quickstart) describes has the scopes the adapter needs (`agent:enroll` and `anchor:write`) and the scope that `bundle` needs later (`anchor:read`).
 
 The example agent on this page has no model, so you need no key from a model provider. It has three nodes: one asks for a tool call, one runs the tool, and one pauses for a person to approve. To use your own agent, keep the Sanning parts and replace the graph.
 
@@ -18,16 +18,39 @@ The example agent on this page has no model, so you need no key from a model pro
     <CodeGroup>
 
     ```bash TypeScript
-    npm install @sanning/anchor @sanning/anchor-langchain @langchain/core @langchain/langgraph zod
+    npm install @sanning/anchor @sanning/anchor-langchain @langchain/core @langchain/langgraph zod @aws-sdk/client-s3
     ```
 
     ```bash Python
-    pip install "sanning-anchor[langchain]" langgraph
+    pip install "sanning-anchor[langchain,s3]" langgraph
     ```
 
     </CodeGroup>
 
-    In TypeScript, the adapter is its own package and takes `@langchain/core` as a peer dependency. In Python, the adapter ships inside `sanning-anchor`, and the extra pulls in LangChain.
+    In TypeScript, the adapter is its own package and takes `@langchain/core` as a peer dependency. `@aws-sdk/client-s3` is the AWS S3 library, which the Sanning SDK uses to reach your bucket but does not install for you. In Python, the adapter ships inside `sanning-anchor`: the `langchain` extra pulls in LangChain, and the `s3` extra pulls in the AWS S3 library.
+  </Step>
+
+  <Step title="Set the environment variables">
+    Export the following variables in the terminal where you run the example. Put them in the secret store that your service already uses for production, and never commit them to your code.
+
+    ```bash
+    export SANNING_API_KEY=API_KEY
+    export SANNING_SIGNING_SEED=SEED
+    export SANNING_LOG_BUCKET=BUCKET
+    export AWS_REGION=REGION
+    export AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
+    export AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
+    ```
+
+    Replace the following:
+
+    - `API_KEY`: your Live API key. To make one, see [Make a Live API key](/quickstart#make-a-live-api-key).
+    - `SEED`: the 64 hex characters of the seed for your agent's signing key. To make one, see [Make a seed for the signing key](/quickstart#make-a-seed-for-the-signing-key).
+    - `BUCKET`: the name of your log store bucket. The SDK creates it on the agent's first record. To learn what a log store is, see [Set up your log store](/quickstart#set-up-your-log-store).
+    - `REGION`: the AWS Region of the bucket, such as `us-east-1`. The SDK can create the bucket only in `us-east-1`: for another Region, see [A bucket in another Region](/quickstart#a-bucket-in-another-region).
+    - `ACCESS_KEY_ID` and `SECRET_ACCESS_KEY`: the access key ID and the secret access key of your storage keys. For the permissions they need, see [The exact AWS permissions](/quickstart#the-exact-aws-permissions).
+
+    If the agent runs on AWS with a role, skip the two AWS keys. For a store such as Cloudflare R2 or MinIO, see [Other S3-compatible stores](/quickstart#other-s3-compatible-stores).
   </Step>
 
   <Step title="Start with an agent">
@@ -128,7 +151,12 @@ The example agent on this page has no model, so you need no key from a model pro
     <CodeGroup>
 
     ```ts TypeScript
-    import { createAnchorer, LocalEd25519Signer, ObjectLogStore } from "@sanning/anchor";
+    import {
+      createAnchorer,
+      LocalEd25519Signer,
+      MemoryStore,
+      ObjectLogStore,
+    } from "@sanning/anchor";
     import { S3ObjectStore } from "@sanning/anchor/s3";
     import { anchorCallbacks } from "@sanning/anchor-langchain";
 
@@ -144,6 +172,7 @@ The example agent on this page has no model, so you need no key from a model pro
       subject: { type: "agent", agent_id: "claims-triage" },
       apiKey: process.env.SANNING_API_KEY!,
       logStore,
+      store: new MemoryStore(),
     });
 
     const caseId = "case-4b19de";
@@ -157,6 +186,7 @@ The example agent on this page has no model, so you need no key from a model pro
         Anchorer,
         AnchorCallbackHandler,
         LocalEd25519Signer,
+        MemoryStore,
         ObjectLogStore,
     )
     from sanning_anchor.s3 import S3ObjectStore
@@ -173,6 +203,7 @@ The example agent on this page has no model, so you need no key from a model pro
         subject={"type": "agent", "agent_id": "claims-triage"},
         api_key=os.environ["SANNING_API_KEY"],
         log_store=log_store,
+        store=MemoryStore(),
     )
 
     case_id = "case-4b19de"
@@ -183,7 +214,7 @@ The example agent on this page has no model, so you need no key from a model pro
 
     Replace `claims-triage` with the agent ID, the name that identifies your agent to Sanning, and keep it stable: it is how the agent shows on the **Agents** page. Replace `case-4b19de` with the ID of the case from your own system. A case ID is 1 to 128 characters of letters, digits, `_`, `.`, `:` and `-`.
 
-    The anchorer and the log store are the ones you set up in the Quickstart: see [Set up your log store](/quickstart#set-up-your-log-store) and [Create the anchorer](/quickstart#create-the-anchorer). The log store keeps the content of each step in your S3 bucket, and Sanning never receives it. With a Live API key, every record needs a log store. For why you keep the content, see [Keep your content](/evidence/build#keep-your-content).
+    The log store keeps the content of each step in your S3 bucket, and Sanning never receives it. With a Live API key, every record needs a log store. Each run of the adapter has its own chain of records, and `MemoryStore` keeps the last record of each chain in memory. For why, see [Create the anchorer](/quickstart#create-the-anchorer). For why you keep the content, see [Keep your content](/evidence/build#keep-your-content).
 
     The mode (Sandbox or Live) comes from the start of your API key, so you set nothing else.
   </Step>
@@ -325,7 +356,7 @@ The example agent on this page has no model, so you need no key from a model pro
   </Step>
 
   <Step title="Run it, and see the records">
-    Put the pieces in one file: `agent.mts` for TypeScript or `agent.py` for Python. The [whole file](#the-whole-file) is at the end of this page. Check that `SANNING_API_KEY`, `SANNING_SIGNING_SEED` and `SANNING_LOG_BUCKET` are set, then run it.
+    Put the pieces in one file: `agent.mts` for TypeScript or `agent.py` for Python. The [whole file](#the-whole-file) is at the end of this page. Run it in the terminal where you exported the environment variables.
 
     <CodeGroup>
 
@@ -387,7 +418,12 @@ For example, the first record of each run lists approvals when you do not pass `
   <Accordion title="TypeScript: agent.mts">
 
   ```ts
-  import { createAnchorer, LocalEd25519Signer, ObjectLogStore } from "@sanning/anchor";
+  import {
+    createAnchorer,
+    LocalEd25519Signer,
+    MemoryStore,
+    ObjectLogStore,
+  } from "@sanning/anchor";
   import { S3ObjectStore } from "@sanning/anchor/s3";
   import { anchorCallbacks } from "@sanning/anchor-langchain";
   import { awaitAllCallbacks } from "@langchain/core/callbacks/promises";
@@ -445,6 +481,7 @@ For example, the first record of each run lists approvals when you do not pass `
     subject: { type: "agent", agent_id: "claims-triage" },
     apiKey: process.env.SANNING_API_KEY!,
     logStore,
+    store: new MemoryStore(),
   });
 
   const caseId = "case-4b19de";
@@ -504,6 +541,7 @@ For example, the first record of each run lists approvals when you do not pass `
       ApprovalOptions,
       DecisionTool,
       LocalEd25519Signer,
+      MemoryStore,
       ObjectLogStore,
   )
   from sanning_anchor.s3 import S3ObjectStore
@@ -549,6 +587,7 @@ For example, the first record of each run lists approvals when you do not pass `
       subject={"type": "agent", "agent_id": "claims-triage"},
       api_key=os.environ["SANNING_API_KEY"],
       log_store=log_store,
+      store=MemoryStore(),
   )
 
   case_id = "case-4b19de"

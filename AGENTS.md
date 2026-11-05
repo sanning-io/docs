@@ -25,6 +25,7 @@ The brand is defined once, in [`sanning-io/sanning-design-system`](https://githu
 - The two modes are **Sandbox** and **Live** in prose, and an **API key**, never a bare "key". The wire values (`sanning_test_`, `sanning_prod_`, `environment: "dev"` and `"production"`) appear in tables and reference. In a sentence, use one only where the reader must recognise it: a key prefix, or `environment: "production"` in an error they might meet. Every page is written for Live, with a Live API key. The [Quickstart](quickstart.mdx) and every guide carry one short callout near the top that says to use a Sandbox API key to test and links to [Test in the Sandbox](sandbox.mdx), the one page that explains the two modes. Never name a chain: say "the public record".
 - Say **evidence pack** for the file a reviewer gets, and "evidence" in titles, as the website and the console do. Say **verdict** for Verified, Failed or Incomplete, and **reviewer** for the person who checks evidence.
 - The docs are one path in four groups: Get started (Introduction, Quickstart, Test in the Sandbox), Record your agents (adapters), Evidence (build, verify), then Reference. A concept is a section on the page where a reader needs it, not a page of its own. Samples record through an adapter, never with `anchor()` calls placed through an agent's code.
+- A guide holds all the code and commands that its example needs to work in Live. It links to other pages only for explanations.
 - Company: Sanning Inc. GitHub org: `sanning-io`. Production console: `console.sanning.io`.
 
 ## Style preferences

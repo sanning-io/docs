@@ -169,7 +169,12 @@ The anchorer signs your records and sends them to Sanning. It needs your API key
 <CodeGroup>
 
 ```ts TypeScript
-import { createAnchorer, LocalEd25519Signer, ObjectLogStore } from "@sanning/anchor";
+import {
+  createAnchorer,
+  LocalEd25519Signer,
+  MemoryStore,
+  ObjectLogStore,
+} from "@sanning/anchor";
 import { S3ObjectStore } from "@sanning/anchor/s3";
 
 const logStore = new ObjectLogStore(
@@ -184,13 +189,14 @@ const anchorer = createAnchorer({
   subject: { type: "agent", agent_id: "claims-triage" },
   apiKey: process.env.SANNING_API_KEY!,
   logStore,
+  store: new MemoryStore(),
 });
 ```
 
 ```python Python
 import os
 
-from sanning_anchor import Anchorer, LocalEd25519Signer, ObjectLogStore
+from sanning_anchor import Anchorer, LocalEd25519Signer, MemoryStore, ObjectLogStore
 from sanning_anchor.s3 import S3ObjectStore
 
 log_store = ObjectLogStore(
@@ -205,10 +211,13 @@ anchorer = Anchorer(
     subject={"type": "agent", "agent_id": "claims-triage"},
     api_key=os.environ["SANNING_API_KEY"],
     log_store=log_store,
+    store=MemoryStore(),
 )
 ```
 
 </CodeGroup>
+
+Each run of an adapter has its own chain of records. `MemoryStore` keeps the last record of each chain in memory, and the line stops a warning about a durable chain store that does not apply to adapters.
 
 Both samples read the Region of the bucket from `AWS_REGION`. Replace `claims-triage` with the agent ID of your agent. Keep it stable: it is how the agent shows on the **Agents** page.
 
