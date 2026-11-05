@@ -87,6 +87,9 @@ html [data-floating-buttons] button { background: transparent !important; }
 /* Callouts and cards: brand surfaces, 1px lines, 6px corners, state colour on the icon only */
 .callout, .card { border-radius: 6px !important; } /* radius */
 #topbar-cta-button a > span:first-child { border-radius: 6px !important; } /* radius: the top bar button's background */
+#topbar-cta-button a > span:first-child { background-color: #2B3FD6 !important; } /* primary: the top bar button's fill (label and chevron stay white, primary-foreground) */
+.dark #topbar-cta-button a > span:first-child { background-color: #7D8CFF !important; } /* primary (dark) */
+.dark #topbar-cta-button a > div > span, .dark #topbar-cta-button a svg { color: #0E1118 !important; } /* primary-foreground (dark): the top bar button's label and chevron */
 .callout { background: #F7F7F8 !important; border: 1px solid #C9CDD2 !important; } /* background-alt, border */
 .callout [data-component-part="callout-content"] { color: #16181D !important; } /* foreground */
 .callout[data-callout-type="note"] [data-component-part="callout-icon"] svg,
