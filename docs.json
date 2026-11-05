@@ -39,6 +39,13 @@
     "light": "/logo/sanning-ink.svg",
     "dark": "/logo/sanning-paper.svg"
   },
+  "navbar": {
+    "primary": {
+      "type": "button",
+      "label": "Book a call",
+      "href": "https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ18-Dhr-iEjRTlJFuFJNL9aTUjEu3pkzVx6VqyP3iRc_uZJd4hbdkog2KTmOml-hcmqhtGAqbfZ"
+    }
+  },
   "thumbnails": {
     "preset": "headline",
     "appearance": "light",

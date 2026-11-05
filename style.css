@@ -86,6 +86,7 @@ html [data-floating-buttons] button { background: transparent !important; }
 
 /* Callouts and cards: brand surfaces, 1px lines, 6px corners, state colour on the icon only */
 .callout, .card { border-radius: 6px !important; } /* radius */
+#topbar-cta-button a > span:first-child { border-radius: 6px !important; } /* radius: the top bar button's background */
 .callout { background: #F7F7F8 !important; border: 1px solid #C9CDD2 !important; } /* background-alt, border */
 .callout [data-component-part="callout-content"] { color: #16181D !important; } /* foreground */
 .callout[data-callout-type="note"] [data-component-part="callout-icon"] svg,
