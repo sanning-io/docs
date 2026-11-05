@@ -1,0 +1,71 @@
+<svg viewBox="0 0 536 390" xmlns="http://www.w3.org/2000/svg" role="img"
+   aria-label="How Sanning works, steps 1 to 3. Your agent and its adapter capture each step. The content goes to your own log store. Only signed hashes go to Sanning, with no content. Sanning receives the records and seals them into a stamp, and puts one stamp per interval on the public record. The stamp shows when the records existed. How Sanning works, step 4. Sanning's records and stamp proofs, and your content from your log store, make the evidence pack. You hand the pack to the reviewer, who verifies it on their own machine. The reviewer also checks the stamp on the public record. Sanning is not needed to verify.">
+<style>
+  .lbl  { font-family:"Geist",sans-serif; font-size:13px; font-weight:500; fill:#F5F5F2; }
+  .sub  { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.02em; fill:#A3A9B1; }
+  .zone { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.08em; fill:#8A9098; }
+  .step { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.04em; fill:#7D8CFF; }
+  .acc  { font-family:"Geist",sans-serif; font-size:13px; font-weight:500; fill:#7D8CFF; }
+</style>
+<rect x="0" y="0" width="536" height="390" fill="#0E1118"/>
+<rect x="10" y="10" width="200" height="370" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="zone" x="22" y="29" text-anchor="start">YOUR SYSTEMS</text>
+<rect x="22" y="38" width="176" height="50" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="step" x="34" y="62" text-anchor="start">1</text>
+<text class="lbl" x="50" y="62" text-anchor="start">Your agent + adapter</text>
+<text class="sub" x="50" y="77" text-anchor="start">captures each step</text>
+<polyline points="60,88 60.0,139.0" fill="none" stroke="#F5F5F2" stroke-width="1"/>
+<polygon points="60,144 57.0,138.0 63.0,138.0" fill="#F5F5F2"/>
+<text class="sub" x="68" y="120" text-anchor="start">content</text>
+<rect x="22" y="144" width="176" height="64" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="lbl" x="34" y="168" text-anchor="start">Your log store</text>
+<text class="sub" x="34" y="183" text-anchor="start">your content,</text>
+<text class="sub" x="34" y="197" text-anchor="start">kept by you</text>
+<polyline points="60,208 60.0,261.0" fill="none" stroke="#F5F5F2" stroke-width="1"/>
+<polygon points="60,266 57.0,260.0 63.0,260.0" fill="#F5F5F2"/>
+<text class="sub" x="68" y="241" text-anchor="start">your content</text>
+<rect x="22" y="266" width="176" height="82" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="lbl" x="34" y="290" text-anchor="start">Evidence pack</text>
+<text class="sub" x="34" y="305" text-anchor="start">Sanning's records and</text>
+<text class="sub" x="34" y="319" text-anchor="start">stamp proofs, plus</text>
+<text class="sub" x="34" y="333" text-anchor="start">your content</text>
+<rect x="326" y="10" width="200" height="76" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="zone" x="338" y="29" text-anchor="start">SANNING</text>
+<text class="lbl" x="340" y="56" text-anchor="start">Receives the records</text>
+<text class="sub" x="340" y="71" text-anchor="start">seals them into a stamp</text>
+<polyline points="210,63 321.0,63.0" fill="none" stroke="#7D8CFF" stroke-width="1"/>
+<polygon points="326,63 320.0,66.0 320.0,60.0" fill="#7D8CFF"/>
+<text class="step" x="268" y="30" text-anchor="middle">2  Sign</text>
+<text class="step" x="268" y="44" text-anchor="middle">signed hashes,</text>
+<text class="step" x="268" y="58" text-anchor="middle">no content</text>
+<polyline points="500,86 500.0,125.0" fill="none" stroke="#F5F5F2" stroke-width="1"/>
+<polygon points="500,130 497.0,124.0 503.0,124.0" fill="#F5F5F2"/>
+<text class="step" x="492" y="104" text-anchor="end">3  Anchor</text>
+<text class="sub" x="492" y="118" text-anchor="end">one stamp per interval</text>
+<rect x="326" y="130" width="200" height="100" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="zone" x="338" y="149" text-anchor="start">PUBLIC RECORD</text>
+<rect x="338" y="158" width="176" height="60" fill="none" stroke="#7D8CFF" stroke-width="1"/>
+<text class="acc" x="352" y="182" text-anchor="start">The stamp</text>
+<text class="sub" x="352" y="197" text-anchor="start">shows when the</text>
+<text class="sub" x="352" y="211" text-anchor="start">records existed</text>
+<polyline points="326,78 222,78 222,282 203.0,282.0" fill="none" stroke="#F5F5F2" stroke-width="1"/>
+<polygon points="198,282 204.0,279.0 204.0,285.0" fill="#F5F5F2"/>
+<text class="sub" x="230" y="172" text-anchor="start">records and</text>
+<text class="sub" x="230" y="186" text-anchor="start">stamp proofs</text>
+<polyline points="198,316 321.0,316.0" fill="none" stroke="#F5F5F2" stroke-width="1"/>
+<polygon points="326,316 320.0,319.0 320.0,313.0" fill="#F5F5F2"/>
+<text class="sub" x="262" y="308" text-anchor="middle">hands over</text>
+<polyline points="500,274 500.0,235.0" fill="none" stroke="#F5F5F2" stroke-width="1" stroke-dasharray="3 3"/>
+<polygon points="500,230 503.0,236.0 497.0,236.0" fill="#F5F5F2"/>
+<text class="sub" x="492" y="256" text-anchor="end">checks the stamp</text>
+<rect x="326" y="274" width="200" height="106" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="zone" x="338" y="293" text-anchor="start">THE REVIEWER</text>
+<text class="step" x="340" y="320" text-anchor="start">4</text>
+<text class="lbl" x="356" y="320" text-anchor="start">Verifies</text>
+<text class="sub" x="356" y="335" text-anchor="start">on their own machine</text>
+<circle cx="346" cy="358" r="8" fill="#0E1118" stroke="#F5F5F2" stroke-width="1"/>
+<line fill="none" x1="342.5" y1="354.5" x2="349.5" y2="361.5" stroke="#F5F5F2" stroke-width="1"/>
+<line fill="none" x1="349.5" y1="354.5" x2="342.5" y2="361.5" stroke="#F5F5F2" stroke-width="1"/>
+<text class="sub" x="362" y="358" text-anchor="start">Sanning: not needed</text>
+<text class="sub" x="362" y="372" text-anchor="start">to verify</text>
+</svg>

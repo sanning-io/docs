@@ -1,0 +1,66 @@
+<svg viewBox="0 0 536 540" xmlns="http://www.w3.org/2000/svg" role="img"
+   aria-label="The six claims the kernel checks: signed, unchanged, witnessed, complete, agreed and follows the rules. Each claim is proven, disproven or not proven. How the claims become one verdict. The rule is read in order. If any claim is disproven, the verdict is Failed, exit 1. If not, and any claim is not proven, the verdict is Incomplete, exit 2. Otherwise the verdict is Verified, exit 0. Below, a note: a pack built in the Sandbox that verifies exits 3. Sandbox is a label on the result, not a verdict.">
+<style>
+  .lbl  { font-family:"Geist",sans-serif; font-size:13px; font-weight:500; fill:#F5F5F2; }
+  .sub  { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.02em; fill:#A3A9B1; }
+  .zone { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.08em; fill:#8A9098; }
+  .step { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.04em; fill:#7D8CFF; }
+  .acc  { font-family:"Geist",sans-serif; font-size:13px; font-weight:500; fill:#7D8CFF; }
+</style>
+<rect x="0" y="0" width="536" height="540" fill="#0E1118"/>
+<rect x="10" y="10" width="516" height="176" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="zone" x="22" y="29" text-anchor="start">SIX CLAIMS</text>
+<text class="lbl" x="24" y="52" text-anchor="start">Signed</text>
+<text class="sub" x="24" y="67" text-anchor="start">the named key signed it</text>
+<text class="lbl" x="280" y="52" text-anchor="start">Unchanged</text>
+<text class="sub" x="280" y="67" text-anchor="start">bytes match what was signed</text>
+<text class="lbl" x="24" y="92" text-anchor="start">Witnessed</text>
+<text class="sub" x="24" y="107" text-anchor="start">a stamp covers it</text>
+<text class="lbl" x="280" y="92" text-anchor="start">Complete</text>
+<text class="sub" x="280" y="107" text-anchor="start">the pack holds all it declares</text>
+<text class="lbl" x="24" y="132" text-anchor="start">Agreed</text>
+<text class="sub" x="24" y="147" text-anchor="start">both sides of a hand-off agree</text>
+<text class="lbl" x="280" y="132" text-anchor="start">Follows the rules</text>
+<text class="sub" x="280" y="147" text-anchor="start">follows the record format</text>
+<text class="sub" x="24" y="172" text-anchor="start">each: proven, disproven, not proven</text>
+<polyline points="115,186 115.0,217.0" fill="none" stroke="#F5F5F2" stroke-width="1"/>
+<polygon points="115,222 112.0,216.0 118.0,216.0" fill="#F5F5F2"/>
+<rect x="10" y="222" width="210" height="224" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="zone" x="22" y="241" text-anchor="start">THE RULE</text>
+<text class="step" x="22" y="264" text-anchor="start">1</text>
+<text class="lbl" x="38" y="264" text-anchor="start">Any claim disproven?</text>
+<text class="step" x="22" y="327" text-anchor="start">2</text>
+<text class="lbl" x="38" y="327" text-anchor="start">Any claim not proven?</text>
+<text class="step" x="22" y="390" text-anchor="start">3</text>
+<text class="lbl" x="38" y="390" text-anchor="start">Otherwise</text>
+<polyline points="60,274 60.0,308.0" fill="none" stroke="#F5F5F2" stroke-width="1" stroke-dasharray="3 3"/>
+<polygon points="60,313 57.0,307.0 63.0,307.0" fill="#F5F5F2"/>
+<text class="sub" x="68" y="298" text-anchor="start">no</text>
+<polyline points="60,337 60.0,371.0" fill="none" stroke="#F5F5F2" stroke-width="1" stroke-dasharray="3 3"/>
+<polygon points="60,376 57.0,370.0 63.0,370.0" fill="#F5F5F2"/>
+<text class="sub" x="68" y="361" text-anchor="start">no</text>
+<rect x="262" y="222" width="264" height="224" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="zone" x="274" y="241" text-anchor="start">THREE VERDICTS</text>
+<text class="lbl" x="276" y="264" text-anchor="start">Failed</text>
+<text class="sub" x="276" y="279" text-anchor="start">exit 1</text>
+<text class="sub" x="276" y="293" text-anchor="start">a claim is disproven</text>
+<text class="lbl" x="276" y="327" text-anchor="start">Incomplete</text>
+<text class="sub" x="276" y="342" text-anchor="start">exit 2</text>
+<text class="sub" x="276" y="356" text-anchor="start">none disproven, some not proven</text>
+<rect x="270" y="372" width="248" height="60" fill="none" stroke="#7D8CFF" stroke-width="1"/>
+<text class="acc" x="282" y="394" text-anchor="start">Verified</text>
+<text class="sub" x="282" y="409" text-anchor="start">exit 0</text>
+<text class="sub" x="282" y="423" text-anchor="start">every claim in scope proven</text>
+<polyline points="220,260 257.0,260.0" fill="none" stroke="#F5F5F2" stroke-width="1"/>
+<polygon points="262,260 256.0,263.0 256.0,257.0" fill="#F5F5F2"/>
+<text class="sub" x="241" y="252" text-anchor="middle">yes</text>
+<polyline points="220,323 257.0,323.0" fill="none" stroke="#F5F5F2" stroke-width="1"/>
+<polygon points="262,323 256.0,326.0 256.0,320.0" fill="#F5F5F2"/>
+<text class="sub" x="241" y="315" text-anchor="middle">yes</text>
+<polyline points="220,386 257.0,386.0" fill="none" stroke="#F5F5F2" stroke-width="1"/>
+<polygon points="262,386 256.0,389.0 256.0,383.0" fill="#F5F5F2"/>
+<rect x="10" y="458" width="516" height="72" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="zone" x="22" y="477" text-anchor="start">SANDBOX</text>
+<text class="sub" x="24" y="504" text-anchor="start">Sandbox evidence that verifies exits 3.</text>
+<text class="sub" x="24" y="518" text-anchor="start">Sandbox is a label on the result, never a verdict or a claim.</text>
+</svg>

@@ -1,0 +1,75 @@
+<svg viewBox="0 0 536 436" xmlns="http://www.w3.org/2000/svg" role="img"
+   aria-label="The life of one case. Two agents work on one case over time. Every record in their three runs carries the case ID. The intake agent has run 1. The review agent has run 2 and run 3. A run ends with a closing record. At the end of each interval, Sanning seals the new records into a stamp on the public record. Time runs from left to right. What happens to the case's records. You build one evidence pack for the case, from the records, the stamp proofs and your own content, and hand it to the reviewer. The reviewer checks the pack on their own machine, checks the stamps on the public record, and reads the verdict.">
+<style>
+  .lbl  { font-family:"Geist",sans-serif; font-size:13px; font-weight:500; fill:#16181D; }
+  .sub  { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.02em; fill:#5D636B; }
+  .zone { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.08em; fill:#8A9098; }
+  .step { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.04em; fill:#2C2E6B; }
+  .acc  { font-family:"Geist",sans-serif; font-size:13px; font-weight:500; fill:#2C2E6B; }
+</style>
+<rect x="0" y="0" width="536" height="436" fill="#FFFFFF"/>
+<rect x="10" y="10" width="320" height="222" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<text class="zone" x="22" y="29" text-anchor="start">YOUR AGENTS, ONE CASE</text>
+<text class="acc" x="24" y="56" text-anchor="start">case-4b19de is on every record</text>
+<text class="lbl" x="24" y="86" text-anchor="start">Intake agent</text>
+<text class="sub" x="24" y="107" text-anchor="start">run 1</text>
+<rect x="22" y="112" width="138" height="20" rx="10" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<circle cx="38" cy="122" r="3.2" fill="#16181D"/>
+<circle cx="53" cy="122" r="3.2" fill="#16181D"/>
+<circle cx="68" cy="122" r="3.2" fill="#16181D"/>
+<circle cx="83" cy="122" r="3.2" fill="#16181D"/>
+<circle cx="98" cy="122" r="3.2" fill="#16181D"/>
+<rect x="142.5" y="118.5" width="7" height="7" fill="#16181D"/>
+<text class="lbl" x="24" y="166" text-anchor="start">Review agent</text>
+<text class="sub" x="170" y="187" text-anchor="start">run 2</text>
+<rect x="168" y="192" width="72" height="20" rx="10" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<circle cx="180" cy="202" r="3.2" fill="#16181D"/>
+<circle cx="194" cy="202" r="3.2" fill="#16181D"/>
+<circle cx="208" cy="202" r="3.2" fill="#16181D"/>
+<rect x="225.5" y="198.5" width="7" height="7" fill="#16181D"/>
+<text class="sub" x="250" y="187" text-anchor="start">run 3</text>
+<rect x="248" y="192" width="72" height="20" rx="10" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<circle cx="260" cy="202" r="3.2" fill="#16181D"/>
+<circle cx="274" cy="202" r="3.2" fill="#16181D"/>
+<circle cx="288" cy="202" r="3.2" fill="#16181D"/>
+<rect x="305.5" y="198.5" width="7" height="7" fill="#16181D"/>
+<rect x="10" y="262" width="320" height="100" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<text class="zone" x="22" y="281" text-anchor="start">PUBLIC RECORD</text>
+<line fill="none" x1="128" y1="232" x2="128" y2="296" stroke="#16181D" stroke-width="1" stroke-dasharray="3 3"/>
+<rect x="121" y="296" width="14" height="14" fill="none" stroke="#2C2E6B" stroke-width="1.5"/>
+<line fill="none" x1="219" y1="232" x2="219" y2="296" stroke="#16181D" stroke-width="1" stroke-dasharray="3 3"/>
+<rect x="212" y="296" width="14" height="14" fill="none" stroke="#2C2E6B" stroke-width="1.5"/>
+<line fill="none" x1="298" y1="232" x2="298" y2="296" stroke="#16181D" stroke-width="1" stroke-dasharray="3 3"/>
+<rect x="291" y="296" width="14" height="14" fill="none" stroke="#2C2E6B" stroke-width="1.5"/>
+<text class="acc" x="24" y="308" text-anchor="start">stamps</text>
+<text class="sub" x="24" y="336" text-anchor="start">a stamp at the end of each interval</text>
+<text class="sub" x="24" y="350" text-anchor="start">seals the new records</text>
+<polyline points="22,392 283.0,392.0" fill="none" stroke="#16181D" stroke-width="1"/>
+<polygon points="288,392 282.0,395.0 282.0,389.0" fill="#16181D"/>
+<text class="sub" x="298" y="396" text-anchor="start">time</text>
+<circle cx="28" cy="418" r="3.2" fill="#16181D"/>
+<text class="sub" x="38" y="422" text-anchor="start">record</text>
+<rect x="100.5" y="414.5" width="7" height="7" fill="#16181D"/>
+<text class="sub" x="114" y="422" text-anchor="start">closing record of a run</text>
+<rect x="380" y="100" width="146" height="103" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<text class="zone" x="392" y="119" text-anchor="start">YOU</text>
+<text class="lbl" x="394" y="146" text-anchor="start">Evidence pack</text>
+<text class="sub" x="394" y="161" text-anchor="start">records, stamp</text>
+<text class="sub" x="394" y="175" text-anchor="start">proofs and</text>
+<text class="sub" x="394" y="189" text-anchor="start">your content</text>
+<polyline points="330,146 375.0,146.0" fill="none" stroke="#16181D" stroke-width="1"/>
+<polygon points="380,146 374.0,149.0 374.0,143.0" fill="#16181D"/>
+<text class="sub" x="355" y="138" text-anchor="middle">build</text>
+<polyline points="396,203 396.0,257.0" fill="none" stroke="#16181D" stroke-width="1"/>
+<polygon points="396,262 393.0,256.0 399.0,256.0" fill="#16181D"/>
+<text class="sub" x="404" y="237" text-anchor="start">hand over</text>
+<rect x="380" y="262" width="146" height="100" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<text class="zone" x="392" y="281" text-anchor="start">THE REVIEWER</text>
+<rect x="392" y="288" width="122" height="62" fill="none" stroke="#2C2E6B" stroke-width="1"/>
+<text class="acc" x="404" y="311" text-anchor="start">Verdict</text>
+<text class="sub" x="404" y="326" text-anchor="start">checked on</text>
+<text class="sub" x="404" y="340" text-anchor="start">their machine</text>
+<polyline points="380,314 335.0,314.0" fill="none" stroke="#16181D" stroke-width="1" stroke-dasharray="3 3"/>
+<polygon points="330,314 336.0,311.0 336.0,317.0" fill="#16181D"/>
+<text class="sub" x="355" y="306" text-anchor="middle">checks</text>
+</svg>

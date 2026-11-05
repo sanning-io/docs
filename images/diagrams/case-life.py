@@ -1,9 +1,10 @@
-"""Writes case-life.svg, case-life-review.svg and their -dark twins.
+"""Writes case-life.svg, case-life-review.svg, case-life-wide.svg and their -dark twins.
 Run: python3 case-life.py, then python3 render.py <names> for the PNGs the pages show.
 
-Drawn 340 wide, the width of a docs column on a phone, with 11px labels at the least.
-The picture is split in two, one under the other: the case over time, then the
-evidence pack, the reviewer and the verdict.
+The phone version is drawn 340 wide, the width of a docs column on a phone, with 11px
+labels at the least, and split in two, one under the other: the case over time, then
+the evidence pack, the reviewer and the verdict. The wide version is one image, drawn
+536 wide, the width of the Maple column on a desktop, so it shows at a scale of 1.
 """
 import os
 from lib import D
@@ -18,10 +19,12 @@ ARIA_REVIEW = ("What happens to the case's records. You build one evidence pack 
                "checks the pack on their own machine, checks the stamps on the public record, and reads "
                "the verdict.")
 
+ARIA_WIDE = ARIA + " " + ARIA_REVIEW
 
-def pill(d, x1, x2, y, label):
+
+def pill(d, x1, x2, y, label, rx=10):
     d.text(x1 + 2, y - 15, label)
-    d.add(f'<rect x="{x1}" y="{y - 10}" width="{x2 - x1}" height="20" rx="10" fill="none" '
+    d.add(f'<rect x="{x1}" y="{y - 10}" width="{x2 - x1}" height="20" rx="{rx}" fill="none" '
           f'stroke="{d.t["hair"]}" stroke-width="1"/>')
 
 
@@ -30,23 +33,22 @@ def square(d, x, y, fill=None):
     d.add(f'<rect x="{x - 3.5}" y="{y - 3.5}" width="7" height="7" fill="{fill}"/>')
 
 
-def run(d, x1, x2, y, label, dots, close_x):
-    pill(d, x1, x2, y, label)
+def run(d, x1, x2, y, label, dots, close_x, rx=10):
+    pill(d, x1, x2, y, label, rx)
     for x in dots:
         d.dot(x, y)
     square(d, close_x, y)
 
 
-def case(dark=False):
-    d = D(340, 436, ARIA, dark, big=True)
-
+def timeline(d, rx=10):
+    """The case over time: two agents, three runs, the stamps, the time axis and the legend."""
     d.zone(10, 10, 320, 222, "Your agents, one case")
     d.text(24, 56, "case-4b19de is on every record", 'acc')
     d.text(24, 86, "Intake agent", 'lbl')
-    run(d, 22, 160, 122, "run 1", [38, 53, 68, 83, 98], 146)
+    run(d, 22, 160, 122, "run 1", [38, 53, 68, 83, 98], 146, rx)
     d.text(24, 166, "Review agent", 'lbl')
-    run(d, 168, 240, 202, "run 2", [180, 194, 208], 229)
-    run(d, 248, 320, 202, "run 3", [260, 274, 288], 309)
+    run(d, 168, 240, 202, "run 2", [180, 194, 208], 229, rx)
+    run(d, 248, 320, 202, "run 3", [260, 274, 288], 309, rx)
 
     d.zone(10, 262, 320, 100, "Public record")
     for x in (128, 219, 298):
@@ -62,6 +64,37 @@ def case(dark=False):
     d.text(38, 422, "record")
     square(d, 104, 418)
     d.text(114, 422, "closing record of a run")
+
+
+
+
+def case(dark=False):
+    d = D(340, 436, ARIA, dark, big=True)
+    timeline(d)
+    return d
+
+
+def wide(dark=False, rx=10):
+    """One image, 536 wide: the width of the Maple column on a desktop, so it shows at a scale of 1.
+    The case timeline keeps its phone layout; the pack and the reviewer sit beside it."""
+    d = D(536, 436, ARIA_WIDE, dark, big=True)
+    timeline(d, rx)
+
+    d.zone(380, 100, 146, 103, "You")
+    d.node(394, 146, "Evidence pack", ["records, stamp", "proofs and", "your content"])
+    d.arrow([(330, 146), (380, 146)])
+    d.text(355, 138, "build", anchor='middle')
+
+    d.arrow([(396, 203), (396, 262)])
+    d.text(404, 237, "hand over")
+
+    d.zone(380, 262, 146, 100, "The reviewer")
+    d.accent_box(392, 288, 122, 62)
+    d.text(404, 311, "Verdict", 'acc')
+    d.text(404, 326, "checked on")
+    d.text(404, 340, "their machine")
+    d.arrow([(380, 314), (330, 314)], dashed=True)
+    d.text(355, 306, "checks", anchor='middle')
     return d
 
 
@@ -92,6 +125,6 @@ def review(dark=False):
 
 if __name__ == '__main__':
     here = os.path.dirname(os.path.abspath(__file__))
-    for name, fn in (("case-life", case), ("case-life-review", review)):
+    for name, fn in (("case-life", case), ("case-life-review", review), ("case-life-wide", wide)):
         fn().save(f"{here}/{name}.svg")
         fn(True).save(f"{here}/{name}-dark.svg")
