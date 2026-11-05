@@ -40,6 +40,7 @@
     "dark": "/logo/sanning-paper.svg"
   },
   "thumbnails": {
+    "preset": "headline",
     "appearance": "light",
     "surface": "neutral",
     "fonts": {

@@ -17,7 +17,7 @@ Work on a branch and open a pull request. Never commit to `main`.
 
 ## Brand
 
-The brand is defined once, in [`sanning-design-system`](https://github.com/sanning-io/sanning-design-system). This site carries it through Mintlify's own configuration: colours from the semantic tokens, the Geist font, the wordmark, and the favicons. Mintlify draws each page's share image from the `thumbnails` setting. `logo/`, `favicon.svg`, `favicon-midnight.svg`, `og/`, and `fonts/` are copied verbatim from that repo's `assets/`. The design-system commit they came from is recorded in [`AGENTS.md`](AGENTS.md), which also holds the voice and terminology rules for anyone writing here.
+The brand is defined once, in [`sanning-design-system`](https://github.com/sanning-io/sanning-design-system). This site carries it through Mintlify's own configuration: colours from the semantic tokens, the Geist font, the wordmark, and the favicons. Mintlify draws each page's share image from the `thumbnails` setting, in the `headline` layout. `logo/`, `favicon.svg`, `favicon-midnight.svg`, `og/`, and `fonts/` are copied verbatim from that repo's `assets/`, except the two Instrument Sans files in `fonts/`, which are this site's own copy from the `@fontsource-variable/instrument-sans` package. The design-system commit they came from is recorded in [`AGENTS.md`](AGENTS.md), which also holds the voice and terminology rules for anyone writing here.
 
 ## Agents
 

@@ -1,7 +1,7 @@
 ---
 title: "Prove what your AI agents did"
 sidebarTitle: "Introduction"
-description: "Records anyone can verify without Sanning."
+description: "Sanning records what your AI agents do, so that someone else can verify it without trusting you or Sanning."
 ---
 
 Each step of your agent becomes a signed record. Sanning seals your records into a stamp and publishes the stamp to the public record, a permanent record that Sanning does not control. Later, you build an evidence pack for a case and hand it to a reviewer, who verifies it on their own machine.
@@ -12,8 +12,8 @@ Your agents act for you. Later, someone asks you to prove what they did: an audi
 
 ## How it works
 
-<img src="/images/diagrams/how-it-works.svg" alt="Your agent and its adapter capture each step. The content goes to your own log store. Only signed hashes go to Sanning, which seals the records into a stamp on the public record at each interval. You build the evidence pack from Sanning's records and stamp proofs and your own content, and hand it to the reviewer. The reviewer verifies it on their own machine, checks the stamps on the public record, and does not need Sanning." className="block dark:hidden" />
-<img src="/images/diagrams/how-it-works-dark.svg" alt="Your agent and its adapter capture each step. The content goes to your own log store. Only signed hashes go to Sanning, which seals the records into a stamp on the public record at each interval. You build the evidence pack from Sanning's records and stamp proofs and your own content, and hand it to the reviewer. The reviewer verifies it on their own machine, checks the stamps on the public record, and does not need Sanning." className="hidden dark:block" />
+<img src="/images/diagrams/how-it-works.png" alt="Your agent and its adapter capture each step. The content goes to your own log store. Only signed hashes go to Sanning, which seals the records into a stamp on the public record at each interval. You build the evidence pack from Sanning's records and stamp proofs and your own content, and hand it to the reviewer. The reviewer verifies it on their own machine, checks the stamps on the public record, and does not need Sanning." className="block dark:hidden" />
+<img src="/images/diagrams/how-it-works-dark.png" alt="Your agent and its adapter capture each step. The content goes to your own log store. Only signed hashes go to Sanning, which seals the records into a stamp on the public record at each interval. You build the evidence pack from Sanning's records and stamp proofs and your own content, and hand it to the reviewer. The reviewer verifies it on their own machine, checks the stamps on the public record, and does not need Sanning." className="hidden dark:block" />
 
 1. Capture. An [adapter](/adapters) watches your agent's framework and turns each step into a record. The content of each step goes to your own log store, which is storage that you control.
 2. Sign. Your agent signs each record with its signing key. Sanning receives the signed record. The record holds hashes of your content, never the content.
