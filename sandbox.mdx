@@ -1,11 +1,9 @@
 ---
 title: "Test in the Sandbox"
-description: "Try your setup with a Sandbox API key before you record for production, and what changes when you go to Live"
+description: "A Sandbox API key signs your records for real but never puts a stamp on the public record, so nothing you test counts as evidence."
 ---
 
-This page shows how to test your agent with a Sandbox API key, what the Sandbox does differently from Live, and what to change when you move to Live.
-
-Every other page in these docs is written for Live. The Sandbox is the mode to use while you build. It signs your records for real, but it never puts a stamp on the public record, so nothing in it counts as evidence.
+Use the Sandbox while you build. Every other page in these docs is written for Live.
 
 ## How the two modes differ
 
@@ -58,16 +56,14 @@ You enter the Sandbox from your Live organization. Confirm your email address fi
 
    Replace the following:
 
-   - `SEED` with the 64 hex characters that you made in step 4.
-   - `API_KEY` with the Sandbox API key from step 3. It starts with `sanning_test_`.
+   - `SEED`: the 64 hex characters that you made in step 4.
+   - `API_KEY`: the Sandbox API key from step 3. It starts with `sanning_test_`.
 
-Your Sandbox agent and your Live agent are separate identities, and the Sandbox does not carry its agents or signing keys over to Live.
+Do not set `environment` in your code: with a Sandbox API key, `environment: "production"` gives an error when you create the anchorer, the object that signs your records and sends them to Sanning.
 
-Do not set `environment` in your code. A Sandbox API key together with `environment: "production"` gives an error when you create the anchorer, the object that signs your records and sends them to Sanning.
+## Keep the content on local disk
 
-## Use local disk for a quick test
-
-For a quick test in the Sandbox, you can keep the content on local disk instead of an S3 bucket. Local disk is for a quick test in the Sandbox only. This part uses the API key and the seed from [Make a Sandbox API key](#make-a-sandbox-api-key).
+In the Sandbox only, you can keep the content on local disk instead of an S3 bucket. Use the API key and the seed from [Make a Sandbox API key](#make-a-sandbox-api-key).
 
 Install the SDK. Local disk needs no S3 library:
 
@@ -131,13 +127,13 @@ To build a pack from that folder, give `bundle` the folder as `--logs ./logstore
 
 ## Run your agent and read the result
 
-Add an adapter to your agent as in [Using adapters](/adapters), and run it. Each step appears as a record in the console, under **Records**.
+Add an adapter to your agent as in [Record your agent with an adapter](/adapters), and run it. Each step appears as a record in the console, under **Records**.
 
 Then build an evidence pack for the case and verify it, as in [Build an evidence pack](/evidence/build) and [Verify an evidence pack](/evidence/verify). A Sandbox pack goes through the same steps as a Live one. The verifier checks the records and says Verified, and it marks the pack as Sandbox. On the command line, it exits with code 3 where a Live pack exits with 0. No flag changes that.
 
 ## Why a Sandbox pack is never evidence
 
-A simulated stamp is Sanning's own computation. It gives no time from outside Sanning, so no reviewer can check it against anything. The mode is also signed into each record. Nobody can relabel a Sandbox record as a Live one, because that breaks its signature.
+A simulated stamp is Sanning's own computation: it gives no time from outside Sanning, so no reviewer can check it against anything. The mode is also signed into each record, so relabeling a Sandbox record as a Live one breaks its signature.
 
 A pack carries one mode. The [`bundle`](/reference/cli#bundle) command refuses a pack that mixes Sandbox and Live records for the same agent, so give your Sandbox agent its own agent ID.
 
@@ -152,21 +148,28 @@ Every Sandbox organization has the same fixed limits:
 
 A request over a limit fails with `SANDBOX_LIMIT_REACHED`.
 
-To clear a Sandbox at once, reset it. Only an owner or admin can.
+To clear a Sandbox at once, reset it. Only an owner or admin can. A reset does the following:
+
+- Deletes your records, stamps and pack reports.
+- Keeps your API keys and signing keys, so your integration keeps recording.
+- Retires every agent. The **Agents** page lists each one as Retired, and a retired agent no longer counts toward the limit of 25 active agents.
+- Never touches Live.
+
+You can reset once every 5 minutes.
 
 1. Open **Settings**, then **Sandbox**.
 2. Select **Reset the sandbox**.
 3. Type the organization's name.
 4. In the dialog, select **Reset the sandbox**.
 
-A reset deletes your records, stamps and pack reports. It keeps your API keys and signing keys, so your integration keeps recording. It also decommissions every agent: the Agents page lists each one as Retired, and a retired agent no longer counts toward the limit of 25 active agents. You can reset once every 5 minutes. A reset never touches Live.
-
 ## Move to Live
+
+The Sandbox does not carry its agents or signing keys over to Live: your Live agent is a separate identity.
 
 When your agent records what you expect in the Sandbox, change three things:
 
 1. In the console, select **Switch to live** in the strip across the top, and make a Live API key as in the [Quickstart](/quickstart#make-a-live-api-key).
-2. Make a new seed for the Live agent. Do not reuse the Sandbox seed. A Sandbox seed usually sits in test pipelines and on developer machines, so a Live agent must not sign with it.
+2. Make a new seed for the Live agent. Do not reuse the Sandbox seed: test pipelines and developer machines can hold it, so a Live agent must not sign with it.
 3. Replace `SANNING_API_KEY` and `SANNING_SIGNING_SEED` in your service's secrets, and remove any `environment` that you set.
 
 A stamp on the public record cannot be withdrawn, and a case ID cannot be changed after it is recorded. Before your first Live record, check that your case IDs hold no names or other personal data.

@@ -1,15 +1,13 @@
 ---
 title: "Verify an evidence pack"
-description: "Check an evidence pack in your browser or at the command line, with no account, and read what the verdict proves"
+description: "For reviewers: verify a pack in your browser or at the command line, with no account, and learn what a Verified verdict proves and what it does not."
 ---
 
-This page is for the reviewer: it shows how to check an evidence pack that someone gave you, and what the verdict does and does not prove. You need no account. The command line check needs no Sanning server. The verifier is the program that checks an evidence pack. Terms such as record, stamp and verdict are defined in the [Introduction](/#core-ideas).
-
-You need the evidence pack, which is a zip file. The pack stays on your machine. To also look each stamp up on the public record, you need the address of a public gateway, a web server that serves the public record.
+You need the evidence pack, a zip file, and it stays on your machine. To also look each stamp up on the public record, you need the address of a public gateway, a web server that serves the public record. Terms such as record, stamp and verdict are defined in the [Introduction](/#core-ideas).
 
 ## Check it in your browser
 
-Open [verify.sanning.io](https://verify.sanning.io) and drop the zip file on the page. The check runs in your browser. The pack is never uploaded. The only data that leaves your browser is the public record ID of each stamp. By default the page looks the stamps up through a Sanning server, and it has no setting to change that. For a check with no Sanning server in it, use the command line with `--gateways` and a public gateway.
+Open [verify.sanning.io](https://verify.sanning.io) and drop the zip file on the page. The check runs in your browser and the pack is never uploaded: the only data that leaves your browser is the public record ID of each stamp. The page looks the stamps up through a Sanning server, and it has no setting to change that. For a check with no Sanning server in it, use the command line with `--gateways` and a public gateway.
 
 ## Check it at the command line
 
@@ -32,10 +30,11 @@ sanning-proof verify pack/bundle.json --logs pack/logs/
 
 {/* OUTPUT FROM REAL RUN: the report that verify prints for a Verified pack, with its Witness line */}
 
-Both commands read the pack offline and give the same answer, with the same exit codes. To look each stamp up on the public record, add `--gateways` with the address of a public gateway. Without `--gateways`, the report says `Witness: Not checked`, and the verdict does not change. The lookup is the one network call the verifier makes.
+Both commands read the pack offline and give the same answer, with the same exit codes. To look each stamp up on the public record, add `--gateways` with the address of a public gateway. Without `--gateways`, the report says `Witness: Not checked`, and the skipped lookup does not change the verdict. The lookup is the one network call the verifier makes.
 
 ```bash
-npx @sanning/proof verify pack/bundle.json --logs pack/logs/ --gateways https://arweave.net
+npx @sanning/proof verify pack/bundle.json --logs pack/logs/ \
+  --gateways https://arweave.net
 ```
 
 This command asks the gateway for each stamp, and compares what it returns with the pack. You can name more than one gateway, separated by commas.
@@ -50,9 +49,9 @@ The flags are in [Command line](/reference/cli).
 
 ## What the verifier checks
 
-The verifier is the program that you run to check a pack. Its core, the kernel, is the code that reads a pack and gives the verdict. The kernel ships in two versions: `@sanning/proof` for TypeScript and `sanning-proof` for Python. The verify page and both command lines run it.
+The verifier is the program that checks a pack. The verify page and both command lines run the same core, the kernel, which ships as `@sanning/proof` for TypeScript and `sanning-proof` for Python.
 
-The report states six claims: Signed, Unchanged, Witnessed, Complete, Agreed and Follows the rules. Each claim is proven, disproven or not proven, or it is not in scope. The text report leaves out a claim that is not in scope. One rule turns the claims into the verdict. Every check except the optional stamp lookup runs on your machine.
+The report states six claims: Signed, Unchanged, Witnessed, Complete, Agreed and Follows the rules. Each claim is proven, disproven or not proven, or it is not in scope. The text report leaves out a claim that is not in scope. One rule turns the claims into the verdict: if any claim is disproven, the verdict is Failed; otherwise, if any claim is not proven, it is Incomplete; otherwise, it is Verified. Every check except the optional stamp lookup runs on your machine.
 
 <img src="/images/diagrams/claims-to-verdict.png" alt="Six claims, read by one rule, give one of three results. Any claim disproven gives Failed, exit 1. Otherwise any claim not proven gives Incomplete, exit 2. Otherwise Verified, exit 0. Sandbox evidence that verifies exits 3, and is a label, not a result." className="block dark:hidden" />
 <img src="/images/diagrams/claims-to-verdict-dark.png" alt="Six claims, read by one rule, give one of three results. Any claim disproven gives Failed, exit 1. Otherwise any claim not proven gives Incomplete, exit 2. Otherwise Verified, exit 0. Sandbox evidence that verifies exits 3, and is a label, not a result." className="hidden dark:block" />
@@ -65,7 +64,7 @@ The following table shows the question that the verifier asks for each claim.
 | Unchanged | Do the bytes agree with what was signed? |
 | Witnessed | Does a stamp cover each record? The independent check is the separate `Witness:` line. |
 | Complete | Does the pack hold everything that its own signed declaration and its stamp say it holds? |
-| Agreed | Where the evidence holds hand-off records, which record a message passing from one agent to another, do the two sides of each hand-off agree? Without hand-off records, this claim is not in scope. |
+| Agreed | Do the two sides of each hand-off agree? A hand-off record records a message passing from one agent to another. Without hand-off records, this claim is not in scope. |
 | Follows the rules | Does each record follow the record format that it names? |
 
 ## What each verdict means
@@ -87,7 +86,9 @@ After the verdict come one line for each claim that is disproven or not proven, 
 - `Sandbox:` when the records were made with a Sandbox API key.
 - `Witness:` always, to say whether the stamps were looked up on the public record. It reads `Confirmed on the public record`, `Not checked`, or `The public record holds different bytes`.
 
-If the records of a pack were made with a Sandbox API key and the pack otherwise verifies, the report reads Verified and adds the line `Sandbox: these records are sandbox records, not production evidence.` The command exits with code 3. The stamps are simulated and are not on the public record. Do not rely on the pack as evidence.
+<Warning>
+  If the report adds the line `Sandbox: these records are sandbox records, not production evidence.`, do not rely on the pack as evidence, even though it reads Verified. Its records were made with a Sandbox API key, its stamps are simulated and are not on the public record, and the command exits with code 3.
+</Warning>
 
 A command that could not run, such as one given a file that is not a pack, exits with code 4. The exit codes are in [Command line](/reference/cli#exit-codes).
 
@@ -101,7 +102,7 @@ A Verified verdict proves the following:
 - Each run's records are complete and in order.
 - Stamps cover the records.
 
-The stamp lookup adds the independent time. If you looked the stamps up with `--gateways` and a public gateway, Verified also proves that the public record holds them. The public record is the independent witness: it fixes when the records existed, and neither the sender nor Sanning can change that afterward without the check failing. Without the lookup, the report says `Witness: Not checked`, and Verified does not prove when the records existed. The verify page looks the stamps up through a Sanning server, so that lookup passes through a Sanning server.
+If you looked the stamps up with `--gateways` and a public gateway, Verified also proves that the public record holds them. The public record is the independent witness: it fixes when the records existed, and neither the sender nor Sanning can change that afterward without the check failing. Without the lookup, the report says `Witness: Not checked`, and Verified does not prove when the records existed. On the verify page, the lookup goes through a Sanning server.
 
 ## What Verified does not prove
 

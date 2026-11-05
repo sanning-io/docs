@@ -1,9 +1,10 @@
 ---
-title: "Quickstart"
-description: "Make a Live API key and a seed for your agent's signing key, set up a log store, create the anchorer, and pick how to record your agent"
+title: "Set up your agent to record evidence"
+sidebarTitle: "Quickstart"
+description: "A Live API key, a seed for its signing key, the SDK, a log store and an anchorer: what your agent needs before it records for production."
 ---
 
-This page sets up what your agent needs to record for production: a Live API key, a seed for its signing key, the SDK (the package that signs records and sends them to Sanning), a log store, and an anchorer. Live is the mode that records real evidence. The Sandbox is the mode for testing. You need Node.js 22 or later, or Python 3.11 or later.
+Every step here is for Live, the mode that records real evidence. You need Node.js 22 or later, or Python 3.11 or later.
 
 <Note>
   To test, use a Sandbox API key, and see [Test in the Sandbox](/sandbox).
@@ -22,7 +23,7 @@ A Live API key starts with `sanning_prod_`.
 
 ## Make a seed for the signing key
 
-Your agent signs every record with its signing key, an Ed25519 key. You make the key from a 32-byte seed. You make the seed once. You keep it, and Sanning never receives it.
+Your agent signs every record with its signing key, an Ed25519 key made from a 32-byte seed. Make the seed once, with one of these commands. You keep it, and Sanning never receives it.
 
 <CodeGroup>
 
@@ -40,7 +41,9 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 </CodeGroup>
 
-Use one seed for each agent ID. To change it later, rotate the signing key: Sanning accepts a new key only when the old key signs the change. If a seed leaks, an owner or admin revokes the key in the console and re-keys the agent. Sanning enrolls the signing key on your agent's first record, so you do not register it anywhere.
+Use one seed for each agent ID. Sanning enrolls the signing key on your agent's first record, so you do not register it anywhere.
+
+To change the key later, rotate it: Sanning accepts a new key only when the old key signs the change. If a seed leaks, an owner or admin revokes the key in the console and re-keys the agent.
 
 ## Store both as environment variables
 
@@ -53,12 +56,14 @@ export SANNING_API_KEY=API_KEY
 
 Replace the following:
 
-- `SEED` with the 64 hex characters that you made.
-- `API_KEY` with the Live API key that you copied.
+- `SEED`: the 64 hex characters that you made.
+- `API_KEY`: the Live API key that you copied.
 
 Never commit either value to your code.
 
 ## Install the SDK
+
+Install the SDK, the package that signs records and sends them to Sanning, with S3 support for your log store:
 
 <CodeGroup>
 
@@ -72,9 +77,7 @@ pip install "sanning-anchor[s3]"
 
 </CodeGroup>
 
-In TypeScript, the second package is the AWS S3 library, which the Sanning SDK uses to reach your bucket but does not install for you.
-
-In TypeScript, an adapter is a separate package. In Python, it ships inside `sanning-anchor`. Each adapter guide shows how to install its own.
+In TypeScript, `@aws-sdk/client-s3` is the AWS S3 library, which the SDK uses to reach your bucket and does not install for you. Each adapter guide shows how to install its adapter: a separate package in TypeScript, part of `sanning-anchor` in Python.
 
 ## Set up your log store
 
@@ -108,7 +111,7 @@ A log store is your own S3 bucket for the content of each record. Sanning gets o
 
 Without keys, the first record fails with a `RetentionError`, and nothing is sent to Sanning. The message ends with `Could not load credentials from any providers` in TypeScript and `NoCredentialsError: Unable to locate credentials` in Python. A direct `anchor` call throws the error. The LangChain adapter logs `step not anchored` for each step instead, and the agent keeps running with gaps in its trail.
 
-On the agent's first record, the SDK creates the bucket with versioning and Object Lock in governance mode for 365 days. In that mode, nobody can delete or overwrite a stored version during that time unless they hold the AWS permission `s3:BypassGovernanceRetention`. A user who holds it can still remove a version. If the bucket exists already, the SDK uses it and does not change it.
+On the agent's first record, the SDK creates the bucket with versioning and Object Lock in governance mode for 365 days. For that time, only a user who holds the AWS permission `s3:BypassGovernanceRetention` can delete or overwrite a stored version. If the bucket exists already, the SDK uses it and does not change it.
 
 <Note>
   The SDK can create the bucket only in `us-east-1`. For another Region, create the bucket before the agent's first record, as in [A bucket in another Region](#a-bucket-in-another-region).
@@ -123,7 +126,10 @@ On the agent's first record, the SDK creates the bucket with versioning and Obje
       --create-bucket-configuration LocationConstraint=REGION \
       --object-lock-enabled-for-bucket
     aws s3api put-object-lock-configuration --bucket BUCKET \
-      --object-lock-configuration '{"ObjectLockEnabled":"Enabled","Rule":{"DefaultRetention":{"Mode":"GOVERNANCE","Days":365}}}'
+      --object-lock-configuration '{
+        "ObjectLockEnabled": "Enabled",
+        "Rule": {"DefaultRetention": {"Mode": "GOVERNANCE", "Days": 365}}
+      }'
     ```
 
     Replace the following:
@@ -158,7 +164,7 @@ On the agent's first record, the SDK creates the bucket with versioning and Obje
 
     Set `SANNING_LOG_BUCKET` and `AWS_REGION` as in step 1. For `AWS_REGION`, use the Region name that the service documents.
 
-    Many such services do not support Object Lock. The SDK then warns and creates a plain bucket, so the content is not protected from deletion.
+    If the service does not support Object Lock, the SDK warns and creates a plain bucket, so the content is not protected from deletion.
   </Accordion>
 </AccordionGroup>
 
@@ -196,7 +202,12 @@ const anchorer = createAnchorer({
 ```python Python
 import os
 
-from sanning_anchor import Anchorer, LocalEd25519Signer, MemoryStore, ObjectLogStore
+from sanning_anchor import (
+    Anchorer,
+    LocalEd25519Signer,
+    MemoryStore,
+    ObjectLogStore,
+)
 from sanning_anchor.s3 import S3ObjectStore
 
 log_store = ObjectLogStore(
@@ -217,16 +228,16 @@ anchorer = Anchorer(
 
 </CodeGroup>
 
-Each run of an adapter has its own chain of records. `MemoryStore` keeps the last record of each chain in memory, and the line stops a warning about a durable chain store that does not apply to adapters.
+Both samples read the Region of the bucket from `AWS_REGION`. Replace `claims-triage` with the agent ID of your agent, and keep it stable: it is how the agent shows on the **Agents** page.
 
-Both samples read the Region of the bucket from `AWS_REGION`. Replace `claims-triage` with the agent ID of your agent. Keep it stable: it is how the agent shows on the **Agents** page.
+`MemoryStore` keeps the last record of each chain in memory. Each adapter run has its own chain of records, so the SDK's warning about a durable chain store does not apply, and the `store` line turns that warning off.
 
-## Pick your path
+## Record your agent
 
 An adapter records your agent's steps for you. You add it once, where your agent runs.
 
 <CardGroup cols={2}>
-  <Card title="Using adapters" icon="plug" href="/adapters">
+  <Card title="Record your agent with an adapter" icon="plug" href="/adapters">
     Add our adapter to your agent, and every step becomes a record. The example uses LangChain.
   </Card>
   <Card title="Build your own adapter (Soon)" href="/adapters/build-your-own">

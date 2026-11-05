@@ -32,6 +32,7 @@ The brand is defined once, in [`sanning-io/sanning-design-system`](https://githu
 
 - Use active voice and second person ("you").
 - Keep sentences concise — one idea per sentence.
+- A page does not open with "This page…". The description says what the page is for, and the first sentence of the body states the point.
 - Use sentence case for headings.
 - Bold for UI elements: Click **Settings**.
 - Code formatting for file names, commands, paths, and code references.

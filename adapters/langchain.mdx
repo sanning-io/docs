@@ -1,9 +1,10 @@
 ---
-title: "LangChain and LangGraph"
-description: "Record every run of a LangChain or LangGraph agent for one case, with its decisions and approvals, in TypeScript or Python"
+title: "Record a LangChain or LangGraph agent"
+sidebarTitle: "LangChain and LangGraph"
+description: "Add the adapter as a callback, name your decisions and approvals, and close each run, in TypeScript or Python."
 ---
 
-This page shows how to add the Sanning adapter to a LangChain or LangGraph agent, so that each run records its steps, decisions and approvals for one case. You end with records in the console. Sanning stamps them on the public record at the end of the interval.
+By the end, each run of the example agent is in the console as records for one case, with its steps, its decision and its approval. Sanning stamps them on the public record at the end of the interval.
 
 <Note>
   To test, use a Sandbox API key, and see [Test in the Sandbox](/sandbox).
@@ -18,7 +19,8 @@ The example agent on this page has no model, so you need no key from a model pro
     <CodeGroup>
 
     ```bash TypeScript
-    npm install @sanning/anchor @sanning/anchor-langchain @langchain/core @langchain/langgraph zod @aws-sdk/client-s3
+    npm install @sanning/anchor @sanning/anchor-langchain \
+      @langchain/core @langchain/langgraph zod @aws-sdk/client-s3
     ```
 
     ```bash Python
@@ -54,7 +56,7 @@ The example agent on this page has no model, so you need no key from a model pro
   </Step>
 
   <Step title="Start with an agent">
-    The following graph makes one tool call that states a decision, and then pauses for approval. The tool, `record_conclusion`, is how the agent states its decision, and the `review` node is where a person approves.
+    The following graph makes one tool call that states a decision, and then pauses for approval. The tool, `record_conclusion`, is how the agent states its decision:
 
     <CodeGroup>
 
@@ -78,28 +80,6 @@ The example agent on this page has no model, so you need no key from a model pro
       description: "State the verdict for the claim.",
       schema: z.object({ verdict: z.enum(["approved", "declined"]) }),
     });
-
-    const graph = new StateGraph(MessagesAnnotation)
-      .addNode("assess", () => ({
-        messages: [
-          new AIMessage({
-            content: "",
-            tool_calls: [
-              { id: "call_1", name: "record_conclusion", args: { verdict: "declined" } },
-            ],
-          }),
-        ],
-      }))
-      .addNode("tools", new ToolNode([recordConclusion]))
-      .addNode("review", () => {
-        const answer = interrupt({ question: "Confirm the declined verdict?" });
-        return { messages: [new AIMessage(`Reviewer answered: ${JSON.stringify(answer)}`)] };
-      })
-      .addEdge(START, "assess")
-      .addEdge("assess", "tools")
-      .addEdge("tools", "review")
-      .addEdge("review", END)
-      .compile({ checkpointer: new MemorySaver() });
     ```
 
     ```python Python
@@ -115,10 +95,53 @@ The example agent on this page has no model, so you need no key from a model pro
     def record_conclusion(verdict: str) -> str:
         """State the verdict for the claim."""
         return verdict
+    ```
 
+    </CodeGroup>
 
+    The graph calls the tool from `assess`, then pauses in `review`, where a person approves:
+
+    <CodeGroup>
+
+    ```ts TypeScript
+    const graph = new StateGraph(MessagesAnnotation)
+      .addNode("assess", () => ({
+        messages: [
+          new AIMessage({
+            content: "",
+            tool_calls: [
+              {
+                id: "call_1",
+                name: "record_conclusion",
+                args: { verdict: "declined" },
+              },
+            ],
+          }),
+        ],
+      }))
+      .addNode("tools", new ToolNode([recordConclusion]))
+      .addNode("review", () => {
+        const answer = interrupt({ question: "Confirm the declined verdict?" });
+        return {
+          messages: [
+            new AIMessage(`Reviewer answered: ${JSON.stringify(answer)}`),
+          ],
+        };
+      })
+      .addEdge(START, "assess")
+      .addEdge("assess", "tools")
+      .addEdge("tools", "review")
+      .addEdge("review", END)
+      .compile({ checkpointer: new MemorySaver() });
+    ```
+
+    ```python Python
     def assess(state):
-        call = {"id": "call_1", "name": "record_conclusion", "args": {"verdict": "declined"}}
+        call = {
+            "id": "call_1",
+            "name": "record_conclusion",
+            "args": {"verdict": "declined"},
+        }
         return {"messages": [AIMessage(content="", tool_calls=[call])]}
 
 
@@ -146,7 +169,9 @@ The example agent on this page has no model, so you need no key from a model pro
   <Step title="Add the adapter, with a case ID">
     Make an anchorer, which signs your records and sends them to Sanning, and make the handler that you pass to LangChain as a callback.
 
-    The case ID is the matter that the work is for. Give it to the handler, and every record of the run carries it, so that you can build one evidence pack for the whole case later. Each record carries its case ID permanently, and nobody can change or withdraw it. The ID reaches Sanning as plain text. Use an ID that means nothing outside your systems: no names, no paths, no personal data. If you need to find a case by customer, keep that link in your own systems.
+    The case ID is the matter that the work is for. Give it to the handler, and every record of the run carries it, so that you can build one evidence pack for the whole case later.
+
+    The ID reaches Sanning as plain text, and nobody can change or withdraw it later. Use an ID that means nothing outside your systems: no names, no paths, no personal data. To find a case by customer, keep that link in your own systems.
 
     <CodeGroup>
 
@@ -214,7 +239,7 @@ The example agent on this page has no model, so you need no key from a model pro
 
     Replace `claims-triage` with the agent ID, the name that identifies your agent to Sanning, and keep it stable: it is how the agent shows on the **Agents** page. Replace `case-4b19de` with the ID of the case from your own system. A case ID is 1 to 128 characters of letters, digits, `_`, `.`, `:` and `-`.
 
-    The log store keeps the content of each step in your S3 bucket, and Sanning never receives it. With a Live API key, every record needs a log store. Each run of the adapter has its own chain of records, and `MemoryStore` keeps the last record of each chain in memory. For why, see [Create the anchorer](/quickstart#create-the-anchorer). For why you keep the content, see [Keep your content](/evidence/build#keep-your-content).
+    The log store keeps the content of each step in your S3 bucket, and Sanning never receives it. For why the anchorer uses `MemoryStore`, see [Create the anchorer](/quickstart#create-the-anchorer), and for why you keep the content, see [Keep your content](/evidence/build#keep-your-content).
 
     The mode (Sandbox or Live) comes from the start of your API key, so you set nothing else.
   </Step>
@@ -276,7 +301,9 @@ The example agent on this page has no model, so you need no key from a model pro
         approvals=ApprovalOptions(
             actor="human",
             # The value that resumes the run is the answer.
-            verdict=lambda resume: "approved" if resume.get("approved") else "rejected",
+            verdict=lambda resume: (
+                "approved" if resume.get("approved") else "rejected"
+            ),
         ),
     )
     ```
@@ -291,7 +318,7 @@ The example agent on this page has no model, so you need no key from a model pro
   </Step>
 
   <Step title="Close the run, and check for gaps">
-    A run with no closing record cannot show how it ended, and a reader cannot tell it from a process that died. The closing record holds the outcome you state and the outcome the adapter observed. If they differ, a reviewer sees both. You must close the run in every case.
+    You must close the run in every case. A run with no closing record cannot show how it ended, and a reader cannot tell it from a process that died. The closing record holds the outcome you state and the outcome the adapter observed, so if they differ, a reviewer sees both.
 
     The closing record also lists the records that the run wrote. A step that could not be recorded is a gap, and `close()` reports it. Check for gaps when you close, because the agent keeps running by default when a record is lost.
 
@@ -314,21 +341,6 @@ The example agent on this page has no model, so you need no key from a model pro
       await evidence.close({ outcome: "failed", reason: "error" });
       throw error;
     }
-
-    // LangChain.js can run callbacks in the background. Wait for them, or the
-    // closing record is written without the last step.
-    await awaitAllCallbacks();
-    await evidence.close({ outcome: "completed" });
-    if (!evidence.isComplete) {
-      console.error("Records are missing from the trail:", evidence.gaps, evidence.unbuilt);
-      process.exitCode = 1;
-    }
-
-    // The handler never closes the anchorer. Close it when the process is done.
-    await anchorer.close({ raiseOnGaps: false });
-    if (evidence.isComplete) {
-      console.log(`Recorded case ${caseId}.`);
-    }
     ```
 
     ```python Python
@@ -341,7 +353,36 @@ The example agent on this page has no model, so you need no key from a model pro
     except BaseException:
         handler.close(raise_on_gaps=False, outcome="failed", reason="error")
         raise
+    ```
 
+    </CodeGroup>
+
+    When the run ends, close it with its outcome and check for gaps. Then close the anchorer:
+
+    <CodeGroup>
+
+    ```ts TypeScript
+    // LangChain.js can run callbacks in the background. Wait for them, or the
+    // closing record is written without the last step.
+    await awaitAllCallbacks();
+    await evidence.close({ outcome: "completed" });
+    if (!evidence.isComplete) {
+      console.error(
+        "Records are missing from the trail:",
+        evidence.gaps,
+        evidence.unbuilt,
+      );
+      process.exitCode = 1;
+    }
+
+    // The handler never closes the anchorer. Close it when the process is done.
+    await anchorer.close({ raiseOnGaps: false });
+    if (evidence.isComplete) {
+      console.log(`Recorded case ${caseId}.`);
+    }
+    ```
+
+    ```python Python
     # Raises IncompleteTrailError if any record is missing from the trail.
     handler.close(outcome="completed")
 
@@ -372,9 +413,9 @@ The example agent on this page has no model, so you need no key from a model pro
 
     {/* OUTPUT FROM REAL RUN: the last line the script prints, "Recorded case case-4b19de.", and nothing else when the trail is complete */}
 
-    Open the [console](https://console.sanning.io) and go to **Records**. Each row is a record from your run: the run starts, the steps and the tool call run, the decision is stated, and the approval is requested and then resolved. The run ends with a closing record. The columns are Received, Agent, Kind and Signed by. A **Witness** strip at the top of the table shows the block time of the latest stamp, which is the time the public record confirmed it.
+    Open the [console](https://console.sanning.io) and go to **Records**. Each row is a record from your run: the run starts, the steps and the tool call run, the decision is stated, and the approval is requested and then resolved. The run ends with a closing record.
 
-    The page does not mark each record as stamped. Sanning seals the records of each 10-minute interval, and the proofs are ready about a minute later. The public record can take longer to confirm a stamp, sometimes hours. To know whether your records are stamped, run `bundle`, as in [Build an evidence pack](/evidence/build#wait-for-the-stamp).
+    The **Records** page does not show whether a record is stamped. To find out, run `bundle`, as in [Wait for the stamp](/evidence/build#wait-for-the-stamp).
   </Step>
 </Steps>
 
@@ -412,7 +453,7 @@ After a handler stops the agent, it refuses every later step. Make one handler f
 
 ## What the adapter cannot record
 
-For example, the first record of each run lists approvals when you do not pass `approvals`, and decisions when you name no decision tool. The record types, and which LangChain event writes each, are in [Using adapters](/adapters#how-adapters-work).
+The first record of each run lists what the adapter does not capture: for example, approvals when you do not pass `approvals`, and decisions when you name no decision tool. The record types, and which LangChain event writes each, are in [How adapters work](/adapters#how-adapters-work).
 
 ## The whole file
 
@@ -455,7 +496,11 @@ For example, the first record of each run lists approvals when you do not pass `
         new AIMessage({
           content: "",
           tool_calls: [
-            { id: "call_1", name: "record_conclusion", args: { verdict: "declined" } },
+            {
+              id: "call_1",
+              name: "record_conclusion",
+              args: { verdict: "declined" },
+            },
           ],
         }),
       ],
@@ -463,7 +508,11 @@ For example, the first record of each run lists approvals when you do not pass `
     .addNode("tools", new ToolNode([recordConclusion]))
     .addNode("review", () => {
       const answer = interrupt({ question: "Confirm the declined verdict?" });
-      return { messages: [new AIMessage(`Reviewer answered: ${JSON.stringify(answer)}`)] };
+      return {
+        messages: [
+          new AIMessage(`Reviewer answered: ${JSON.stringify(answer)}`),
+        ],
+      };
     })
     .addEdge(START, "assess")
     .addEdge("assess", "tools")
@@ -514,7 +563,11 @@ For example, the first record of each run lists approvals when you do not pass `
   await awaitAllCallbacks();
   await evidence.close({ outcome: "completed" });
   if (!evidence.isComplete) {
-    console.error("Records are missing from the trail:", evidence.gaps, evidence.unbuilt);
+    console.error(
+      "Records are missing from the trail:",
+      evidence.gaps,
+      evidence.unbuilt,
+    );
     process.exitCode = 1;
   }
 
@@ -556,7 +609,11 @@ For example, the first record of each run lists approvals when you do not pass `
 
 
   def assess(state):
-      call = {"id": "call_1", "name": "record_conclusion", "args": {"verdict": "declined"}}
+      call = {
+          "id": "call_1",
+          "name": "record_conclusion",
+          "args": {"verdict": "declined"},
+      }
       return {"messages": [AIMessage(content="", tool_calls=[call])]}
 
 
@@ -599,7 +656,9 @@ For example, the first record of each run lists approvals when you do not pass `
       decisions=[DecisionTool(record_conclusion, "claim_verdict")],
       approvals=ApprovalOptions(
           actor="human",
-          verdict=lambda resume: "approved" if resume.get("approved") else "rejected",
+          verdict=lambda resume: (
+              "approved" if resume.get("approved") else "rejected"
+          ),
       ),
   )
 

@@ -1,9 +1,10 @@
 ---
-title: "Command line"
+title: "Command line reference"
+sidebarTitle: "Command line"
 description: "The bundle, verify and case commands, their flags, environment variables and exit codes"
 ---
 
-This page lists the commands, their flags and their exit codes. For the steps, see [Build an evidence pack](/evidence/build) and [Verify an evidence pack](/evidence/verify).
+For step-by-step use, see [Build an evidence pack](/evidence/build) and [Verify an evidence pack](/evidence/verify).
 
 Three commands come from two packages, and each package has a TypeScript and a Python version.
 
@@ -19,7 +20,7 @@ In TypeScript, run the commands with `npx`, such as `npx @sanning/anchor bundle`
 
 ## Exit codes
 
-`bundle`, `verify` and `case` share one table of exit codes.
+`bundle`, `verify` and `case` use the same exit codes. For `bundle`, each code also says whether it wrote a pack: see [bundle exit codes](#bundle-exit-codes).
 
 | Exit | Name | Meaning |
 |---|---|---|
@@ -60,13 +61,13 @@ npx @sanning/anchor bundle \
 | `--case` | No | Select the records whose own signed case ID is this case, and declare the pack about it. A case pack takes no dates and holds every record of the case, however long it ran. |
 | `--from` | Without `--case` | The start of the period: a whole UTC day, written `YYYY-MM-DD`. A time is refused. |
 | `--to` | Without `--case` | The end of the period: a whole UTC day, written `YYYY-MM-DD`. That day is included. |
-| `--logs` | Yes | The root of your log store: a local folder that holds `content/` and `records/`, or `s3://bucket` or `s3://bucket/prefix`. For a case file, give it once for every agent, or once for each `--agent` in the same order. |
+| `--logs` | Yes | The root of your log store: a local folder that holds `content/` and `records/`, or `s3://BUCKET` or `s3://BUCKET/PREFIX`, where `BUCKET` is the name of the bucket and `PREFIX` is a prefix inside it. For a case file, give it once for every agent, or once for each `--agent` in the same order. |
 | `--out` | Yes | Where to write the zip. A `.zip` ending is added if it is missing. |
 | `--base-url` | No | The address of the Sanning API to read from. The default is `https://api.sanning.io`, or the value of `SANNING_BASE_URL`. |
 | `--allow-unstamped` | No | Build the pack even when records in the period are recorded and not stamped yet. Takes no value. |
 | `--report-file` | No | For a case file only. A file to put under `report/` in the case file, such as a cover note. You can give it more than once. No record holds a hash of it. |
 
-The command needs `--logs`, because it reads your log store to find which records belong to the agent. A record that Sanning holds does not carry the agent ID.
+The command needs `--logs`, because it reads the agent ID from the signed record in your log store. The record that Sanning holds does not carry the agent ID.
 
 ### Environment variables
 
@@ -82,11 +83,11 @@ The command needs `--logs`, because it reads your log store to find which record
 
 ### What bundle does
 
-- `--agent` is checked twice. The command filters by the agent ID on the server, and it also refuses if a record that comes back names a different agent. A misspelled agent ID stops with `the control plane does not recognize this agent`, and the command writes no pack.
+- `--agent` is checked twice. The server filters by the agent that Sanning bound to each record when it arrived, and the command also reads the agent ID from the signed record in your log store, and refuses if a record names a different agent. A misspelled agent ID stops with `the control plane does not recognize this agent`, and the command writes no pack.
 - It refuses a period that mixes Sandbox and Live records for one agent, because a pack holds one mode.
-- With several `--agent`, it builds one pack for each agent and writes them together as a case file, under `packs/<agent>/`, beside an unsigned `contents.json` and a `HOW-TO-VERIFY.txt`. Every agent must have a pack, or the command writes nothing.
+- With several `--agent`, it builds one pack for each agent and writes them together as a case file, under `packs/AGENT_ID/` (the agent ID of its agent), beside an unsigned `contents.json` and a `HOW-TO-VERIFY.txt`. Every agent must have a pack, or the command writes nothing.
 - If `--to` is today, the period ends at the end of the last sealed interval, so that every record in the pack has a stamp.
-- The window is matched against the time that Sanning received each record, which can be a moment later than the time on your machine. A record recorded within a moment of 00:00 UTC can belong to the neighbouring day. Compare the pack's record count with what your agent recorded, and build the neighbouring day too when they differ.
+- The period is matched against the time that Sanning received each record, which can be later than the time on your machine. A record made close to 00:00 UTC can fall on the neighboring day. Compare the pack's record count with what your agent recorded, and build the neighboring day too when they differ.
 
 ### bundle exit codes
 
@@ -117,7 +118,7 @@ npx @sanning/proof verify bundle.json --logs logs/
 | Argument | Meaning |
 |---|---|
 | `bundle.json` | The bundle file from the unzipped pack. |
-| `--logs` | The folder of content that the pack carries. The command reads only regular files named `<event_id>.json`. It never follows a link or enters a subfolder, and it names every other entry. It exits with code 4 for a name that is not UTF-8, for more than 50,000 entries, or for more than 1 GiB of content. |
+| `--logs` | The folder of content that the pack carries. The command reads only regular files named `EVENT_ID.json`. It never follows a link or enters a subfolder, and it names every other entry. It exits with code 4 for a name that is not UTF-8, for more than 50,000 entries, or for more than 1 GiB of content. |
 | `--gateways` | Addresses of public gateways, which are web servers that serve the public record, separated by commas. The command fetches each stamp from them and compares its bytes. |
 | `--files` | Files that you hold beside the pack. The command hashes each one and matches it, by SHA-256 alone, against the hashes that the pack's records hold. A path can be a folder: the command matches the regular files inside it, found recursively. It never matches by file name, and it never changes the verdict. |
 | `--json` | Print the report as JSON, for a script. See [JSON output](#json-output). |
@@ -129,13 +130,21 @@ The command parses strictly. A bundle, a record or a log file whose JSON repeats
 The text report starts with the verdict, then prints only the lines that apply:
 
 ```text
-<verdict>
-<one line for each claim that is disproven or not proven>
-Next: <one next action>
-Note: <one line for each note>
+VERDICT
+CLAIM_LINES
+Next: NEXT_ACTION
+Note: NOTE_LINES
 Sandbox: these records are sandbox records, not production evidence.
-Witness: <the witness line>
+Witness: WITNESS_LINE
 ```
+
+Replace the following:
+
+- `VERDICT`: the first line, one of the four verdicts that the next paragraph lists.
+- `CLAIM_LINES`: one line for each claim that is disproven or not proven.
+- `NEXT_ACTION`: one next action.
+- `NOTE_LINES`: one line for each note.
+- `WITNESS_LINE`: the witness line.
 
 The verdict is one of `Verified`, `Failed: do not rely on this evidence.`, `Failed: a record does not follow the rules.` and `Incomplete: not everything could be checked.` The `Witness:` line is `Confirmed on the public record`, `Not checked` or `The public record holds different bytes`. Only a lookup that finds other bytes changes the verdict. A gateway that cannot be reached changes nothing, and the line says so.
 
@@ -154,7 +163,7 @@ After these lines comes a blank line and the detail for each record.
 
 ## case
 
-`case` reads one or more packs, or a case file, as one case. It prints one verdict, and it names every exception, which is a pack or a record that the command could not read or check. Each argument is a pack folder, a folder that holds several packs, or a case file named `<name>.zip`.
+`case` reads one or more packs, or a case file, as one case. It prints one verdict, and it names every exception, which is a pack or a record that the command could not read or check. Each argument is a pack folder, a folder that holds several packs, or a case file named `NAME.zip`.
 
 ```bash
 npx @sanning/proof case case-4b19de.zip
@@ -163,9 +172,9 @@ npx @sanning/proof case intake-pack/ review-pack/
 
 `case` uses the same exit codes. A case reads as its worst pack. `--gateways`, `--files` and `--json` work as they do for `verify`, and `case --json` carries the same `verdict`, `claims`, `person` and `exit_code` members.
 
-`case` also looks at every file in the zip, or in the folder that unzipping it makes, that sits outside every pack. It hashes each file with SHA-256. It then lists the file as matched by a record in a named pack, as matching no record, or as skipped. This section is information only: the verdict and the exit code never change.
+`case` also hashes, with SHA-256, every file in the zip (or in the folder that unzipping it makes) that sits outside every pack. It lists each file as matched by a record in a named pack, as matching no record, or as skipped. This part of the report is information only: the verdict and the exit code never change.
 
-## Getting help
+## Get help
 
 `--help` works on each command and exits with code 0 in both languages.
 
