@@ -1,0 +1,684 @@
+---
+title: "Record a LangChain or LangGraph agent"
+sidebarTitle: "LangChain and LangGraph"
+description: "Add the adapter as a callback, name your decisions and approvals, and close each run, in TypeScript or Python."
+---
+
+By the end, each run of the example agent is in the console as records for one case, with its steps, its decision and its approval. Sanning stamps them on the public record at the end of the interval.
+
+<Note>
+  To test, use a Sandbox API key, and see [Test in the Sandbox](/sandbox).
+</Note>
+
+Before you start, you need a Live API key, a seed for your agent's signing key, and an S3 bucket for your log store. The environment variables step links to how to make each one. A Live API key made as the [Quickstart](/quickstart) describes has every scope this guide needs: `agent:enroll` and `anchor:write` for the adapter, and `anchor:read` for `bundle` later.
+
+The example agent on this page has no model, so you need no key from a model provider. It has three nodes: one asks for a tool call, one runs the tool, and one pauses for a person to approve. To use your own agent, keep the Sanning parts and replace the graph.
+
+<Steps titleSize="h3">
+  <Step title="Install the adapter">
+    <CodeGroup>
+
+    ```bash TypeScript
+    npm install @sanning/anchor @sanning/anchor-langchain \
+      @langchain/core @langchain/langgraph zod @aws-sdk/client-s3
+    ```
+
+    ```bash Python
+    pip install "sanning-anchor[langchain,s3]" langgraph
+    ```
+
+    </CodeGroup>
+
+    In TypeScript, the adapter is its own package and takes `@langchain/core` as a peer dependency. `@aws-sdk/client-s3` is the AWS S3 library, which the Sanning SDK uses to reach your bucket but does not install for you. In Python, the adapter ships inside `sanning-anchor`: the `langchain` extra pulls in LangChain, and the `s3` extra pulls in the AWS S3 library.
+  </Step>
+
+  <Step title="Set the environment variables">
+    Export the following variables in the terminal where you run the example. Put them in the secret store that your service already uses for production, and never commit them to your code.
+
+    ```bash
+    export SANNING_API_KEY=API_KEY
+    export SANNING_SIGNING_SEED=SEED
+    export SANNING_LOG_BUCKET=BUCKET
+    export AWS_REGION=REGION
+    export AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
+    export AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
+    ```
+
+    Replace the following:
+
+    - `API_KEY`: your Live API key. To make one, see [Make a Live API key](/quickstart#make-a-live-api-key).
+    - `SEED`: the 64 hex characters of the seed for your agent's signing key. To make one, see [Make a seed for the signing key](/quickstart#make-a-seed-for-the-signing-key).
+    - `BUCKET`: the name of your log store bucket. The SDK creates it on the agent's first record. To learn what a log store is, see [Set up your log store](/quickstart#set-up-your-log-store).
+    - `REGION`: the AWS Region of the bucket, such as `us-east-1`. The SDK can create the bucket only in `us-east-1`: for another Region, see [A bucket in another Region](/quickstart#a-bucket-in-another-region).
+    - `ACCESS_KEY_ID` and `SECRET_ACCESS_KEY`: the access key ID and the secret access key of your storage keys. For the permissions they need, see [The exact AWS permissions](/quickstart#the-exact-aws-permissions).
+
+    If the agent runs on AWS with a role, skip the two AWS keys. For a store such as Cloudflare R2 or MinIO, see [Other S3-compatible stores](/quickstart#other-s3-compatible-stores).
+  </Step>
+
+  <Step title="Start with an agent">
+    The following graph makes one tool call that states a decision, and then pauses for approval. The tool, `record_conclusion`, is how the agent states its decision:
+
+    <CodeGroup>
+
+    ```ts TypeScript
+    import { AIMessage } from "@langchain/core/messages";
+    import { tool } from "@langchain/core/tools";
+    import {
+      Command,
+      END,
+      interrupt,
+      MemorySaver,
+      MessagesAnnotation,
+      START,
+      StateGraph,
+    } from "@langchain/langgraph";
+    import { ToolNode } from "@langchain/langgraph/prebuilt";
+    import { z } from "zod";
+
+    const recordConclusion = tool(async ({ verdict }) => verdict, {
+      name: "record_conclusion",
+      description: "State the verdict for the claim.",
+      schema: z.object({ verdict: z.enum(["approved", "declined"]) }),
+    });
+    ```
+
+    ```python Python
+    from langchain_core.messages import AIMessage
+    from langchain_core.tools import tool
+    from langgraph.checkpoint.memory import MemorySaver
+    from langgraph.graph import END, START, MessagesState, StateGraph
+    from langgraph.prebuilt import ToolNode
+    from langgraph.types import Command, interrupt
+
+
+    @tool
+    def record_conclusion(verdict: str) -> str:
+        """State the verdict for the claim."""
+        return verdict
+    ```
+
+    </CodeGroup>
+
+    The graph calls the tool from `assess`, then pauses in `review`, where a person approves:
+
+    <CodeGroup>
+
+    ```ts TypeScript
+    const graph = new StateGraph(MessagesAnnotation)
+      .addNode("assess", () => ({
+        messages: [
+          new AIMessage({
+            content: "",
+            tool_calls: [
+              {
+                id: "call_1",
+                name: "record_conclusion",
+                args: { verdict: "declined" },
+              },
+            ],
+          }),
+        ],
+      }))
+      .addNode("tools", new ToolNode([recordConclusion]))
+      .addNode("review", () => {
+        const answer = interrupt({ question: "Confirm the declined verdict?" });
+        return {
+          messages: [
+            new AIMessage(`Reviewer answered: ${JSON.stringify(answer)}`),
+          ],
+        };
+      })
+      .addEdge(START, "assess")
+      .addEdge("assess", "tools")
+      .addEdge("tools", "review")
+      .addEdge("review", END)
+      .compile({ checkpointer: new MemorySaver() });
+    ```
+
+    ```python Python
+    def assess(state):
+        call = {
+            "id": "call_1",
+            "name": "record_conclusion",
+            "args": {"verdict": "declined"},
+        }
+        return {"messages": [AIMessage(content="", tool_calls=[call])]}
+
+
+    def review(state):
+        answer = interrupt({"question": "Confirm the declined verdict?"})
+        return {"messages": [AIMessage(content=f"Reviewer answered: {answer}")]}
+
+
+    graph = (
+        StateGraph(MessagesState)
+        .add_node("assess", assess)
+        .add_node("tools", ToolNode([record_conclusion]))
+        .add_node("review", review)
+        .add_edge(START, "assess")
+        .add_edge("assess", "tools")
+        .add_edge("tools", "review")
+        .add_edge("review", END)
+        .compile(checkpointer=MemorySaver())
+    )
+    ```
+
+    </CodeGroup>
+  </Step>
+
+  <Step title="Add the adapter, with a case ID">
+    Make an anchorer, which signs your records and sends them to Sanning, and make the handler that you pass to LangChain as a callback.
+
+    The case ID is the matter that the work is for. Give it to the handler, and every record of the run carries it, so that you can build one evidence pack for the whole case later.
+
+    The ID reaches Sanning as plain text, and nobody can change or withdraw it later. Use an ID that means nothing outside your systems: no names, no paths, no personal data. To find a case by customer, keep that link in your own systems.
+
+    <CodeGroup>
+
+    ```ts TypeScript
+    import {
+      createAnchorer,
+      LocalEd25519Signer,
+      MemoryStore,
+      ObjectLogStore,
+    } from "@sanning/anchor";
+    import { S3ObjectStore } from "@sanning/anchor/s3";
+    import { anchorCallbacks } from "@sanning/anchor-langchain";
+
+    const logStore = new ObjectLogStore(
+      new S3ObjectStore({
+        bucket: process.env.SANNING_LOG_BUCKET!,
+        region: process.env.AWS_REGION!,
+      }),
+    );
+
+    const anchorer = createAnchorer({
+      signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED!),
+      subject: { type: "agent", agent_id: "claims-triage" },
+      apiKey: process.env.SANNING_API_KEY!,
+      logStore,
+      store: new MemoryStore(),
+    });
+
+    const caseId = "case-4b19de";
+    const evidence = anchorCallbacks(anchorer, { caseId });
+    ```
+
+    ```python Python
+    import os
+
+    from sanning_anchor import (
+        Anchorer,
+        AnchorCallbackHandler,
+        LocalEd25519Signer,
+        MemoryStore,
+        ObjectLogStore,
+    )
+    from sanning_anchor.s3 import S3ObjectStore
+
+    log_store = ObjectLogStore(
+        S3ObjectStore(
+            bucket=os.environ["SANNING_LOG_BUCKET"],
+            region=os.environ["AWS_REGION"],
+        )
+    )
+
+    anchorer = Anchorer(
+        signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
+        subject={"type": "agent", "agent_id": "claims-triage"},
+        api_key=os.environ["SANNING_API_KEY"],
+        log_store=log_store,
+        store=MemoryStore(),
+    )
+
+    case_id = "case-4b19de"
+    handler = AnchorCallbackHandler(anchorer, case_id=case_id)
+    ```
+
+    </CodeGroup>
+
+    Replace `claims-triage` with the agent ID, the name that identifies your agent to Sanning, and keep it stable: it is how the agent shows on the **Agents** page. Replace `case-4b19de` with the ID of the case from your own system. A case ID is 1 to 128 characters of letters, digits, `_`, `.`, `:` and `-`.
+
+    The log store keeps the content of each step in your S3 bucket, and Sanning never receives it. For why the anchorer uses `MemoryStore`, see [Create the anchorer](/quickstart#create-the-anchorer), and for why you keep the content, see [Keep your content](/evidence/build#keep-your-content).
+
+    The mode (Sandbox or Live) comes from the start of your API key, so you set nothing else.
+  </Step>
+
+  <Step title="Record decisions from a named tool">
+    A framework records tool calls, and it cannot tell which call is a decision. Put each decision in a tool, and name that tool to the adapter. When the tool ends without an error, the adapter writes a Decision record with the name that you give it. The value is what the tool returned, and it is hashed with the record like any other content.
+
+    Name the decision for what was decided, and put the outcome in the value. The name `claim_verdict` with the value `declined` is right. The name `claim_declined` is not: a name that holds one outcome stops a reviewer from comparing decisions.
+
+    <CodeGroup>
+
+    ```ts TypeScript
+    const evidence = anchorCallbacks(anchorer, {
+      caseId,
+      decisions: [{ tool: recordConclusion, name: "claim_verdict" }],
+    });
+    ```
+
+    ```python Python
+    from sanning_anchor import DecisionTool
+
+    handler = AnchorCallbackHandler(
+        anchorer,
+        case_id=case_id,
+        decisions=[DecisionTool(record_conclusion, "claim_verdict")],
+    )
+    ```
+
+    </CodeGroup>
+
+    Pass the tool object. The handler refuses a tool that does not exist, a tool named twice, and a name that is not a valid label (1 to 128 characters, with no control characters), when you construct it. A call that ends with an error writes no decision.
+  </Step>
+
+  <Step title="Record approvals">
+    When a person must approve a step, use a LangGraph `interrupt()`, as the `review` node does. An interrupt does not say who decides, so tell the adapter, and tell it how to read the answer. The adapter then writes an Approval requested record when the node pauses, and an Approval resolved record when the run resumes.
+
+    <CodeGroup>
+
+    ```ts TypeScript
+    const evidence = anchorCallbacks(anchorer, {
+      caseId,
+      decisions: [{ tool: recordConclusion, name: "claim_verdict" }],
+      approvals: {
+        actor: "human",
+        // The value that resumes the run is the answer.
+        verdict: (resume) =>
+          (resume as { approved?: boolean }).approved ? "approved" : "rejected",
+      },
+    });
+    ```
+
+    ```python Python
+    from sanning_anchor import ApprovalOptions
+
+    handler = AnchorCallbackHandler(
+        anchorer,
+        case_id=case_id,
+        decisions=[DecisionTool(record_conclusion, "claim_verdict")],
+        approvals=ApprovalOptions(
+            actor="human",
+            # The value that resumes the run is the answer.
+            verdict=lambda resume: (
+                "approved" if resume.get("approved") else "rejected"
+            ),
+        ),
+    )
+    ```
+
+    </CodeGroup>
+
+    `actor` is `human`, `policy` or `model`. `verdict` returns `approved`, `rejected` or `edited`, and it must raise an error for a value that is not an answer. Only a LangGraph resume command answers a pending approval.
+
+    The two records are in different runs, and a LangGraph `thread_id` ties them together. A `thread_id` is 1 to 128 characters of letters, digits, `_`, `.`, `:` and `-`. Use an ID that means nothing outside your systems: the adapter refuses every record of a run whose `thread_id` is an email address, for example.
+
+    The request waits in the process until the run resumes. If the answer can arrive in another process, pass a store that outlives the first process as `approvals.pending` (`pending` in Python). Without `approvals`, the adapter records no approvals, and the first record of each run says so.
+  </Step>
+
+  <Step title="Close the run, and check for gaps">
+    You must close the run in every case. A run with no closing record cannot show how it ended, and a reader cannot tell it from a process that died. The closing record holds the outcome you state and the outcome the adapter observed, so if they differ, a reviewer sees both.
+
+    The closing record also lists the records that the run wrote. A step that could not be recorded is a gap, and `close()` reports it. Check for gaps when you close, because the agent keeps running by default when a record is lost.
+
+    <CodeGroup>
+
+    ```ts TypeScript
+    import { awaitAllCallbacks } from "@langchain/core/callbacks/promises";
+
+    const config = {
+      configurable: { thread_id: "claim-4471" },
+      callbacks: [evidence],
+    };
+
+    try {
+      // The first call pauses at the review node. The second is the answer.
+      await graph.invoke({ messages: [] }, config);
+      await graph.invoke(new Command({ resume: { approved: true } }), config);
+    } catch (error) {
+      await awaitAllCallbacks();
+      await evidence.close({ outcome: "failed", reason: "error" });
+      throw error;
+    }
+    ```
+
+    ```python Python
+    config = {"configurable": {"thread_id": "claim-4471"}, "callbacks": [handler]}
+
+    try:
+        # The first call pauses at the review node. The second is the answer.
+        graph.invoke({"messages": []}, config)
+        graph.invoke(Command(resume={"approved": True}), config)
+    except BaseException:
+        handler.close(raise_on_gaps=False, outcome="failed", reason="error")
+        raise
+    ```
+
+    </CodeGroup>
+
+    When the run ends, close it with its outcome and check for gaps. Then close the anchorer:
+
+    <CodeGroup>
+
+    ```ts TypeScript
+    // LangChain.js can run callbacks in the background. Wait for them, or the
+    // closing record is written without the last step.
+    await awaitAllCallbacks();
+    await evidence.close({ outcome: "completed" });
+    if (!evidence.isComplete) {
+      console.error(
+        "Records are missing from the trail:",
+        evidence.gaps,
+        evidence.unbuilt,
+      );
+      process.exitCode = 1;
+    }
+
+    // The handler never closes the anchorer. Close it when the process is done.
+    await anchorer.close({ raiseOnGaps: false });
+    if (evidence.isComplete) {
+      console.log(`Recorded case ${caseId}.`);
+    }
+    ```
+
+    ```python Python
+    # Raises IncompleteTrailError if any record is missing from the trail.
+    handler.close(outcome="completed")
+
+    # The handler never closes the anchorer. Close it when the process is done.
+    anchorer.close()
+    print(f"Recorded case {case_id}.")
+    ```
+
+    </CodeGroup>
+
+    `outcome` is `completed`, `failed`, `interrupted` or `unknown`. `reason` is a code: `error`, `timeout`, `cancelled`, `interrupted` or `policy`. State the outcome on the first `close()`: a later one does not rewrite the closing records.
+  </Step>
+
+  <Step title="Run it, and see the records">
+    Put the pieces in one file: `agent.mts` for TypeScript or `agent.py` for Python. The [whole file](#the-whole-file) is at the end of this page. Run it in the terminal where you exported the environment variables.
+
+    <CodeGroup>
+
+    ```bash TypeScript
+    npx tsx agent.mts
+    ```
+
+    ```bash Python
+    python agent.py
+    ```
+
+    </CodeGroup>
+
+    {/* OUTPUT FROM REAL RUN: the last line the script prints, "Recorded case case-4b19de.", and nothing else when the trail is complete */}
+
+    Open the [console](https://console.sanning.io) and go to **Records**. Each row is a record from your run: the run starts, the steps and the tool call run, the decision is stated, and the approval is requested and then resolved. The run ends with a closing record.
+
+    The **Records** page does not show whether a record is stamped. To find out, run `bundle`, as in [Wait for the stamp](/evidence/build#wait-for-the-stamp).
+  </Step>
+</Steps>
+
+## If a step must not run unrecorded
+
+By default, a lost record does not stop the agent. If a step must not run unless its record is kept, build the anchorer with `failClosed`. The handler then waits for each step's records and stops the agent when one is lost, before the next step runs. A tool whose start record is lost does not run.
+
+<CodeGroup>
+
+```ts TypeScript
+const anchorer = createAnchorer({
+  signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED!),
+  subject: { type: "agent", agent_id: "claims-triage" },
+  apiKey: process.env.SANNING_API_KEY!,
+  logStore,
+  store: new MemoryStore(),
+  failClosed: true,
+});
+```
+
+```python Python
+anchorer = Anchorer(
+    signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
+    subject={"type": "agent", "agent_id": "claims-triage"},
+    api_key=os.environ["SANNING_API_KEY"],
+    log_store=log_store,
+    store=MemoryStore(),
+    fail_closed=True,
+)
+```
+
+</CodeGroup>
+
+After a handler stops the agent, it refuses every later step. Make one handler for each case, and share one anchorer between them.
+
+## What the adapter cannot record
+
+The first record of each run lists what the adapter does not capture: for example, approvals when you do not pass `approvals`, and decisions when you name no decision tool. The record types, and which LangChain event writes each, are in [How adapters work](/adapters#how-adapters-work).
+
+## The whole file
+
+<AccordionGroup>
+  <Accordion title="TypeScript: agent.mts">
+
+  ```ts
+  import {
+    createAnchorer,
+    LocalEd25519Signer,
+    MemoryStore,
+    ObjectLogStore,
+  } from "@sanning/anchor";
+  import { S3ObjectStore } from "@sanning/anchor/s3";
+  import { anchorCallbacks } from "@sanning/anchor-langchain";
+  import { awaitAllCallbacks } from "@langchain/core/callbacks/promises";
+  import { AIMessage } from "@langchain/core/messages";
+  import { tool } from "@langchain/core/tools";
+  import {
+    Command,
+    END,
+    interrupt,
+    MemorySaver,
+    MessagesAnnotation,
+    START,
+    StateGraph,
+  } from "@langchain/langgraph";
+  import { ToolNode } from "@langchain/langgraph/prebuilt";
+  import { z } from "zod";
+
+  const recordConclusion = tool(async ({ verdict }) => verdict, {
+    name: "record_conclusion",
+    description: "State the verdict for the claim.",
+    schema: z.object({ verdict: z.enum(["approved", "declined"]) }),
+  });
+
+  const graph = new StateGraph(MessagesAnnotation)
+    .addNode("assess", () => ({
+      messages: [
+        new AIMessage({
+          content: "",
+          tool_calls: [
+            {
+              id: "call_1",
+              name: "record_conclusion",
+              args: { verdict: "declined" },
+            },
+          ],
+        }),
+      ],
+    }))
+    .addNode("tools", new ToolNode([recordConclusion]))
+    .addNode("review", () => {
+      const answer = interrupt({ question: "Confirm the declined verdict?" });
+      return {
+        messages: [
+          new AIMessage(`Reviewer answered: ${JSON.stringify(answer)}`),
+        ],
+      };
+    })
+    .addEdge(START, "assess")
+    .addEdge("assess", "tools")
+    .addEdge("tools", "review")
+    .addEdge("review", END)
+    .compile({ checkpointer: new MemorySaver() });
+
+  const logStore = new ObjectLogStore(
+    new S3ObjectStore({
+      bucket: process.env.SANNING_LOG_BUCKET!,
+      region: process.env.AWS_REGION!,
+    }),
+  );
+
+  const anchorer = createAnchorer({
+    signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED!),
+    subject: { type: "agent", agent_id: "claims-triage" },
+    apiKey: process.env.SANNING_API_KEY!,
+    logStore,
+    store: new MemoryStore(),
+  });
+
+  const caseId = "case-4b19de";
+  const evidence = anchorCallbacks(anchorer, {
+    caseId,
+    decisions: [{ tool: recordConclusion, name: "claim_verdict" }],
+    approvals: {
+      actor: "human",
+      verdict: (resume) =>
+        (resume as { approved?: boolean }).approved ? "approved" : "rejected",
+    },
+  });
+
+  const config = {
+    configurable: { thread_id: "claim-4471" },
+    callbacks: [evidence],
+  };
+
+  try {
+    await graph.invoke({ messages: [] }, config);
+    await graph.invoke(new Command({ resume: { approved: true } }), config);
+  } catch (error) {
+    await awaitAllCallbacks();
+    await evidence.close({ outcome: "failed", reason: "error" });
+    throw error;
+  }
+
+  await awaitAllCallbacks();
+  await evidence.close({ outcome: "completed" });
+  if (!evidence.isComplete) {
+    console.error(
+      "Records are missing from the trail:",
+      evidence.gaps,
+      evidence.unbuilt,
+    );
+    process.exitCode = 1;
+  }
+
+  await anchorer.close({ raiseOnGaps: false });
+  if (evidence.isComplete) {
+    console.log(`Recorded case ${caseId}.`);
+  }
+  ```
+
+  </Accordion>
+  <Accordion title="Python: agent.py">
+
+  ```python
+  import os
+
+  from langchain_core.messages import AIMessage
+  from langchain_core.tools import tool
+  from langgraph.checkpoint.memory import MemorySaver
+  from langgraph.graph import END, START, MessagesState, StateGraph
+  from langgraph.prebuilt import ToolNode
+  from langgraph.types import Command, interrupt
+
+  from sanning_anchor import (
+      Anchorer,
+      AnchorCallbackHandler,
+      ApprovalOptions,
+      DecisionTool,
+      LocalEd25519Signer,
+      MemoryStore,
+      ObjectLogStore,
+  )
+  from sanning_anchor.s3 import S3ObjectStore
+
+
+  @tool
+  def record_conclusion(verdict: str) -> str:
+      """State the verdict for the claim."""
+      return verdict
+
+
+  def assess(state):
+      call = {
+          "id": "call_1",
+          "name": "record_conclusion",
+          "args": {"verdict": "declined"},
+      }
+      return {"messages": [AIMessage(content="", tool_calls=[call])]}
+
+
+  def review(state):
+      answer = interrupt({"question": "Confirm the declined verdict?"})
+      return {"messages": [AIMessage(content=f"Reviewer answered: {answer}")]}
+
+
+  graph = (
+      StateGraph(MessagesState)
+      .add_node("assess", assess)
+      .add_node("tools", ToolNode([record_conclusion]))
+      .add_node("review", review)
+      .add_edge(START, "assess")
+      .add_edge("assess", "tools")
+      .add_edge("tools", "review")
+      .add_edge("review", END)
+      .compile(checkpointer=MemorySaver())
+  )
+
+  log_store = ObjectLogStore(
+      S3ObjectStore(
+          bucket=os.environ["SANNING_LOG_BUCKET"],
+          region=os.environ["AWS_REGION"],
+      )
+  )
+
+  anchorer = Anchorer(
+      signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
+      subject={"type": "agent", "agent_id": "claims-triage"},
+      api_key=os.environ["SANNING_API_KEY"],
+      log_store=log_store,
+      store=MemoryStore(),
+  )
+
+  case_id = "case-4b19de"
+  handler = AnchorCallbackHandler(
+      anchorer,
+      case_id=case_id,
+      decisions=[DecisionTool(record_conclusion, "claim_verdict")],
+      approvals=ApprovalOptions(
+          actor="human",
+          verdict=lambda resume: (
+              "approved" if resume.get("approved") else "rejected"
+          ),
+      ),
+  )
+
+  config = {"configurable": {"thread_id": "claim-4471"}, "callbacks": [handler]}
+
+  try:
+      graph.invoke({"messages": []}, config)
+      graph.invoke(Command(resume={"approved": True}), config)
+  except BaseException:
+      handler.close(raise_on_gaps=False, outcome="failed", reason="error")
+      raise
+
+  handler.close(outcome="completed")
+  anchorer.close()
+  print(f"Recorded case {case_id}.")
+  ```
+
+  </Accordion>
+</AccordionGroup>
+
+## Next
+
+[Build an evidence pack](/evidence/build) for the case, and hand it to a reviewer.
