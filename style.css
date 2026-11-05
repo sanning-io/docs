@@ -70,7 +70,7 @@ html [data-floating-buttons] button { background: transparent !important; }
 /* Body text in ink at the body line height, with paragraph space tied to it */
 #content { color: #16181D; line-height: 1.6; } /* foreground, text-body--line-height */
 .dark #content { color: #F5F5F2; } /* foreground (dark) */
-#content > p, #content > ul, #content > ol, #content [data-as="p"] { margin-top: 0; margin-bottom: 1.6em; }
+#content > p, #content > ul, #content > ol, #content [data-as="p"], #content-area #content > span[data-as="p"] { margin-top: 0; margin-bottom: 1.6em; }
 #content li { margin-top: 0.4em; margin-bottom: 0.4em; }
 #content h2 { margin-top: 3rem; margin-bottom: 1rem; }
 #content h3 { margin-top: 2rem; margin-bottom: 0.75rem; }
