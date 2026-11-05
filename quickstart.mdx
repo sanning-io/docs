@@ -93,7 +93,7 @@ A log store is your own S3 bucket for the content of each record. Sanning gets o
    Replace the following:
 
    - `BUCKET`: the name you choose for your bucket.
-   - `REGION`: the AWS Region for the bucket, such as `us-east-1`.
+   - `REGION`: the AWS Region for the bucket, such as `us-east-1`. The SDK can create the bucket only in `us-east-1`. For another Region, create the bucket before the agent's first record, as in [A bucket in another Region](#a-bucket-in-another-region).
 
 2. If the agent runs on AWS with a role, skip this step. Otherwise, set the storage keys as environment variables:
 
@@ -112,10 +112,6 @@ A log store is your own S3 bucket for the content of each record. Sanning gets o
 Without keys, the first record fails with a `RetentionError`, and nothing is sent to Sanning. The message ends with `Could not load credentials from any providers` in TypeScript and `NoCredentialsError: Unable to locate credentials` in Python. A direct `anchor` call throws the error. The LangChain adapter logs `step not anchored` for each step instead, and the agent keeps running with gaps in its trail.
 
 On the agent's first record, the SDK creates the bucket with versioning and Object Lock in governance mode for 365 days. For that time, only a user who holds the AWS permission `s3:BypassGovernanceRetention` can delete or overwrite a stored version. If the bucket exists already, the SDK uses it and does not change it.
-
-<Note>
-  The SDK can create the bucket only in `us-east-1`. For another Region, create the bucket before the agent's first record, as in [A bucket in another Region](#a-bucket-in-another-region).
-</Note>
 
 <AccordionGroup>
   <Accordion title="A bucket in another Region">
@@ -236,13 +232,8 @@ Both samples read the Region of the bucket from `AWS_REGION`. Replace `claims-tr
 
 An adapter records your agent's steps for you. You add it once, where your agent runs.
 
-<CardGroup cols={2}>
-  <Card title="Record your agent with an adapter" icon="plug" href="/adapters">
-    Add our adapter to your agent, and every step becomes a record. The example uses LangChain.
-  </Card>
-  <Card title="Build your own adapter (Soon)" href="/adapters/build-your-own">
-    For another framework or your own code. The guide is not ready yet.
-  </Card>
-</CardGroup>
+<Card title="Record your agent with an adapter" icon="plug" href="/adapters">
+  Add our adapter to your agent, and every step becomes a record. The example uses LangChain.
+</Card>
 
-Until the build guide is ready, you can [request an adapter](#request-an-adapter-placeholder) for your framework.
+For another framework, [request an adapter](#request-an-adapter-placeholder).

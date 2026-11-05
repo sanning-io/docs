@@ -55,17 +55,17 @@ npx @sanning/anchor bundle \
   --out claims-triage-2026-11-04.zip
 ```
 
-| Flag | Required | Meaning |
-|---|---|---|
-| `--agent` | Yes | The agent ID of the agent whose records to gather. Give it more than once, with `--case`, to write a case file. |
-| `--case` | No | Select the records whose own signed case ID is this case, and declare the pack about it. A case pack takes no dates and holds every record of the case, however long it ran. |
-| `--from` | Without `--case` | The start of the period: a whole UTC day, written `YYYY-MM-DD`. A time is refused. |
-| `--to` | Without `--case` | The end of the period: a whole UTC day, written `YYYY-MM-DD`. That day is included. |
-| `--logs` | Yes | The root of your log store: a local folder that holds `content/` and `records/`, or `s3://BUCKET` or `s3://BUCKET/PREFIX`, where `BUCKET` is the name of the bucket and `PREFIX` is a prefix inside it. For a case file, give it once for every agent, or once for each `--agent` in the same order. |
-| `--out` | Yes | Where to write the zip. A `.zip` ending is added if it is missing. |
-| `--base-url` | No | The address of the Sanning API to read from. The default is `https://api.sanning.io`, or the value of `SANNING_BASE_URL`. |
-| `--allow-unstamped` | No | Build the pack even when records in the period are recorded and not stamped yet. Takes no value. |
-| `--report-file` | No | For a case file only. A file to put under `report/` in the case file, such as a cover note. You can give it more than once. No record holds a hash of it. |
+| Flag | Meaning |
+|---|---|
+| `--agent` | Required. The agent ID of the agent whose records to gather. Give it more than once, with `--case`, to write a case file. |
+| `--case` | Optional. Select the records whose own signed case ID is this case, and declare the pack about it. A case pack takes no dates and holds every record of the case, however long it ran. |
+| `--from` | Required without `--case`. The start of the period: a whole UTC day, written `YYYY-MM-DD`. A time is refused. |
+| `--to` | Required without `--case`. The end of the period: a whole UTC day, written `YYYY-MM-DD`. That day is included. |
+| `--logs` | Required. The root of your log store: a local folder that holds `content/` and `records/`, or `s3://BUCKET` or `s3://BUCKET/PREFIX`, where `BUCKET` is the name of the bucket and `PREFIX` is a prefix inside it. For a case file, give it once for every agent, or once for each `--agent` in the same order. |
+| `--out` | Required. Where to write the zip. A `.zip` ending is added if it is missing. |
+| `--base-url` | Optional. The address of the Sanning API to read from. The default is `https://api.sanning.io`, or the value of `SANNING_BASE_URL`. |
+| `--allow-unstamped` | Optional. Build the pack even when records in the period are recorded and not stamped yet. Takes no value. |
+| `--report-file` | Optional. For a case file only. A file to put under `report/` in the case file, such as a cover note. You can give it more than once. No record holds a hash of it. |
 
 The command needs `--logs`, because it reads the agent ID from the signed record in your log store. The record that Sanning holds does not carry the agent ID.
 

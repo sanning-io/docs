@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
+  "theme": "maple",
   "name": "Sanning",
   "colors": {
     "primary": "#16181D",
@@ -18,10 +18,18 @@
     "strict": false
   },
   "fonts": {
-    "family": "Geist",
-    "source": "/fonts/Geist-Variable.woff2",
-    "format": "woff2",
-    "weight": 400
+    "heading": {
+      "family": "Geist",
+      "source": "/fonts/Geist-Variable.woff2",
+      "format": "woff2",
+      "weight": 600
+    },
+    "body": {
+      "family": "Geist",
+      "source": "/fonts/Geist-Variable.woff2",
+      "format": "woff2",
+      "weight": 400
+    }
   },
   "favicon": {
     "light": "/favicon.svg",
@@ -80,15 +88,16 @@
       "view",
       "chatgpt",
       "claude",
-      "perplexity",
       "mcp",
-      "cursor",
-      "vscode"
+      "cursor"
     ]
   },
   "integrations": {
     "telemetry": {
       "enabled": false
     }
+  },
+  "icons": {
+    "library": "lucide"
   }
 }

@@ -54,23 +54,13 @@ A Verified verdict says that the records are the ones your agent signed, that no
 
 ## Built on standards
 
-<CardGroup cols={2}>
-  <Card title="SHA-256" icon="hashtag" href="https://csrc.nist.gov/pubs/fips/180-4/upd1/final">
-    Hashes your content in your own process.
-  </Card>
-  <Card title="Ed25519 signatures" icon="signature" href="https://www.rfc-editor.org/rfc/rfc8032">
-    Signs each record with your agent's signing key.
-  </Card>
-  <Card title="JSON canonicalization, RFC 8785" icon="brackets-curly" href="https://www.rfc-editor.org/rfc/rfc8785">
-    Gives every record one exact byte form, so a signature checks the same way everywhere.
-  </Card>
-  <Card title="Merkle trees, RFC 9162" icon="sitemap" href="https://www.rfc-editor.org/rfc/rfc9162">
-    Seals many records into one stamp, and proves that a record is in it.
-  </Card>
-  <Card title="Sanning's record format" icon="file-lines">
-    Every adapter writes this format and the verifier checks it, so records from agents on different frameworks read the same way.
-  </Card>
-</CardGroup>
+| Standard | What it does |
+|---|---|
+| [SHA-256](https://csrc.nist.gov/pubs/fips/180-4/upd1/final) | Hashes your content in your own process. |
+| [Ed25519 signatures](https://www.rfc-editor.org/rfc/rfc8032) | Signs each record with your agent's signing key. |
+| [JSON canonicalization, RFC 8785](https://www.rfc-editor.org/rfc/rfc8785) | Gives every record one exact byte form, so a signature checks the same way everywhere. |
+| [Merkle trees, RFC 9162](https://www.rfc-editor.org/rfc/rfc9162) | Seals many records into one stamp, and proves that a record is in it. |
+| Sanning's record format | Every adapter writes this format and the verifier checks it, so records from agents on different frameworks read the same way. |
 
 ## Next
 

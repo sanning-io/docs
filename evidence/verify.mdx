@@ -15,7 +15,7 @@ Unzip the pack, and run the verifier on `bundle.json`. `--logs` points at the fo
 
 <CodeGroup>
 
-```bash TypeScript
+```bash Node.js
 unzip case-4b19de.zip -d pack
 npx @sanning/proof verify pack/bundle.json --logs pack/logs/
 ```
@@ -71,12 +71,12 @@ The following table shows the question that the verifier asks for each claim.
 
 The first line of the report is the verdict.
 
-| Verdict | First line | Meaning | Exit code |
-|---|---|---|---|
-| Verified | `Verified` | Every claim that applies is proven. | 0 |
-| Failed | `Failed: do not rely on this evidence.` | A claim is disproven. For example, a record changed after it was signed, or the public record holds different bytes for a stamp. | 1 |
-| Failed | `Failed: a record does not follow the rules.` | A record breaks the record format. | 1 |
-| Incomplete | `Incomplete: not everything could be checked.` | Nothing is disproven, and at least one claim could not be checked. | 2 |
+| First line of the report | Meaning | Exit |
+|---|---|---|
+| `Verified` | Every claim that applies is proven. | 0 |
+| `Failed: do not rely on this evidence.` | A claim is disproven. For example, a record changed after it was signed, or the public record holds different bytes for a stamp. | 1 |
+| `Failed: a record does not follow the rules.` | A record breaks the record format. | 1 |
+| `Incomplete: not everything could be checked.` | Nothing is disproven, and at least one claim could not be checked. | 2 |
 
 An Incomplete verdict means that nothing is disproven and the pack leaves something out, such as the content of a record, or a stamp the public record has not confirmed yet. The report says which, and a `Next:` line says what to do. Ask the sender for what is missing, or check again later.
 

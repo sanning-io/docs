@@ -10,6 +10,27 @@ Pick the adapter for your agent framework, then follow the five practices that e
   To test, use a Sandbox API key, and see [Test in the Sandbox](/sandbox).
 </Note>
 
+## The adapters
+
+<CardGroup cols={2}>
+  <Card title="LangChain and LangGraph" icon="link" href="/adapters/langchain">
+    For agents in TypeScript or Python. Records chains, model calls, tool calls, retrievals, files, decisions and approvals.
+  </Card>
+  <Card title="Request an adapter" icon="plus" href="#request-an-adapter-placeholder">
+    Tell us which framework you use.
+  </Card>
+</CardGroup>
+
+## What every adapter needs from you
+
+For each of these, the [LangChain and LangGraph guide](/adapters/langchain) shows the code that does it:
+
+- State each decision in a named tool call, and name the decision for what was decided. Use `claim_verdict` with the value `declined`, not `claim_declined`.
+- Give every run its case ID, and use an ID that means nothing outside your systems: no names and no personal data.
+- Close each run, and state how it ended.
+- Configure approvals, so that a person's answer becomes a record.
+- Check for gaps when the run closes. A gap is a step whose record was lost. Where a step must not run unrecorded, stop the agent when a record is lost.
+
 ## How adapters work
 
 An adapter watches your framework while your agent runs. For each step, it builds a record (defined in the [Introduction](/#core-ideas)) in Sanning's record format, signs it with your agent's signing key, and sends it to Sanning. The record holds hashes of the step's content, never the content. The adapter writes the content to a log store that you own, so that you can add it to the evidence pack when someone must check the evidence.
@@ -39,27 +60,6 @@ Every adapter follows the same rules, which the verifier checks:
 - Each record points to the record before it, with a sequence number, so that a missing or reordered record shows.
 - Each run opens with a record, and it ends with a closing record that says how the run ended and which records it holds.
 - Every record carries the case ID.
-
-## The adapters
-
-<CardGroup cols={2}>
-  <Card title="LangChain and LangGraph" icon="link" href="/adapters/langchain">
-    For agents in TypeScript or Python. Records chains, model calls, tool calls, retrievals, files, decisions and approvals.
-  </Card>
-  <Card title="Request an adapter" icon="plus" href="#request-an-adapter-placeholder">
-    Tell us which framework you use.
-  </Card>
-</CardGroup>
-
-## What every adapter needs from you
-
-For each of these, the [LangChain and LangGraph guide](/adapters/langchain) shows the code that does it:
-
-- State each decision in a named tool call, and name the decision for what was decided. Use `claim_verdict` with the value `declined`, not `claim_declined`.
-- Give every run its case ID, and use an ID that means nothing outside your systems: no names and no personal data.
-- Close each run, and state how it ended.
-- Configure approvals, so that a person's answer becomes a record.
-- Check for gaps when the run closes. A gap is a step whose record was lost. Where a step must not run unrecorded, stop the agent when a record is lost.
 
 ## If your framework is not listed
 
