@@ -1,72 +1,54 @@
-<svg viewBox="0 0 760 330" xmlns="http://www.w3.org/2000/svg" role="img"
-   aria-label="The life of one case. Two agents work on one case over time. Every record in their three runs carries the case ID. A run ends with a closing record. At the end of each interval, Sanning seals the new records into a stamp on the public record. You build one evidence pack for the case, from the records and your own content. The reviewer checks the pack on their own machine, checks the stamps on the public record, and reads the verdict.">
+<svg viewBox="0 0 340 436" xmlns="http://www.w3.org/2000/svg" role="img"
+   aria-label="The life of one case. Two agents work on one case over time. Every record in their three runs carries the case ID. The intake agent has run 1. The review agent has run 2 and run 3. A run ends with a closing record. At the end of each interval, Sanning seals the new records into a stamp on the public record. Time runs from left to right.">
 <style>
-  .lbl  { font-family:"Geist",sans-serif; font-size:12px; font-weight:500; fill:#16181D; }
-  .sub  { font-family:"Geist Mono",monospace; font-size:9px; letter-spacing:.03em; fill:#5D636B; }
-  .zone { font-family:"Geist Mono",monospace; font-size:8.6px; letter-spacing:.13em; fill:#8A9098; }
-  .step { font-family:"Geist Mono",monospace; font-size:9px; letter-spacing:.07em; fill:#2C2E6B; }
-  .acc  { font-family:"Geist",sans-serif; font-size:12px; font-weight:500; fill:#2C2E6B; }
+  .lbl  { font-family:"Geist",sans-serif; font-size:13px; font-weight:500; fill:#16181D; }
+  .sub  { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.02em; fill:#5D636B; }
+  .zone { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.08em; fill:#8A9098; }
+  .step { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.04em; fill:#2C2E6B; }
+  .acc  { font-family:"Geist",sans-serif; font-size:13px; font-weight:500; fill:#2C2E6B; }
 </style>
-<rect x="0" y="0" width="760" height="330" fill="#FFFFFF"/>
-<rect x="10" y="10" width="510" height="150" fill="none" stroke="#D8D8D2" stroke-width="1"/>
-<text class="zone" x="20" y="26" text-anchor="start">YOUR AGENTS, ONE CASE</text>
-<text class="acc" x="24" y="46" text-anchor="start">case-4b19de is on every record</text>
-<text class="lbl" x="24" y="84" text-anchor="start">Intake agent</text>
-<text class="lbl" x="24" y="134" text-anchor="start">Review agent</text>
-<text class="sub" x="130" y="69" text-anchor="start">run 1</text>
-<rect x="130" y="74" width="160" height="20" rx="10" fill="none" stroke="#D8D8D2" stroke-width="1"/>
-<circle cx="146" cy="84" r="3.2" fill="#16181D"/>
-<circle cx="170" cy="84" r="3.2" fill="#16181D"/>
-<circle cx="194" cy="84" r="3.2" fill="#16181D"/>
-<circle cx="218" cy="84" r="3.2" fill="#16181D"/>
-<circle cx="242" cy="84" r="3.2" fill="#16181D"/>
-<rect x="264.5" y="80.5" width="7" height="7" fill="#16181D"/>
-<text class="sub" x="300" y="119" text-anchor="start">run 2</text>
-<rect x="300" y="124" width="110" height="20" rx="10" fill="none" stroke="#D8D8D2" stroke-width="1"/>
-<circle cx="316" cy="134" r="3.2" fill="#16181D"/>
-<circle cx="340" cy="134" r="3.2" fill="#16181D"/>
-<circle cx="364" cy="134" r="3.2" fill="#16181D"/>
-<rect x="386.5" y="130.5" width="7" height="7" fill="#16181D"/>
-<text class="sub" x="420" y="119" text-anchor="start">run 3</text>
-<rect x="420" y="124" width="92" height="20" rx="10" fill="none" stroke="#D8D8D2" stroke-width="1"/>
-<circle cx="434" cy="134" r="3.2" fill="#16181D"/>
-<circle cx="458" cy="134" r="3.2" fill="#16181D"/>
-<circle cx="480" cy="134" r="3.2" fill="#16181D"/>
-<rect x="494.5" y="130.5" width="7" height="7" fill="#16181D"/>
-<rect x="10" y="180" width="510" height="90" fill="none" stroke="#D8D8D2" stroke-width="1"/>
-<text class="zone" x="20" y="196" text-anchor="start">PUBLIC RECORD</text>
-<line fill="none" x1="250" y1="160" x2="250" y2="216" stroke="#16181D" stroke-width="1" stroke-dasharray="3 3"/>
-<rect x="243" y="216" width="14" height="14" fill="none" stroke="#2C2E6B" stroke-width="1.5"/>
-<line fill="none" x1="370" y1="160" x2="370" y2="216" stroke="#16181D" stroke-width="1" stroke-dasharray="3 3"/>
-<rect x="363" y="216" width="14" height="14" fill="none" stroke="#2C2E6B" stroke-width="1.5"/>
-<line fill="none" x1="490" y1="160" x2="490" y2="216" stroke="#16181D" stroke-width="1" stroke-dasharray="3 3"/>
-<rect x="483" y="216" width="14" height="14" fill="none" stroke="#2C2E6B" stroke-width="1.5"/>
-<text class="acc" x="24" y="224" text-anchor="start">stamps</text>
-<text class="sub" x="24" y="252" text-anchor="start">a stamp at the end of each interval seals the new records</text>
-<polyline points="130,298 507.0,298.0" fill="none" stroke="#16181D" stroke-width="1"/>
-<polygon points="512,298 506.0,301.0 506.0,295.0" fill="#16181D"/>
-<text class="sub" x="520" y="301" text-anchor="start">time</text>
-<circle cx="30" cy="316" r="3.2" fill="#16181D"/>
-<text class="sub" x="40" y="319" text-anchor="start">record</text>
-<rect x="96.5" y="312.5" width="7" height="7" fill="#16181D"/>
-<text class="sub" x="110" y="319" text-anchor="start">closing record of a run</text>
-<rect x="570" y="10" width="180" height="96" fill="none" stroke="#D8D8D2" stroke-width="1"/>
-<text class="zone" x="580" y="26" text-anchor="start">YOU</text>
-<text class="lbl" x="584" y="58" text-anchor="start">Evidence pack</text>
-<text class="sub" x="584" y="70" text-anchor="start">records, stamp proofs</text>
-<text class="sub" x="584" y="81" text-anchor="start">and your content</text>
-<polyline points="520,58 565.0,58.0" fill="none" stroke="#16181D" stroke-width="1"/>
-<polygon points="570,58 564.0,61.0 564.0,55.0" fill="#16181D"/>
-<text class="sub" x="545" y="50" text-anchor="middle">build</text>
-<rect x="570" y="180" width="180" height="90" fill="none" stroke="#D8D8D2" stroke-width="1"/>
-<text class="zone" x="580" y="196" text-anchor="start">THE REVIEWER</text>
-<rect x="580" y="200" width="160" height="52" fill="none" stroke="#2C2E6B" stroke-width="1"/>
-<text class="acc" x="592" y="222" text-anchor="start">Verdict</text>
-<text class="sub" x="592" y="236" text-anchor="start">checked on their machine</text>
-<polyline points="660,106 660.0,175.0" fill="none" stroke="#16181D" stroke-width="1"/>
-<polygon points="660,180 657.0,174.0 663.0,174.0" fill="#16181D"/>
-<text class="sub" x="668" y="148" text-anchor="start">hand over</text>
-<polyline points="570,226 525.0,226.0" fill="none" stroke="#16181D" stroke-width="1" stroke-dasharray="3 3"/>
-<polygon points="520,226 526.0,223.0 526.0,229.0" fill="#16181D"/>
-<text class="sub" x="545" y="218" text-anchor="middle">checks</text>
+<rect x="0" y="0" width="340" height="436" fill="#FFFFFF"/>
+<rect x="10" y="10" width="320" height="222" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<text class="zone" x="22" y="29" text-anchor="start">YOUR AGENTS, ONE CASE</text>
+<text class="acc" x="24" y="56" text-anchor="start">case-4b19de is on every record</text>
+<text class="lbl" x="24" y="86" text-anchor="start">Intake agent</text>
+<text class="sub" x="24" y="107" text-anchor="start">run 1</text>
+<rect x="22" y="112" width="138" height="20" rx="10" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<circle cx="38" cy="122" r="3.2" fill="#16181D"/>
+<circle cx="53" cy="122" r="3.2" fill="#16181D"/>
+<circle cx="68" cy="122" r="3.2" fill="#16181D"/>
+<circle cx="83" cy="122" r="3.2" fill="#16181D"/>
+<circle cx="98" cy="122" r="3.2" fill="#16181D"/>
+<rect x="142.5" y="118.5" width="7" height="7" fill="#16181D"/>
+<text class="lbl" x="24" y="166" text-anchor="start">Review agent</text>
+<text class="sub" x="170" y="187" text-anchor="start">run 2</text>
+<rect x="168" y="192" width="72" height="20" rx="10" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<circle cx="180" cy="202" r="3.2" fill="#16181D"/>
+<circle cx="194" cy="202" r="3.2" fill="#16181D"/>
+<circle cx="208" cy="202" r="3.2" fill="#16181D"/>
+<rect x="225.5" y="198.5" width="7" height="7" fill="#16181D"/>
+<text class="sub" x="250" y="187" text-anchor="start">run 3</text>
+<rect x="248" y="192" width="72" height="20" rx="10" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<circle cx="260" cy="202" r="3.2" fill="#16181D"/>
+<circle cx="274" cy="202" r="3.2" fill="#16181D"/>
+<circle cx="288" cy="202" r="3.2" fill="#16181D"/>
+<rect x="305.5" y="198.5" width="7" height="7" fill="#16181D"/>
+<rect x="10" y="262" width="320" height="100" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<text class="zone" x="22" y="281" text-anchor="start">PUBLIC RECORD</text>
+<line fill="none" x1="128" y1="232" x2="128" y2="296" stroke="#16181D" stroke-width="1" stroke-dasharray="3 3"/>
+<rect x="121" y="296" width="14" height="14" fill="none" stroke="#2C2E6B" stroke-width="1.5"/>
+<line fill="none" x1="219" y1="232" x2="219" y2="296" stroke="#16181D" stroke-width="1" stroke-dasharray="3 3"/>
+<rect x="212" y="296" width="14" height="14" fill="none" stroke="#2C2E6B" stroke-width="1.5"/>
+<line fill="none" x1="298" y1="232" x2="298" y2="296" stroke="#16181D" stroke-width="1" stroke-dasharray="3 3"/>
+<rect x="291" y="296" width="14" height="14" fill="none" stroke="#2C2E6B" stroke-width="1.5"/>
+<text class="acc" x="24" y="308" text-anchor="start">stamps</text>
+<text class="sub" x="24" y="336" text-anchor="start">a stamp at the end of each interval</text>
+<text class="sub" x="24" y="350" text-anchor="start">seals the new records</text>
+<polyline points="22,392 283.0,392.0" fill="none" stroke="#16181D" stroke-width="1"/>
+<polygon points="288,392 282.0,395.0 282.0,389.0" fill="#16181D"/>
+<text class="sub" x="298" y="396" text-anchor="start">time</text>
+<circle cx="28" cy="418" r="3.2" fill="#16181D"/>
+<text class="sub" x="38" y="422" text-anchor="start">record</text>
+<rect x="100.5" y="414.5" width="7" height="7" fill="#16181D"/>
+<text class="sub" x="114" y="422" text-anchor="start">closing record of a run</text>
 </svg>

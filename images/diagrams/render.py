@@ -1,4 +1,4 @@
-"""Render NAME.svg to NAME.png (the PNG is what the page shows: an SVG in an img tag cannot load the Geist fonts) at 2x with the design system's Geist fonts.
+"""Render NAME.svg to NAME.png (the PNG is what the page shows: an SVG in an img tag cannot load the Geist fonts) at 3x with the design system's Geist fonts.
 
 Usage: python3 render.py NAME [NAME ...]
 Needs SANNING_DESIGN_SYSTEM (a sanning-design-system checkout, for the fonts) and
@@ -17,5 +17,5 @@ for name in sys.argv[1:]:
 html,body{{margin:0;background:#fff}} svg{{display:block}}</style></head><body>{svg.replace('<svg ', f'<svg width="{w}" height="{h}" ',1)}</body></html>"""
     p = os.path.join(tempfile.gettempdir(), f"render-{name}.html")
     open(p, "w").write(html)
-    r = subprocess.run([CH, "--no-sandbox", "--hide-scrollbars", "--force-device-scale-factor=2", f"--window-size={w},{h}", "--virtual-time-budget=3000", f"--screenshot={OUT}/{name}.png", "file://" + p], capture_output=True, text=True)
+    r = subprocess.run([CH, "--no-sandbox", "--hide-scrollbars", "--force-device-scale-factor=3", f"--window-size={w},{h}", "--virtual-time-budget=3000", f"--screenshot={OUT}/{name}.png", "file://" + p], capture_output=True, text=True)
     print(name, r.returncode, r.stderr[-200:])

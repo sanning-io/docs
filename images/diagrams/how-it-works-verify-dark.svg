@@ -1,0 +1,50 @@
+<svg viewBox="0 0 340 588" xmlns="http://www.w3.org/2000/svg" role="img"
+   aria-label="How Sanning works, step 4. Sanning's records and stamp proofs, and your content from your log store, make the evidence pack. You hand the pack to the reviewer, who verifies it on their own machine. The reviewer also checks the stamp on the public record. Sanning is not needed to verify.">
+<style>
+  .lbl  { font-family:"Geist",sans-serif; font-size:13px; font-weight:500; fill:#F5F5F2; }
+  .sub  { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.02em; fill:#A3A9B1; }
+  .zone { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.08em; fill:#8A9098; }
+  .step { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.04em; fill:#7D8CFF; }
+  .acc  { font-family:"Geist",sans-serif; font-size:13px; font-weight:500; fill:#7D8CFF; }
+</style>
+<rect x="0" y="0" width="340" height="588" fill="#0E1118"/>
+<rect x="10" y="10" width="320" height="72" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="zone" x="22" y="29" text-anchor="start">SANNING</text>
+<text class="lbl" x="24" y="56" text-anchor="start">Receives the records</text>
+<text class="sub" x="24" y="71" text-anchor="start">seals them into a stamp</text>
+<polyline points="300,82 300.0,221.0" fill="none" stroke="#F5F5F2" stroke-width="1"/>
+<polygon points="300,226 297.0,220.0 303.0,220.0" fill="#F5F5F2"/>
+<text class="sub" x="292" y="106" text-anchor="end">records and stamp proofs</text>
+<rect x="10" y="122" width="320" height="184" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="zone" x="22" y="141" text-anchor="start">YOUR SYSTEMS</text>
+<rect x="22" y="150" width="248" height="50" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="lbl" x="34" y="174" text-anchor="start">Your log store</text>
+<text class="sub" x="34" y="189" text-anchor="start">your content, kept by you</text>
+<polyline points="60,200 60.0,221.0" fill="none" stroke="#F5F5F2" stroke-width="1"/>
+<polygon points="60,226 57.0,220.0 63.0,220.0" fill="#F5F5F2"/>
+<text class="sub" x="68" y="217" text-anchor="start">your content</text>
+<rect x="22" y="226" width="296" height="68" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="lbl" x="34" y="250" text-anchor="start">Evidence pack</text>
+<text class="sub" x="34" y="265" text-anchor="start">Sanning's records and stamp</text>
+<text class="sub" x="34" y="279" text-anchor="start">proofs, plus your content</text>
+<polyline points="60,294 60.0,341.0" fill="none" stroke="#F5F5F2" stroke-width="1"/>
+<polygon points="60,346 57.0,340.0 63.0,340.0" fill="#F5F5F2"/>
+<text class="sub" x="68" y="328" text-anchor="start">hands over</text>
+<rect x="10" y="346" width="320" height="106" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="zone" x="22" y="365" text-anchor="start">THE REVIEWER</text>
+<text class="step" x="24" y="392" text-anchor="start">4</text>
+<text class="lbl" x="40" y="392" text-anchor="start">Verifies</text>
+<text class="sub" x="40" y="407" text-anchor="start">on their own machine</text>
+<circle cx="32" cy="434" r="8" fill="#0E1118" stroke="#F5F5F2" stroke-width="1"/>
+<line fill="none" x1="28.5" y1="430.5" x2="35.5" y2="437.5" stroke="#F5F5F2" stroke-width="1"/>
+<line fill="none" x1="35.5" y1="430.5" x2="28.5" y2="437.5" stroke="#F5F5F2" stroke-width="1"/>
+<text class="sub" x="48" y="438" text-anchor="start">Sanning: not needed to verify</text>
+<polyline points="300,452 300.0,487.0" fill="none" stroke="#F5F5F2" stroke-width="1" stroke-dasharray="3 3"/>
+<polygon points="300,492 297.0,486.0 303.0,486.0" fill="#F5F5F2"/>
+<text class="sub" x="292" y="476" text-anchor="end">checks the stamp</text>
+<rect x="10" y="492" width="320" height="86" fill="none" stroke="#262B36" stroke-width="1"/>
+<text class="zone" x="22" y="511" text-anchor="start">PUBLIC RECORD</text>
+<rect x="22" y="520" width="296" height="46" fill="none" stroke="#7D8CFF" stroke-width="1"/>
+<text class="acc" x="36" y="544" text-anchor="start">The stamp</text>
+<text class="sub" x="36" y="559" text-anchor="start">shows when the records existed</text>
+</svg>

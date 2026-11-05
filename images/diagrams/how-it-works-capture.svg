@@ -1,0 +1,40 @@
+<svg viewBox="0 0 340 436" xmlns="http://www.w3.org/2000/svg" role="img"
+   aria-label="How Sanning works, steps 1 to 3. Your agent and its adapter capture each step. The content goes to your own log store. Only signed hashes go to Sanning, with no content. Sanning receives the records and seals them into a stamp, and puts one stamp per interval on the public record. The stamp shows when the records existed.">
+<style>
+  .lbl  { font-family:"Geist",sans-serif; font-size:13px; font-weight:500; fill:#16181D; }
+  .sub  { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.02em; fill:#5D636B; }
+  .zone { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.08em; fill:#8A9098; }
+  .step { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.04em; fill:#2C2E6B; }
+  .acc  { font-family:"Geist",sans-serif; font-size:13px; font-weight:500; fill:#2C2E6B; }
+</style>
+<rect x="0" y="0" width="340" height="436" fill="#FFFFFF"/>
+<rect x="10" y="10" width="320" height="166" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<text class="zone" x="22" y="29" text-anchor="start">YOUR SYSTEMS</text>
+<rect x="22" y="38" width="296" height="50" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<text class="step" x="34" y="62" text-anchor="start">1</text>
+<text class="lbl" x="50" y="62" text-anchor="start">Your agent + adapter</text>
+<text class="sub" x="50" y="77" text-anchor="start">captures each step</text>
+<polyline points="60,88 60.0,109.0" fill="none" stroke="#16181D" stroke-width="1"/>
+<polygon points="60,114 57.0,108.0 63.0,108.0" fill="#16181D"/>
+<text class="sub" x="68" y="105" text-anchor="start">content</text>
+<rect x="22" y="114" width="248" height="50" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<text class="lbl" x="34" y="138" text-anchor="start">Your log store</text>
+<text class="sub" x="34" y="153" text-anchor="start">your content, kept by you</text>
+<polyline points="300,88 300.0,215.0" fill="none" stroke="#2C2E6B" stroke-width="1"/>
+<polygon points="300,220 297.0,214.0 303.0,214.0" fill="#2C2E6B"/>
+<text class="step" x="292" y="194" text-anchor="end">2  Sign</text>
+<text class="step" x="292" y="208" text-anchor="end">signed hashes, no content</text>
+<rect x="10" y="220" width="320" height="76" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<text class="zone" x="22" y="239" text-anchor="start">SANNING</text>
+<text class="lbl" x="24" y="266" text-anchor="start">Receives the records</text>
+<text class="sub" x="24" y="281" text-anchor="start">seals them into a stamp</text>
+<polyline points="300,296 300.0,335.0" fill="none" stroke="#16181D" stroke-width="1"/>
+<polygon points="300,340 297.0,334.0 303.0,334.0" fill="#16181D"/>
+<text class="step" x="292" y="313" text-anchor="end">3  Anchor</text>
+<text class="sub" x="292" y="327" text-anchor="end">one stamp per interval</text>
+<rect x="10" y="340" width="320" height="86" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<text class="zone" x="22" y="359" text-anchor="start">PUBLIC RECORD</text>
+<rect x="22" y="368" width="296" height="46" fill="none" stroke="#2C2E6B" stroke-width="1"/>
+<text class="acc" x="36" y="392" text-anchor="start">The stamp</text>
+<text class="sub" x="36" y="407" text-anchor="start">shows when the records existed</text>
+</svg>

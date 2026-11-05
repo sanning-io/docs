@@ -1,0 +1,36 @@
+<svg viewBox="0 0 340 430" xmlns="http://www.w3.org/2000/svg" role="img"
+   aria-label="What happens to the case's records. You build one evidence pack for the case, from the records, the stamp proofs and your own content, and hand it to the reviewer. The reviewer checks the pack on their own machine, checks the stamps on the public record, and reads the verdict.">
+<style>
+  .lbl  { font-family:"Geist",sans-serif; font-size:13px; font-weight:500; fill:#16181D; }
+  .sub  { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.02em; fill:#5D636B; }
+  .zone { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.08em; fill:#8A9098; }
+  .step { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.04em; fill:#2C2E6B; }
+  .acc  { font-family:"Geist",sans-serif; font-size:13px; font-weight:500; fill:#2C2E6B; }
+</style>
+<rect x="0" y="0" width="340" height="430" fill="#FFFFFF"/>
+<rect x="10" y="10" width="320" height="52" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<text class="zone" x="22" y="29" text-anchor="start">YOUR AGENTS, ONE CASE</text>
+<text class="acc" x="24" y="50" text-anchor="start">case-4b19de is on every record</text>
+<polyline points="60,62 60.0,97.0" fill="none" stroke="#16181D" stroke-width="1"/>
+<polygon points="60,102 57.0,96.0 63.0,96.0" fill="#16181D"/>
+<text class="sub" x="68" y="86" text-anchor="start">build</text>
+<rect x="10" y="102" width="320" height="92" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<text class="zone" x="22" y="121" text-anchor="start">YOU</text>
+<text class="lbl" x="24" y="148" text-anchor="start">Evidence pack</text>
+<text class="sub" x="24" y="163" text-anchor="start">records, stamp proofs</text>
+<text class="sub" x="24" y="177" text-anchor="start">and your content</text>
+<polyline points="60,194 60.0,229.0" fill="none" stroke="#16181D" stroke-width="1"/>
+<polygon points="60,234 57.0,228.0 63.0,228.0" fill="#16181D"/>
+<text class="sub" x="68" y="218" text-anchor="start">hand over</text>
+<rect x="10" y="234" width="320" height="90" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<text class="zone" x="22" y="253" text-anchor="start">THE REVIEWER</text>
+<rect x="22" y="262" width="296" height="50" fill="none" stroke="#2C2E6B" stroke-width="1"/>
+<text class="acc" x="36" y="286" text-anchor="start">Verdict</text>
+<text class="sub" x="36" y="301" text-anchor="start">checked on their machine</text>
+<polyline points="300,324 300.0,359.0" fill="none" stroke="#16181D" stroke-width="1" stroke-dasharray="3 3"/>
+<polygon points="300,364 297.0,358.0 303.0,358.0" fill="#16181D"/>
+<text class="sub" x="292" y="348" text-anchor="end">checks</text>
+<rect x="10" y="364" width="320" height="56" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<text class="zone" x="22" y="383" text-anchor="start">PUBLIC RECORD</text>
+<text class="acc" x="24" y="408" text-anchor="start">stamps</text>
+</svg>

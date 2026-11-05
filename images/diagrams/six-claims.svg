@@ -1,0 +1,26 @@
+<svg viewBox="0 0 340 314" xmlns="http://www.w3.org/2000/svg" role="img"
+   aria-label="The six claims the kernel checks: signed, unchanged, witnessed, complete, agreed and follows the rules. Each claim is proven, disproven or not proven.">
+<style>
+  .lbl  { font-family:"Geist",sans-serif; font-size:13px; font-weight:500; fill:#16181D; }
+  .sub  { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.02em; fill:#5D636B; }
+  .zone { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.08em; fill:#8A9098; }
+  .step { font-family:"Geist Mono",monospace; font-size:11px; letter-spacing:.04em; fill:#2C2E6B; }
+  .acc  { font-family:"Geist",sans-serif; font-size:13px; font-weight:500; fill:#2C2E6B; }
+</style>
+<rect x="0" y="0" width="340" height="314" fill="#FFFFFF"/>
+<rect x="10" y="10" width="320" height="294" fill="none" stroke="#D8D8D2" stroke-width="1"/>
+<text class="zone" x="22" y="29" text-anchor="start">SIX CLAIMS</text>
+<text class="lbl" x="24" y="52" text-anchor="start">Signed</text>
+<text class="sub" x="24" y="67" text-anchor="start">the named key signed it</text>
+<text class="lbl" x="24" y="92" text-anchor="start">Unchanged</text>
+<text class="sub" x="24" y="107" text-anchor="start">bytes match what was signed</text>
+<text class="lbl" x="24" y="132" text-anchor="start">Witnessed</text>
+<text class="sub" x="24" y="147" text-anchor="start">a stamp covers it</text>
+<text class="lbl" x="24" y="172" text-anchor="start">Complete</text>
+<text class="sub" x="24" y="187" text-anchor="start">the pack holds all it declares</text>
+<text class="lbl" x="24" y="212" text-anchor="start">Agreed</text>
+<text class="sub" x="24" y="227" text-anchor="start">both sides of a hand-off agree</text>
+<text class="lbl" x="24" y="252" text-anchor="start">Follows the rules</text>
+<text class="sub" x="24" y="267" text-anchor="start">follows the record format</text>
+<text class="sub" x="24" y="292" text-anchor="start">each: proven, disproven, not proven</text>
+</svg>
