@@ -39,35 +39,95 @@ Store the Sandbox API key and its seed as `SANNING_API_KEY` and `SANNING_SIGNING
 
 ## Use local disk for a quick test
 
-For a quick test in the Sandbox, you can keep the content on local disk instead of an S3 bucket. In the anchorer from the [Quickstart](/quickstart#create-the-anchorer), replace the log store:
+For a quick test in the Sandbox, you can keep the content on local disk instead of an S3 bucket. Local disk is for a quick test in the Sandbox only. This part holds everything the test needs.
+
+Install the SDK. Local disk needs no S3 library:
+
+<CodeGroup>
+
+```bash TypeScript
+npm install @sanning/anchor
+```
+
+```bash Python
+pip install sanning-anchor
+```
+
+</CodeGroup>
+
+Make a seed for the Sandbox agent. Run one of these commands and copy the output:
+
+<CodeGroup>
+
+```bash OpenSSL
+openssl rand -hex 32
+```
+
+```bash Python
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+```bash Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+</CodeGroup>
+
+Export the seed and the Sandbox API key:
+
+```bash
+export SANNING_SIGNING_SEED=SEED
+export SANNING_API_KEY=API_KEY
+```
+
+Replace the following:
+
+- `SEED` with the 64 hex characters that you made.
+- `API_KEY` with the Sandbox API key from [Make a Sandbox API key](#make-a-sandbox-api-key). It starts with `sanning_test_`.
+
+Create the anchorer, with the log store on local disk:
 
 <CodeGroup>
 
 ```ts TypeScript
-import { createAnchorer, FsLogStore, LocalEd25519Signer } from "@sanning/anchor";
+import {
+  createAnchorer,
+  FsLogStore,
+  LocalEd25519Signer,
+  MemoryStore,
+} from "@sanning/anchor";
 
 const anchorer = createAnchorer({
   signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED!),
   subject: { type: "agent", agent_id: "claims-triage" },
   apiKey: process.env.SANNING_API_KEY!,
   logStore: new FsLogStore("./logstore"),
+  store: new MemoryStore(),
 });
 ```
 
 ```python Python
 import os
 
-from sanning_anchor import Anchorer, FsLogStore, LocalEd25519Signer
+from sanning_anchor import (
+    Anchorer,
+    FsLogStore,
+    LocalEd25519Signer,
+    MemoryStore,
+)
 
 anchorer = Anchorer(
     signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
     subject={"type": "agent", "agent_id": "claims-triage"},
     api_key=os.environ["SANNING_API_KEY"],
     log_store=FsLogStore("./logstore"),
+    store=MemoryStore(),
 )
 ```
 
 </CodeGroup>
+
+Replace `claims-triage` with the agent ID of your agent. `MemoryStore` keeps the last record of each adapter run in memory.
 
 To build a pack from that folder, give `bundle` the folder as `--logs ./logstore`. A folder is lost with the machine, so use S3 for Live.
 

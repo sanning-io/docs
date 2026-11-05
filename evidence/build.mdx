@@ -35,6 +35,20 @@ When records are not stamped yet, `bundle` writes nothing, says how many records
 
 ## Build the pack
 
+Install the SDK where you run `bundle`. Reading an S3 log store needs the S3 library in TypeScript and the `s3` extra in Python, the same as the [Quickstart](/quickstart#install-the-sdk):
+
+<CodeGroup>
+
+```bash TypeScript
+npm install @sanning/anchor @aws-sdk/client-s3
+```
+
+```bash Python
+pip install "sanning-anchor[s3]"
+```
+
+</CodeGroup>
+
 Run `bundle` somewhere that can reach your log store, with your signing seed in the environment. The command reads your records from Sanning with your API key, reads the content from your log store, and checks the result the way a reviewer will before it writes anything. If the pack would fail the check, the command writes nothing.
 
 <CodeGroup>
@@ -73,7 +87,7 @@ sanning-anchor bundle \
 
 Replace the following:
 
-- `API_KEY` with the Live API key from the Quickstart. It already has the scope `anchor:read` that `bundle` needs.
+- `API_KEY` with the Live API key from the [Quickstart](/quickstart#make-a-live-api-key). It already has the scope `anchor:read` that `bundle` needs.
 - `SEED` with the seed of the agent in `--agent`. With the seed, `bundle` signs a declaration, which is the pack's own statement of which records it holds, so that the reviewer can check the pack against it. Without the seed, the pack carries no declaration.
 - `ENDPOINT` with the address of your S3 service, such as `https://s3.us-east-1.amazonaws.com`. Add `SANNING_S3_REGION` if the bucket is not in `us-east-1`.
 - `ACCESS_KEY_ID` and `SECRET_ACCESS_KEY` with credentials that hold the `bundle` permissions in the next paragraph.
@@ -96,6 +110,8 @@ Give `--agent` once for each agent, and put each agent's seed in `SANNING_SIGNIN
 <CodeGroup>
 
 ```bash TypeScript
+export INTAKE_SEED=INTAKE_SEED_VALUE
+export REVIEW_SEED=REVIEW_SEED_VALUE
 export SANNING_SIGNING_SEEDS="intake=$INTAKE_SEED,review=$REVIEW_SEED"
 
 npx @sanning/anchor bundle \
@@ -107,6 +123,8 @@ npx @sanning/anchor bundle \
 ```
 
 ```bash Python
+export INTAKE_SEED=INTAKE_SEED_VALUE
+export REVIEW_SEED=REVIEW_SEED_VALUE
 export SANNING_SIGNING_SEEDS="intake=$INTAKE_SEED,review=$REVIEW_SEED"
 
 sanning-anchor bundle \
@@ -118,6 +136,8 @@ sanning-anchor bundle \
 ```
 
 </CodeGroup>
+
+Replace `INTAKE_SEED_VALUE` and `REVIEW_SEED_VALUE` with the seeds of the `intake` and `review` agents. Each is that agent's own signing seed, the one its anchorer signs with.
 
 Each pack is signed by its own agent's signing key, and nobody signs the case file as a whole. The zip holds each pack under `packs/<agent>/`, an unsigned index named `contents.json`, and a `HOW-TO-VERIFY.txt`. Every agent that you name must have a pack, or the command writes nothing. If one agent's records are not stamped yet, the command exits with code 2, and you run it again later.
 

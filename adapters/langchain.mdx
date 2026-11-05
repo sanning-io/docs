@@ -390,6 +390,7 @@ const anchorer = createAnchorer({
   subject: { type: "agent", agent_id: "claims-triage" },
   apiKey: process.env.SANNING_API_KEY!,
   logStore,
+  store: new MemoryStore(),
   failClosed: true,
 });
 ```
@@ -400,6 +401,7 @@ anchorer = Anchorer(
     subject={"type": "agent", "agent_id": "claims-triage"},
     api_key=os.environ["SANNING_API_KEY"],
     log_store=log_store,
+    store=MemoryStore(),
     fail_closed=True,
 )
 ```
