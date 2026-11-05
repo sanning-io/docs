@@ -31,15 +31,43 @@ You enter the Sandbox from your Live organization. Confirm your email address fi
 1. Sign in to [console.sanning.io](https://console.sanning.io). Open the account menu and select **Switch to sandbox**. A strip across the top of the console says Sandbox.
 2. Open **Settings**, then **API keys**, and select **Create key**. Name the key and leave **Verify** unchecked.
 3. Copy the key. It starts with `sanning_test_`, and the console shows it once.
-4. Make a new seed for the Sandbox agent, with the same commands as in the [Quickstart](/quickstart#make-a-seed-for-the-signing-key).
+4. Make a seed for the Sandbox agent. Run one of these commands and copy the output:
+
+   <CodeGroup>
+
+   ```bash OpenSSL
+   openssl rand -hex 32
+   ```
+
+   ```bash Python
+   python -c "import secrets; print(secrets.token_hex(32))"
+   ```
+
+   ```bash Node.js
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   ```
+
+   </CodeGroup>
+
+5. Export the seed and the Sandbox API key:
+
+   ```bash
+   export SANNING_SIGNING_SEED=SEED
+   export SANNING_API_KEY=API_KEY
+   ```
+
+   Replace the following:
+
+   - `SEED` with the 64 hex characters that you made in step 4.
+   - `API_KEY` with the Sandbox API key from step 3. It starts with `sanning_test_`.
 
 Your Sandbox agent and your Live agent are separate identities, and the Sandbox does not carry its agents or signing keys over to Live.
 
-Store the Sandbox API key and its seed as `SANNING_API_KEY` and `SANNING_SIGNING_SEED`, as the Quickstart does for Live. Do not set `environment` in your code. A Sandbox API key together with `environment: "production"` gives an error when you create the anchorer, the object that signs your records and sends them to Sanning.
+Do not set `environment` in your code. A Sandbox API key together with `environment: "production"` gives an error when you create the anchorer, the object that signs your records and sends them to Sanning.
 
 ## Use local disk for a quick test
 
-For a quick test in the Sandbox, you can keep the content on local disk instead of an S3 bucket. Local disk is for a quick test in the Sandbox only. This part holds everything the test needs.
+For a quick test in the Sandbox, you can keep the content on local disk instead of an S3 bucket. Local disk is for a quick test in the Sandbox only. This part uses the API key and the seed from [Make a Sandbox API key](#make-a-sandbox-api-key).
 
 Install the SDK. Local disk needs no S3 library:
 
@@ -54,36 +82,6 @@ pip install sanning-anchor
 ```
 
 </CodeGroup>
-
-Make a seed for the Sandbox agent. Run one of these commands and copy the output:
-
-<CodeGroup>
-
-```bash OpenSSL
-openssl rand -hex 32
-```
-
-```bash Python
-python -c "import secrets; print(secrets.token_hex(32))"
-```
-
-```bash Node.js
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
-
-</CodeGroup>
-
-Export the seed and the Sandbox API key:
-
-```bash
-export SANNING_SIGNING_SEED=SEED
-export SANNING_API_KEY=API_KEY
-```
-
-Replace the following:
-
-- `SEED` with the 64 hex characters that you made.
-- `API_KEY` with the Sandbox API key from [Make a Sandbox API key](#make-a-sandbox-api-key). It starts with `sanning_test_`.
 
 Create the anchorer, with the log store on local disk:
 
