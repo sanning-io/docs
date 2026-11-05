@@ -1,0 +1,105 @@
+/*
+  Restyles Mintlify's parts to the design system where docs.json cannot.
+  Values are design system token values, each marked with its token name.
+  Dark mode values follow the dark token set. Fonts load from /fonts only.
+  Mintlify does not promise that its class names stay the same: check every page in both modes after each Mintlify update.
+*/
+
+/* Fonts: Geist Mono (font-mono) and Instrument Sans (font-display) */
+@font-face {
+  font-family: "Geist Mono";
+  src: url("/fonts/GeistMono-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("/fonts/instrument-sans-latin-ext-wght-normal.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("/fonts/instrument-sans-latin-wght-normal.woff2") format("woff2");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Code: Geist Mono on the code surface, in a 1px frame with square corners */
+pre, code, kbd { font-family: "Geist Mono", ui-monospace, SFMono-Regular, monospace !important; } /* font-mono */
+pre code { font-size: 0.875rem; line-height: 1.7; } /* text-code */
+.code-block, .code-group { border-radius: 0 !important; border: 1px solid #C9CDD2 !important; background: #F5F5F2 !important; } /* border, code-background */
+.dark .code-block, .dark .code-group { border-color: #262B36 !important; background: #151A24 !important; } /* border, code-background (dark) */
+.code-group { padding: 0 !important; }
+.code-group, .code-group * { border-radius: 0 !important; }
+.code-group .code-block { border: 0 !important; border-top: 1px solid #C9CDD2 !important; } /* border */
+.dark .code-group .code-block { border-top-color: #262B36 !important; } /* border (dark) */
+.code-group [role="tablist"] { border-bottom: 1px solid #C9CDD2 !important; } /* border: the line under the tabs is drawn here, because Mintlify's rounded corners on the code area bend a border drawn on it */
+.dark .code-group [role="tablist"] { border-bottom-color: #262B36 !important; } /* border (dark) */
+html .code-block-background, html.dark .code-block-background, html pre.shiki, html.dark pre.shiki { background-color: transparent !important; border-radius: 0 !important; }
+html [data-floating-buttons] button { background: transparent !important; }
+.code-group [role="tab"] { font-family: "Geist Mono", ui-monospace, monospace; font-size: 0.6875rem; letter-spacing: 0.08em; text-transform: uppercase; } /* font-mono, text-label */
+:not(pre) > code { display: inline-block; max-width: 100%; vertical-align: baseline; word-break: normal; overflow-wrap: normal; padding: 0.1em 0.3em !important; border-radius: 4px; background: #F5F5F2 !important; } /* code-background: inline-block keeps a value such as us-east-1 on one line, and a long value with spaces wraps at its spaces inside its own box */
+.dark :not(pre) > code { background: #151A24 !important; } /* code-background (dark) */
+@media (max-width: 640px) { :not(pre) > code { overflow-wrap: anywhere; } } /* a long inline code wraps on a phone instead of widening the page */
+
+/* Page title in Instrument Sans at statement tracking; eyebrows in the label voice */
+#page-title {
+  font-family: "Instrument Sans", system-ui, sans-serif; /* font-display */
+  font-weight: 600; /* text-statement--font-weight */
+  line-height: 1.1;
+  letter-spacing: -0.03em; /* text-statement--letter-spacing */
+  text-wrap: balance;
+}
+.eyebrow {
+  font-family: "Geist Mono", ui-monospace, monospace; /* font-mono */
+  font-size: 0.6875rem; /* text-label */
+  font-weight: 500; /* text-label--font-weight */
+  letter-spacing: 0.08em; /* text-label--letter-spacing */
+  text-transform: uppercase;
+  color: #5D636B !important; /* muted-foreground */
+}
+.dark .eyebrow { color: #8A9098 !important; } /* muted-foreground (dark) */
+#content h2, #content h3 { text-wrap: balance; }
+
+/* Body text in ink at the body line height, with paragraph space tied to it */
+#content { color: #16181D; line-height: 1.6; } /* foreground, text-body--line-height */
+.dark #content { color: #F5F5F2; } /* foreground (dark) */
+#content > p, #content > ul, #content > ol, #content [data-as="p"], #content-area #content > span[data-as="p"] { margin-top: 0; margin-bottom: 1.6em; }
+#content li { margin-top: 0.4em; margin-bottom: 0.4em; }
+#content h2 { margin-top: 3rem; margin-bottom: 1rem; }
+#content h3 { margin-top: 2rem; margin-bottom: 0.75rem; }
+#content > p { text-wrap: pretty; }
+
+/* Tables: tabular figures, quiet headers, 1px row lines, no forced column width */
+#content table { font-variant-numeric: tabular-nums; border-collapse: collapse; }
+#content table td { min-width: 0 !important; color: #16181D; border-bottom: 1px solid #C9CDD2; vertical-align: top; } /* foreground, border */
+#content table th { white-space: nowrap; font-size: 0.875rem; font-weight: 500; color: #5D636B; border-bottom: 1px solid #C9CDD2; } /* muted-foreground, border */
+#content table tr:last-child td { border-bottom: 0; }
+.dark #content table th { color: #8A9098; border-bottom-color: #262B36; } /* muted-foreground, border (dark) */
+.dark #content table td { color: #F5F5F2; border-bottom-color: #262B36; } /* foreground, border (dark) */
+
+/* Callouts and cards: brand surfaces, 1px lines, 6px corners, state colour on the icon only */
+.callout, .card { border-radius: 6px !important; } /* radius */
+#topbar-cta-button a > span:first-child { border-radius: 6px !important; } /* radius: the top bar button's background */
+#topbar-cta-button a > span:first-child { background-color: #2B3FD6 !important; } /* primary: the top bar button's fill (label and chevron stay white, primary-foreground) */
+.dark #topbar-cta-button a > span:first-child { background-color: #7D8CFF !important; } /* primary (dark) */
+.dark #topbar-cta-button a > div > span, .dark #topbar-cta-button a svg { color: #0E1118 !important; } /* primary-foreground (dark): the top bar button's label and chevron */
+.callout { background: #F7F7F8 !important; border: 1px solid #C9CDD2 !important; } /* background-alt, border */
+.callout [data-component-part="callout-content"] { color: #16181D !important; } /* foreground */
+.callout[data-callout-type="note"] [data-component-part="callout-icon"] svg,
+.callout[data-callout-type="info"] [data-component-part="callout-icon"] svg { color: #5D636B !important; fill: #5D636B !important; } /* muted-foreground */
+.callout[data-callout-type="warning"] [data-component-part="callout-icon"] svg { color: #8A6400 !important; fill: #8A6400 !important; } /* warning */
+.card { border: 1px solid #C9CDD2 !important; } /* border */
+.card:hover { border-color: #16181D !important; } /* foreground */
+.dark .callout { background: #151A24 !important; border-color: #262B36 !important; } /* background-alt, border (dark) */
+.dark .callout [data-component-part="callout-content"] { color: #F5F5F2 !important; } /* foreground (dark) */
+.dark .callout[data-callout-type="note"] [data-component-part="callout-icon"] svg { color: #8A9098 !important; fill: #8A9098 !important; } /* muted-foreground (dark) */
+.dark .callout[data-callout-type="warning"] [data-component-part="callout-icon"] svg { color: #E0A100 !important; fill: #E0A100 !important; } /* warning (dark) */
+.dark .card { border-color: #262B36 !important; } /* border (dark) */
+.dark .card:hover { border-color: #F5F5F2 !important; } /* foreground (dark) */

@@ -18,10 +18,18 @@
     "strict": false
   },
   "fonts": {
-    "family": "Geist",
-    "source": "/fonts/Geist-Variable.woff2",
-    "format": "woff2",
-    "weight": 400
+    "heading": {
+      "family": "Geist",
+      "source": "/fonts/Geist-Variable.woff2",
+      "format": "woff2",
+      "weight": 600
+    },
+    "body": {
+      "family": "Geist",
+      "source": "/fonts/Geist-Variable.woff2",
+      "format": "woff2",
+      "weight": 400
+    }
   },
   "favicon": {
     "light": "/favicon.svg",
@@ -31,10 +39,19 @@
     "light": "/logo/sanning-ink.svg",
     "dark": "/logo/sanning-paper.svg"
   },
-  "seo": {
-    "metatags": {
-      "og:image": "https://docs.sanning.io/og/og-base.png",
-      "twitter:image": "https://docs.sanning.io/og/og-base.png"
+  "navbar": {
+    "primary": {
+      "type": "button",
+      "label": "Book a call",
+      "href": "https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ18-Dhr-iEjRTlJFuFJNL9aTUjEu3pkzVx6VqyP3iRc_uZJd4hbdkog2KTmOml-hcmqhtGAqbfZ"
+    }
+  },
+  "thumbnails": {
+    "preset": "headline",
+    "appearance": "light",
+    "surface": "neutral",
+    "fonts": {
+      "family": "Instrument Sans"
     }
   },
   "styling": {
@@ -44,85 +61,52 @@
   "navigation": {
     "groups": [
       {
-        "group": "Getting started",
+        "group": "Get started",
         "pages": [
           "index",
-          "quickstart"
+          "quickstart",
+          "sandbox"
         ]
       },
       {
-        "group": "Concepts",
+        "group": "Record your agents",
         "pages": [
-          "concepts/how-it-works",
-          "concepts/trust-boundary",
-          "concepts/witness",
-          "concepts/sandbox-and-live",
-          "concepts/limits"
+          "adapters/index",
+          "adapters/langchain",
+          "adapters/build-your-own"
         ]
       },
       {
-        "group": "Guides",
+        "group": "Evidence",
         "pages": [
-          "guides/anchor",
-          "guides/langchain",
-          "guides/vercel",
-          "guides/file-records",
-          "guides/handoff",
-          "guides/handoff-case",
-          "guides/log-store",
-          "guides/bucket",
-          "guides/keys-and-scopes",
-          "guides/enrollment",
-          "guides/go-live",
-          "guides/test-in-ci"
-        ]
-      },
-      {
-        "group": "Verify",
-        "pages": [
-          "verify/browser",
-          "verify/cli",
-          "verify/what-a-verdict-means"
+          "evidence/build",
+          "evidence/verify"
         ]
       },
       {
         "group": "Reference",
         "pages": [
-          "reference/cli",
-          "reference/scopes",
-          "reference/errors",
-          "reference/rate-limits-and-ceilings",
-          "reference/wire-formats",
-          "reference/a2a-mapping"
+          "reference/cli"
         ]
       }
     ]
   },
-  "redirects": [
-    {
-      "source": "/guides/enrolment",
-      "destination": "/guides/enrollment"
-    },
-    {
-      "source": "/guides/environments",
-      "destination": "/concepts/sandbox-and-live"
-    }
-  ],
   "contextual": {
     "options": [
       "copy",
       "view",
       "chatgpt",
       "claude",
-      "perplexity",
       "mcp",
-      "cursor",
-      "vscode"
+      "cursor"
     ]
   },
   "integrations": {
     "telemetry": {
       "enabled": false
     }
+  },
+  "icons": {
+    "library": "lucide"
   }
 }

@@ -1,0 +1,66 @@
+---
+title: "Record your agent with an adapter"
+sidebarTitle: "Adapters"
+description: "An adapter turns each step of your agent into a signed record, so you write no records by hand"
+---
+
+Pick the adapter for your agent framework, then follow the five practices that every adapter needs from you.
+
+<Note>
+  To test, use a Sandbox API key, and see [Test in the Sandbox](/sandbox).
+</Note>
+
+## The adapters
+
+<CardGroup cols={2}>
+  <Card title="LangChain and LangGraph" icon="link" href="/adapters/langchain">
+    For agents in TypeScript or Python. Records chains, model calls, tool calls, retrievals, files, decisions and approvals.
+  </Card>
+  <Card title="Request an adapter" icon="plus" href="https://calendar.app.google/Znof4jp6fordTjhW6">
+    Tell us which framework you use.
+  </Card>
+</CardGroup>
+
+## What every adapter needs from you
+
+For each of these, the [LangChain and LangGraph guide](/adapters/langchain) shows the code that does it:
+
+- State each decision in a named tool call, and name the decision for what was decided. Use `claim_verdict` with the value `declined`, not `claim_declined`.
+- Give every run its case ID, and use an ID that means nothing outside your systems: no names and no personal data.
+- Close each run, and state how it ended.
+- Configure approvals, so that a person's answer becomes a record.
+- Check for gaps when the run closes. A gap is a step whose record was lost. Where a step must not run unrecorded, stop the agent when a record is lost.
+
+## How adapters work
+
+An adapter watches your framework while your agent runs. For each step, it builds a record (defined in the [Introduction](/#core-ideas)) in Sanning's record format, signs it with your agent's signing key, and sends it to Sanning. The record holds hashes of the step's content, never the content. The adapter writes the content to a log store that you own, so that you can add it to the evidence pack when someone must check the evidence.
+
+The adapter opens each run, and closes it when you call `close()`.
+
+For the LangChain adapter, each event in your agent becomes one of these records. The [verify page](https://verify.sanning.io) shows the Record name, and the Type is signed into the record.
+
+| What happens in your agent | Record | Type |
+|---|---|---|
+| A run starts | Run started | `agent.run_opened` |
+| A chain, a graph node or the root starts and ends | Step started, Step ended | `agent.step.started`, `agent.step.ended` |
+| A model call starts and ends | Model call started, Model call ended | `agent.model_call.started`, `agent.model_call.ended` |
+| A tool call starts and ends | Tool call started, Tool call ended | `agent.tool_call.started`, `agent.tool_call.ended` |
+| A retriever call starts and ends | Search started, Search ended | `agent.retrieval.started`, `agent.retrieval.ended` |
+| A tool that you named as a decision ends without an error | Decision | `agent.decision` |
+| A tool returns a file | File | `agent.file` |
+| A LangGraph `interrupt()` pauses the run, and its answer resumes it | Approval requested, Approval resolved | `agent.approval.requested`, `agent.approval.resolved` |
+| LangChain reports one moment as a single event, such as an agent action | Step | `agent.step.occurred` |
+| You close the run | Run ended | `agent.run_closed` |
+
+The first record of each run also lists what the adapter does not capture. A reviewer then knows what is missing, and that it is missing on purpose.
+
+Every adapter follows the same rules, which the verifier checks:
+
+- A step that takes time, such as a tool call, is two records: one when it starts and one when it ends.
+- Each record points to the record before it, with a sequence number, so that a missing or reordered record shows.
+- Each run opens with a record, and it ends with a closing record that says how the run ended and which records it holds.
+- Every record carries the case ID.
+
+## If your framework is not listed
+
+[Request an adapter](https://calendar.app.google/Znof4jp6fordTjhW6) for your framework, or see [Build your own adapter](/adapters/build-your-own).

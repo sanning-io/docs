@@ -1,44 +1,33 @@
 ---
-title: "Quickstart"
-description: "Anchor a step in the sandbox, hand over a pack, and verify it without Sanning"
+title: "Set up your agent to record evidence"
+sidebarTitle: "Quickstart"
+description: "A Live API key, a seed for its signing key, the SDK, a log store and an anchorer: what your agent needs before it records for production."
 ---
 
-This takes you from an organization on `console.sanning.io` to an evidence pack a
-third party can check offline. Everything here runs in the Sanning sandbox: stamps are
-simulated, nothing reaches the public record, and nothing is billed. Budget about ten
-minutes. When you are ready for real evidence, [Go live](/guides/go-live).
+Every step here is for Live, the mode that records real evidence. You need Node.js 22 or later, or Python 3.11 or later.
 
-## Prerequisites
+<Note>
+  To test, use a Sandbox API key, and see [Test in the Sandbox](/sandbox).
+</Note>
 
-Before you begin, you must have:
+## Make a Live API key
 
-- Python 3.11 or later, or Node.js 22 or later.
-- A terminal.
-- An organization on `console.sanning.io`. Access starts with a conversation
-  with the Sanning team.
+An API key proves to Sanning which organization your agent records for. It never signs a record.
 
-## Create a sandbox API key
+<Note>
+  Sanning is in early access. To get an account, [book a call with us](https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ18-Dhr-iEjRTlJFuFJNL9aTUjEu3pkzVx6VqyP3iRc_uZJd4hbdkog2KTmOml-hcmqhtGAqbfZ).
+</Note>
 
-1. Sign in to `console.sanning.io`.
-2. Open the account menu and select **Switch to sandbox**. A strip across the top
-   of the console says you are in the sandbox.
-3. Open **Settings, API keys** and select **Create key**.
-4. Name the key and leave **Verify** unchecked. Every key can already anchor, which
-   covers everything an agent runtime does. See
-   [API keys and scopes](/guides/keys-and-scopes).
-5. Copy the key. The console shows it once.
+1. Sign in to [console.sanning.io](https://console.sanning.io). If a strip across the top says Sandbox, select **Switch to live**.
+2. Open **Settings**, then **API keys**, and select **Create key**. Only an owner or admin can create one.
+3. Name the key and leave **Verify** unchecked: your agent only records and reads.
+4. Copy the key. The console shows it once.
 
-On a new Live account, the first step on the **Agents** page is **Start in the
-sandbox**. It does the same switch.
+A Live API key starts with `sanning_prod_`.
 
-A Sandbox API key makes your records Sandbox records. You set nothing else. See
-[Sandbox and live](/concepts/sandbox-and-live).
+## Make a seed for the signing key
 
-## Make a signing seed
-
-Your agent signs its records with an Ed25519 key. Sanning never receives it. You
-generate its 32-byte seed once and keep it, because a new seed on the next run reads
-as an unauthorized identity rotation and fails.
+Your agent signs every record with its signing key, an Ed25519 key made from a 32-byte seed. Make the seed once, with one of these commands. You keep it, and Sanning never receives it.
 
 <CodeGroup>
 
@@ -56,8 +45,13 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 </CodeGroup>
 
-Store the output in your secret store as `SANNING_SIGNING_SEED`, and your API key as
-`SANNING_API_KEY`. For this quickstart, export both in your shell:
+Use one seed for each agent ID. Sanning enrolls the signing key on your agent's first record, so you do not register it anywhere.
+
+To change the key later, rotate it: Sanning accepts a new key only when the old key signs the change. If a seed leaks, an owner or admin revokes the key in the console and re-keys the agent.
+
+## Store both as environment variables
+
+Put the seed and the API key in the secret store that your service already uses. The adapter guides read them from `SANNING_SIGNING_SEED` and `SANNING_API_KEY`. To follow along from a terminal, export both:
 
 ```bash
 export SANNING_SIGNING_SEED=SEED
@@ -66,256 +60,182 @@ export SANNING_API_KEY=API_KEY
 
 Replace the following:
 
-- `SEED` with the 64 hex characters you generated.
-- `API_KEY` with the Sandbox API key you copied.
+- `SEED`: the 64 hex characters that you made.
+- `API_KEY`: the Live API key that you copied.
 
-The API key authenticates your organization. The seed is your agent's identity. They
-are different secrets.
+Never commit either value to your code.
 
 ## Install the SDK
 
+Install the SDK, the package that signs records and sends them to Sanning, with S3 support for your log store:
+
 <CodeGroup>
 
-```bash Python
-pip install sanning-anchor
+```bash TypeScript
+npm install @sanning/anchor @aws-sdk/client-s3
 ```
 
-```bash TypeScript
-npm install @sanning/anchor
+```bash Python
+pip install "sanning-anchor[s3]"
 ```
 
 </CodeGroup>
 
-Tracing a LangChain agent in Python? Install the extra instead, and follow the
-LangChain branch at the next step:
+In TypeScript, `@aws-sdk/client-s3` is the AWS S3 library, which the SDK uses to reach your bucket and does not install for you. Each adapter guide shows how to install its adapter: a separate package in TypeScript, part of `sanning-anchor` in Python.
 
-```bash
-pip install "sanning-anchor[langchain]"
-```
+## Set up your log store
 
-## Anchor a step
+A log store is your own S3 bucket for the content of each record. Sanning gets only hashes, so the content stays with you, and you need it to build an evidence pack. In Live, the SDK does not record without a log store.
 
-The agent signs each step with the seed and hashes the content locally. Sanning
-never receives the seed or the content.
+1. Choose a bucket name, and put it and its Region in environment variables:
+
+   ```bash
+   export SANNING_LOG_BUCKET=BUCKET
+   export AWS_REGION=REGION
+   ```
+
+   Replace the following:
+
+   - `BUCKET`: the name you choose for your bucket.
+   - `REGION`: the AWS Region for the bucket, such as `us-east-1`. The SDK can create the bucket only in `us-east-1`. For another Region, create the bucket before the agent's first record, as in [A bucket in another Region](#a-bucket-in-another-region).
+
+2. If the agent runs on AWS with a role, skip this step. Otherwise, set the storage keys as environment variables:
+
+   ```bash
+   export AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
+   export AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
+   ```
+
+   Replace the following:
+
+   - `ACCESS_KEY_ID`: the access key ID of your storage keys.
+   - `SECRET_ACCESS_KEY`: the secret access key of your storage keys.
+
+   The keys must be able to create and write to the bucket. For the list, see [The exact AWS permissions](#the-exact-aws-permissions). Both SDKs look for keys the way AWS tools do: environment variables, then the shared config file, then an instance or task role.
+
+Without keys, the first record fails with a `RetentionError`, and nothing is sent to Sanning. The message ends with `Could not load credentials from any providers` in TypeScript and `NoCredentialsError: Unable to locate credentials` in Python. A direct `anchor` call throws the error. The LangChain adapter logs `step not anchored` for each step instead, and the agent keeps running with gaps in its trail.
+
+On the agent's first record, the SDK creates the bucket with versioning and Object Lock in governance mode for 365 days. For that time, only a user who holds the AWS permission `s3:BypassGovernanceRetention` can delete or overwrite a stored version. If the bucket exists already, the SDK uses it and does not change it.
+
+<AccordionGroup>
+  <Accordion title="A bucket in another Region">
+    With the AWS CLI, the first command creates the bucket with Object Lock, which also turns on versioning. The second sets the default retention:
+
+    ```bash
+    aws s3api create-bucket --bucket BUCKET --region REGION \
+      --create-bucket-configuration LocationConstraint=REGION \
+      --object-lock-enabled-for-bucket
+    aws s3api put-object-lock-configuration --bucket BUCKET \
+      --object-lock-configuration '{
+        "ObjectLockEnabled": "Enabled",
+        "Rule": {"DefaultRetention": {"Mode": "GOVERNANCE", "Days": 365}}
+      }'
+    ```
+
+    Replace the following:
+
+    - `BUCKET`: the name of your bucket.
+    - `REGION`: the AWS Region of the bucket, such as `eu-west-1`.
+  </Accordion>
+
+  <Accordion title="The exact AWS permissions">
+    Replace `BUCKET` with the name of your bucket.
+
+    For the agent that records, on `arn:aws:s3:::BUCKET`: `s3:CreateBucket`, `s3:PutBucketVersioning`, `s3:PutBucketObjectLockConfiguration`, `s3:ListBucket`, `s3:GetBucketVersioning` and `s3:GetBucketObjectLockConfiguration`. On `arn:aws:s3:::BUCKET/*`: `s3:PutObject`. The first three create the bucket. The three reads let the SDK check that the bucket exists and is protected. Without them, the SDK warns that it cannot check.
+
+    After the agent's first record, you can remove `s3:CreateBucket`, `s3:PutBucketVersioning` and `s3:PutBucketObjectLockConfiguration` from its credential.
+
+    No credential needs `s3:DeleteObject`.
+  </Accordion>
+
+  <Accordion title="Other S3-compatible stores">
+    A service with an S3-compatible API, such as Cloudflare R2 or MinIO, works with the same samples. Set its address and its keys in environment variables. Both SDKs read `AWS_ENDPOINT_URL_S3`, so "Create the anchorer" does not change:
+
+    ```bash
+    export AWS_ENDPOINT_URL_S3=ENDPOINT
+    export AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
+    export AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
+    ```
+
+    Replace the following:
+
+    - `ENDPOINT`: the address of the service's S3 API, from its documentation.
+    - `ACCESS_KEY_ID` and `SECRET_ACCESS_KEY`: the service's keys.
+
+    Set `SANNING_LOG_BUCKET` and `AWS_REGION` as in step 1. For `AWS_REGION`, use the Region name that the service documents.
+
+    If the service does not support Object Lock, the SDK warns and creates a plain bucket, so the content is not protected from deletion.
+  </Accordion>
+</AccordionGroup>
+
+## Create the anchorer
+
+The anchorer signs your records and sends them to Sanning. It needs your API key, your seed, an agent ID and your log store. Every adapter uses this anchorer.
 
 <CodeGroup>
-
-```python Python
-import os
-from sanning_anchor import Anchorer, FsLogStore, LocalEd25519Signer
-
-anchorer = Anchorer(
-    api_key=os.environ["SANNING_API_KEY"],
-    subject={"type": "agent", "agent_id": "claims-triage"},
-    signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
-    # Your store, on your disk. The SDK writes here before it anchors, and a
-    # store failure means no anchor. The pack step reads this directory.
-    log_store=FsLogStore("./logstore"),
-)
-
-result = anchorer.anchor(
-    content=b"the decision your agent just made",
-    event_type="agent.decision",
-)
-print(result.event_id)
-
-anchorer.close()
-```
 
 ```ts TypeScript
 import {
   createAnchorer,
-  FsLogStore,
   LocalEd25519Signer,
+  MemoryStore,
+  ObjectLogStore,
 } from "@sanning/anchor";
+import { S3ObjectStore } from "@sanning/anchor/s3";
 
-const apiKey = process.env.SANNING_API_KEY;
-const seedHex = process.env.SANNING_SIGNING_SEED;
-if (!apiKey || !seedHex) {
-  throw new Error("set SANNING_API_KEY and SANNING_SIGNING_SEED");
-}
+const logStore = new ObjectLogStore(
+  new S3ObjectStore({
+    bucket: process.env.SANNING_LOG_BUCKET!,
+    region: process.env.AWS_REGION!,
+  }),
+);
 
 const anchorer = createAnchorer({
-  apiKey,
+  signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED!),
   subject: { type: "agent", agent_id: "claims-triage" },
-  signer: LocalEd25519Signer.fromSeedHex(seedHex),
-  // Your store, on your disk. The SDK writes here before it anchors, and a
-  // store failure means no anchor. The pack step reads this directory.
-  logStore: new FsLogStore("./logstore"),
+  apiKey: process.env.SANNING_API_KEY!,
+  logStore,
+  store: new MemoryStore(),
 });
+```
 
-const result = await anchorer.anchor({
-  content: "the decision your agent just made",
-  eventType: "agent.decision",
-});
-console.log(result.eventId);
+```python Python
+import os
 
-await anchorer.close();
+from sanning_anchor import (
+    Anchorer,
+    LocalEd25519Signer,
+    MemoryStore,
+    ObjectLogStore,
+)
+from sanning_anchor.s3 import S3ObjectStore
+
+log_store = ObjectLogStore(
+    S3ObjectStore(
+        bucket=os.environ["SANNING_LOG_BUCKET"],
+        region=os.environ["AWS_REGION"],
+    )
+)
+
+anchorer = Anchorer(
+    signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
+    subject={"type": "agent", "agent_id": "claims-triage"},
+    api_key=os.environ["SANNING_API_KEY"],
+    log_store=log_store,
+    store=MemoryStore(),
+)
 ```
 
 </CodeGroup>
 
-Replace `claims-triage` with a name for this agent. Keep it stable: it is how the agent
-appears on the **Agents** page.
+Both samples read the Region of the bucket from `AWS_REGION`. Replace `claims-triage` with the agent ID of your agent, and keep it stable: it is how the agent shows on the **Agents** page.
 
-The content is hashed locally. The hash is anchored; the bytes are not sent. The SDK
-enrolls your signing key with your organization before the first anchor, so the agent
-appears on the **Agents** page without a separate registration step.
+`MemoryStore` keeps the last record of each chain in memory. Each adapter run has its own chain of records, so the SDK's warning about a durable chain store does not apply, and the `store` line turns that warning off.
 
-There is no `environment` argument. The Sandbox API key makes the SDK sign
-`environment: "dev"` into each record, and a sandbox accepts nothing else.
+## Record your agent
 
-## Or trace a LangChain agent
+An adapter records your agent's steps for you. You add it once, where your agent runs.
 
-The same `anchorer`, with no `anchor()` calls of your own. One callback handler
-anchors every chain, model, tool and retriever step, plus every file a tool
-produces.
-
-```python
-from sanning_anchor import AnchorCallbackHandler
-
-with AnchorCallbackHandler(anchorer, raise_on_gaps=True) as handler:
-    agent.invoke(inputs, config={"callbacks": [handler]})
-
-# The handler never closes the anchorer: do it when the process is done.
-anchorer.close()
-```
-
-Everything after this point is identical: the same log store, the same wait for
-the witness, the same pack.
-
-Two things decide whether this is correct, so they sit here rather than in a
-guide:
-
-- **Use the `with` block.** Leaving it out anchors what it can and walks past
-  what it cannot, and you find out when an auditor asks. `raise_on_gaps=True`
-  stops the agent on a hole in the trail instead.
-- **The whole step is committed**, prompts, outputs, tool input and output. It
-  is hashed locally and stays with you.
-
-For the event vocabulary, the promoted fields and worked examples, see
-[Trace a LangChain agent](/guides/langchain).
-
-## Wait for the stamp
-
-Sanning stamps your records on an interval, not one transaction per event. In the
-sandbox a stamp seals within about a minute, and the stamp is simulated: it never
-reaches the public record.
-
-A pack does not exist the moment you anchor. Until the interval containing your records
-is sealed, the pack command tells you so:
-
-```
-bundle: no stamped records for agent claims-triage in 2026-10-26 → 2026-10-26
-```
-
-That message means not yet, rather than you have no evidence. Wait a minute and run it
-again.
-
-## Hand over a pack
-
-A pack is one zip: `bundle.json`, plus a `logs/` folder holding the bytes you chose to
-disclose.
-
-<CodeGroup>
-
-```bash Python
-sanning-anchor bundle \
-  --agent claims-triage \
-  --from 2026-10-26 \
-  --to 2026-10-26 \
-  --logs ./logstore \
-  --out pack.zip
-```
-
-```bash TypeScript
-npx @sanning/anchor bundle \
-  --agent claims-triage \
-  --from 2026-10-26 \
-  --to 2026-10-26 \
-  --logs ./logstore \
-  --out pack.zip
-```
-
-</CodeGroup>
-
-Replace the following:
-
-- The dates with the day you anchored. A date-only bound names a whole day.
-- `./logstore` with the root of your log store, the directory holding `content/` and
-  `records/`.
-
-`--logs` is required in practice. The command reads your record objects to work out
-which events belong to this agent, because a minimum-disclosure envelope does not carry
-that name.
-
-The command reads your records back from the index, fetches each inclusion proof and the
-stamp that witnessed it, pulls the disclosed bytes from your own store, and verifies the
-result before writing anything. If the pack does not verify, nothing is written.
-
-Once the pack writes, `bundle` reports it to Sanning with the API key it already holds:
-your agent, the environment, the window, the record count, the SHA-256 of `bundle.json`,
-and the SDK name and version. It never sends the pack itself. Find it later under
-**Evidence** in the console.
-
-## Verify it without Sanning
-
-Give `pack.zip` to whoever asked. They have two ways to check it, and neither needs an
-account.
-
-In a browser, they open [verify.sanning.io](https://verify.sanning.io) and drop the file
-on the page. The page runs the open kernel in their browser.
-
-At a command line:
-
-<CodeGroup>
-
-```bash Python
-unzip pack.zip -d pack
-cd pack
-pip install sanning-proof
-sanning-proof verify bundle.json --logs logs/
-echo "exit code: $?"
-```
-
-```bash TypeScript
-unzip pack.zip -d pack
-cd pack
-npx @sanning/proof verify bundle.json --logs logs/
-echo "exit code: $?"
-```
-
-</CodeGroup>
-
-Same verbs, same flags, same exit codes. Your auditor picks whichever runtime they
-already have, and needs neither an account nor a network.
-
-Every check passes, and the headline is `SANDBOX`, not `VERIFIED`:
-
-```
-SANDBOX  verified offline (no gateway re-fetch requested)
-  Sandbox evidence (environment dev): not production evidence
-  declaration: this pack does not say what it holds, so whether it is complete is UNKNOWN
-  logs: 1/1 record(s) content-verified
-exit code: 5
-```
-
-Exit code 5 means Sandbox. The kernel checked the signature, the inclusion proof and the
-disclosed bytes, and it refuses to call a Sandbox pack verified. The browser page shows
-**Sandbox** the same way. A pack with one changed byte exits 1 and names the record that
-failed.
-
-## What you proved
-
-You ran the whole path: an agent signed a record, Sanning stamped it, and a reader checked
-the pack with an open-source kernel and no call to Sanning. The stamp was simulated, so
-the pack is a rehearsal and not evidence.
-
-<CardGroup cols={2}>
-  <Card title="Go live" icon="rocket" href="/guides/go-live">
-    Switch to a Live API key and produce evidence that reaches the public record.
-  </Card>
-  <Card title="Sandbox and live" icon="flask" href="/concepts/sandbox-and-live">
-    What changes between the two, side by side.
-  </Card>
-</CardGroup>
+<Card title="Record your agent with an adapter" icon="plug" href="/adapters">
+  Add our adapter to your agent, and every step becomes a record. The example uses LangChain.
+</Card>
