@@ -14,8 +14,6 @@ The pack is one zip file:
 - `bundle.json`: the signed records, and for each record the proof that a stamp on the public record covers it.
 - `logs/`: your content, one file for each record.
 
-Below we'll show you how to create one.
-
 <Note>
   To test, use a Sandbox API key, and see [Test in the Sandbox](/sandbox).
 </Note>
@@ -34,7 +32,7 @@ If the hand-over seed leaks, an owner revokes the hand-over key in the console. 
 
 ### Install and configure the SDK
 
-Evidence packs are generated using the anchor SDK.
+You build evidence packs with the anchor SDK.
 
 <CodeGroup>
 
@@ -113,9 +111,7 @@ sanning-anchor bundle \
 
 ## Wait for the stamp
 
-Packs can only be created once the records inside them have been stamped.
-
-Sanning stamps records every 10 minutes, so a new record can take up to about 10 minutes to be stamped. During this time, you cannot create packs and the `bundle` command will return an error message showing you this. If the records are stamped but a stamp isn't on the public record yet, `bundle` still writes the pack, and it reads Incomplete when verified. Run `bundle` again later. It writes a new pack in place of the old one.
+Sanning stamps records every 10 minutes. Until a record is stamped, `bundle` refuses to build a pack that holds it. Then Sanning puts the stamp on the public record. Until it's there, `bundle` writes the pack, but the pack reads Incomplete. Run `bundle` again later. It writes a new pack in place of the old one.
 
 {/* OUTPUT FROM REAL RUN: what bundle prints after it writes the pack for a case (the agent, the case, the record count, the path of the zip) */}
 
