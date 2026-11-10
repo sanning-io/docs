@@ -28,7 +28,7 @@ The evidence builder needs the following:
 
 - **The organization's hand-over key.** Follow the guide in [Name your agent and generate its seed](/quickstart#name-your-agent-and-generate-its-seed), store the seed securely in your secrets as `SANNING_SIGNING_SEED`, and also set `SANNING_SIGNING_KEY_KIND=organization` alongside it.
 - **Its own API key.** Follow the guide in [Make a Live API key](/quickstart#make-a-live-api-key), with **Hand-over** ticked and store it securely as `SANNING_API_KEY`.
-- **Access to your log store.** On `arn:aws:s3:::BUCKET/*`, `s3:GetObject` to read the content and `s3:PutObject`, because `bundle` writes the content of each declaration to the bucket before it sends the declaration. On `arn:aws:s3:::BUCKET`, `s3:ListBucket`. Replace `BUCKET` with the name of your bucket.
+- **Its own AWS keys or role**, with the evidence builder's permissions in [The exact AWS permissions](/quickstart#the-exact-aws-permissions).
 
 ### Install & configure the SDK
 

@@ -142,13 +142,14 @@ Use one bucket for all your agents. Each agent writes to its own folder in it, n
 
 <AccordionGroup>
   <Accordion title="The exact AWS permissions">
-    Replace `BUCKET` with the name of your bucket.
+    Set these in AWS, on the keys or role that each service uses. Replace `BUCKET` with the name of your bucket.
 
-    For the agent that records, on `arn:aws:s3:::BUCKET`: `s3:CreateBucket`, `s3:PutBucketVersioning`, `s3:PutBucketObjectLockConfiguration`, `s3:ListBucket`, `s3:GetBucketVersioning` and `s3:GetBucketObjectLockConfiguration`. On `arn:aws:s3:::BUCKET/*`: `s3:PutObject` and `s3:GetObject`. The first three create the bucket. The three reads let the SDK check that the bucket exists and is protected. Without them, the SDK warns that it cannot check. Before each write, the SDK reads the bucket to check that no other record uses the same event ID, so without `s3:GetObject` every record fails with an access error.
+    | | On `arn:aws:s3:::BUCKET` | On `arn:aws:s3:::BUCKET/*` |
+    |---|---|---|
+    | Agent | `s3:CreateBucket`, `s3:PutBucketVersioning`, `s3:PutBucketObjectLockConfiguration`, `s3:ListBucket`, `s3:GetBucketVersioning`, `s3:GetBucketObjectLockConfiguration` | `s3:PutObject`, `s3:GetObject` |
+    | Evidence builder | `s3:ListBucket`, `s3:GetBucketVersioning`, `s3:GetBucketObjectLockConfiguration` | `s3:GetObject`, `s3:PutObject` |
 
-    After the agent's first record, you can remove `s3:CreateBucket`, `s3:PutBucketVersioning` and `s3:PutBucketObjectLockConfiguration` from its credential.
-
-    No credential needs `s3:DeleteObject`.
+    After the agent's first record, you can remove the first three from the agent. They only create the bucket. No service needs `s3:DeleteObject`.
   </Accordion>
 
   <Accordion title="Other S3-compatible stores">
