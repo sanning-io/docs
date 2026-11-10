@@ -66,6 +66,7 @@ Replace `AGENT_ID` with the agent ID of your agent, and `BUCKET` with the name o
 | `--logs` | Required. The root of your log store: a local folder that holds `content/` and `records/`, or `s3://BUCKET` or `s3://BUCKET/PREFIX`, where `BUCKET` is the name of the bucket and `PREFIX` is a prefix inside it. For a case file, give it once for every agent, or once for each `--agent` in the same order. |
 | `--out` | Required. Where to write the zip. A `.zip` ending is added if it is missing. |
 | `--base-url` | Optional. The address of the Sanning API to read from. The default is `https://api.sanning.io`, or the value of `SANNING_BASE_URL`. |
+| `--handoffs-only` | Optional. With `--case`, pack only the case's hand-off records (`agent.handoff.sent` and `agent.handoff.received`) and claim each one in the declaration. Step records are left out and counted. Use it to hand another organization only what is theirs to read. Needs `--case` and `SANNING_SIGNING_SEED`. Takes no value. |
 | `--allow-unstamped` | Optional. Build the pack even when records in the period are recorded and not stamped yet. Takes no value. |
 | `--report-file` | Optional. For a case file only. A file to put under `report/` in the case file, such as a cover note. You can give it more than once. No record holds a hash of it. |
 
@@ -75,10 +76,10 @@ The command needs `--logs`, because it reads the agent ID from the signed record
 
 | Variable | Meaning |
 |---|---|
-| `SANNING_API_KEY` | Your API key. There is no flag for it, so that it stays out of your shell history. It needs the scope `anchor:read`. With `SANNING_SIGNING_KEY_KIND=organization`, it also needs the scope `handover:enroll`, which the console's API key dialog shows as **Hand-over**. An agent's API key never has that scope. |
+| `SANNING_API_KEY` | Your API key. There is no flag for it, so that it stays out of your shell history. It needs the scope `anchor:read`. With `SANNING_SIGNING_KEY_KIND=organization`, make the key with the console's **Hand-over** choice, which gives `handover:enroll`, `anchor:read` and `anchor:write`. An agent's API key never has `handover:enroll`. |
 | `SANNING_SIGNING_SEED` | A seed, as 64 lowercase hex characters: the seed of the agent in `--agent`, or, with `SANNING_SIGNING_KEY_KIND=organization`, the hand-over seed. With it, `bundle` signs a declaration, which is the pack's statement of which records it holds, and seals the pack with that key. Without it, `bundle` signs the pack with a one-time key that it discards, and builds no declaration. |
 | `SANNING_SIGNING_SEEDS` | For a case file: one seed for each agent, written `intake=SEED,review=SEED`. `SANNING_SIGNING_SEED` is refused beside it, and `SANNING_SIGNING_SEEDS` is refused with `SANNING_SIGNING_KEY_KIND=organization`. |
-| `SANNING_SIGNING_KEY_KIND` | Whose key the seed is: `agent` (the default) or `organization`. With `organization`, the seed is your organization's hand-over key, and the pack's issuer is your organization, not the agent. The first `bundle` run enrolls the hand-over key, only when no hand-over key is active. If a different one is active, `bundle` exits with code 4 and says that an owner must revoke it in the console first. See [Enroll the hand-over key](/evidence/build#how-to-build-an-evidence-pack). |
+| `SANNING_SIGNING_KEY_KIND` | Whose key the seed is: `agent` (the default) or `organization`. With `organization`, the seed is your organization's hand-over key, and the pack's issuer is your organization, not the agent. The first `bundle` run whose pack reads Verified enrolls the hand-over key, only when no hand-over key is active. If a different one is active, `bundle` exits with code 4 and says that an owner or admin must revoke it in the console first. Sanning never accepts a revoked hand-over key again: after a revoke, make another seed and set `SANNING_SIGNING_SEED`. See [Build an evidence pack](/evidence/build#how-to-build-an-evidence-pack). |
 | `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL_S3` | Read when `--logs` is an `s3://` URL, as when the agent records, along with the AWS credential chain (roles, single sign-on, profiles). There is no default Region: when none resolves, `bundle` exits with code 4 and names `AWS_REGION`. `AWS_ENDPOINT_URL_S3` is for a service other than AWS. TypeScript also needs `@aws-sdk/client-s3`. Python needs the `s3` extra. The old `SANNING_S3_*` names are not read: with one set and its replacement not, `bundle` exits with code 4 and names the replacement. |
 | `SANNING_GATEWAY_URL` | A gateway to the public record. When it is set, `bundle` asks it for the block height and time of each stamp, and writes them to `witness-cache.json` beside `bundle.json`. A missing or partial cache never blocks a pack. |
 | `SANNING_BASE_URL` | The address of the Sanning API to read from, in place of the default. |
@@ -101,7 +102,7 @@ The command needs `--logs`, because it reads the agent ID from the signed record
 | 1 | Nothing was written, because the pack would read Failed. |
 | 2 | The pack was written and reads Incomplete, for example because a stamp is not on the public record yet. Or nothing was written because records are not stamped yet, or Sanning could not be reached. Run `bundle` again later. |
 | 3 | The pack was written and reads Verified with Sandbox records. |
-| 4 | Nothing was written, because the command could not run: a bad flag, a hand-over key that cannot enroll because a different one is active, an input it cannot read, no records that match, a case that Sanning did not read whole, or an output it cannot write. |
+| 4 | Nothing was written, because the command could not run: a bad flag, a hand-over key that cannot enroll because a different one is active, a revoked hand-over key, an API key without the Hand-over choice, an input it cannot read, no records that match, a case that Sanning did not read whole, or an output it cannot write. |
 
 ### Pack reporting
 

@@ -30,7 +30,7 @@ An API key proves to Sanning which organization your agent records for. It never
 
 A Live API key starts with `sanning_prod_`.
 
-The service that builds your evidence packs needs its own API key. Make it the same way, and tick **Hand-over**, the scope `handover:enroll`. An agent's API key never has this scope.
+The service that builds your evidence packs needs its own API key. Make it the same way, and tick **Hand-over**, which gives the key the three scopes `bundle` needs: `handover:enroll`, `anchor:read` and `anchor:write`. An agent's API key never has `handover:enroll`.
 
 For more information, see [Build an evidence pack](/evidence/build#how-to-build-an-evidence-pack).
 
@@ -60,7 +60,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 Two agents never share a seed or an agent ID.
 
-The same command also generates the seed of the hand-over key to seal evidence packs. For more information, see [Build an evidence pack](/evidence/build#how-to-build-an-evidence-pack).
+The same command also generates the seed of the hand-over key to seal evidence packs. Make a separate seed for the hand-over key. Never use an agent's seed. For more information, see [Build an evidence pack](/evidence/build#how-to-build-an-evidence-pack).
 
 Sanning enrolls the signing key on your agent's first record via a cryptographic handshake.
 
