@@ -160,7 +160,7 @@ A record that the helper cannot write never throws into your code. A call after 
 
 ## Record approvals
 
-An approval is two records in two runs. `requestApproval` (`request_approval`) writes `agent.approval.requested` about an operation of this run, which you name by the ID that its start returned, and says who decides: `human`, `policy` or `model`. When you open the run with a conversation ID, the helper keeps the request in an approval store. The run that answers opens with the same conversation ID and `resume`, which reads the store before the first record, and then calls `resolveApproval` (`resolve_approval`).
+An approval is two records in two runs. `requestApproval` (`request_approval`) writes `agent.approval.requested` about an operation of this run, which you name by the ID that its start returned, and says who decides: `human`, `policy` or `model`. When you open the run with a conversation ID, the helper keeps the request in an approval store. The run that answers opens with the same conversation ID and `resume`, which reads the store before the first record, and then calls `resolveApproval` (`resolve_approval`). The answer records the request's policy hash, or the one you pass to `resolveApproval` when the request names none. An answer whose policy hash differs from the request's is refused, and the request still leaves the store.
 
 <CodeGroup>
 
@@ -208,7 +208,7 @@ New input on a conversation can make a framework drop the requests that it waite
 
 Without a store of your own, the helper keeps the requests in memory, in the process that wrote them. Pass your own store when the answer can arrive in another process: after a restart, on another host, or from a queue. A memory store in another process holds nothing, so the answer is not written, and a run that closes with a request still in memory warns.
 
-The store has four methods: `put(conversationId, pending)`, `list(conversationId)`, `take(conversationId, requestedEventId)` and `clear(conversationId)`. In TypeScript, each returns its value or a promise of it. In Python, a store is usually synchronous. The helper's `a`-prefixed calls take an async store as well, and the LangChain adapter takes a synchronous store only. This is the contract that each SDK states for the store.
+The store has four methods: `put(conversationId, pending)`, `list(conversationId)`, `take(conversationId, requestedEventId)` and `clear(conversationId)`. In TypeScript, each returns its value or a promise of it. In Python, a store is usually synchronous. The helper's `a`-prefixed calls take an async store as well, and the LangChain adapter takes a synchronous store only. A store that lacks one of the four methods is refused when the helper or the adapter is built, with a `TypeError` that names each missing method. This is the contract that each SDK states for the store.
 
 In TypeScript:
 
