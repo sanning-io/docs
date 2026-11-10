@@ -34,11 +34,13 @@ The service that builds your evidence packs needs its own API key. Make it the s
 
 For more information, see [Build an evidence pack](/evidence/build#set-up-the-evidence-builder).
 
-## Name your agent and make its seed
+## Name your agent and generate its seed
 
-Each agent needs an agent ID and a seed. The agent ID is its name in Sanning, such as `claims-triage`. It shows on the **Agents** page and names the agent's folder in the log store. Keep it the same for the life of the agent. The seed makes the agent's signing key.
+Each agent needs an agent ID and a seed. 
 
-The signing key is an Ed25519 key made from a 32-byte seed. Make the seed once for each agent, with one of these commands.
+The agent ID is its name in Sanning, such as `claims-triage`, which never changes and shows in the **Agents** page and names the agent's folder in the log store.
+
+The seed makes the agent's Ed25519 signing key. You can cenerate your agents seed using the commands below.
 
 <CodeGroup>
 
@@ -56,7 +58,9 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 </CodeGroup>
 
-Two agents never share a seed or an agent ID. The same command makes the seed of the hand-over key, which seals your evidence packs and stays with the evidence builder. For that key, see [Build an evidence pack](/evidence/build#set-up-the-evidence-builder). 
+Two agents never share a seed or an agent ID. 
+
+The same command also generates the seed of the hand-over key to seal evidence packs. For more information, see [Build an evidence pack](/evidence/build#set-up-the-evidence-builder). 
 
 Sanning enrolls the signing key on your agent's first record via a cryptographic handshake.
 
