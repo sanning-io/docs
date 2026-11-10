@@ -1,9 +1,361 @@
 ---
 title: "Build your own adapter"
-description: "Request an adapter for a framework that has none."
-tag: "Soon"
+description: "Record an agent from your own code, or build an adapter for a framework that has none, with the run helper."
 ---
 
-To get an adapter for a framework that has none, [request one](https://calendar.app.google/Znof4jp6fordTjhW6).
+The run helper turns what your code says happened into signed records, in the order it happened, and closes the run. You decide which event in your agent is which call. The helper numbers each record, pairs each end with its start, keeps an approval across a resume, and writes the closing record. The LangChain adapter, in TypeScript and Python, is built on it.
 
-For what an adapter does, see [Record your agent with an adapter](/adapters).
+<Note>
+  To test, use a Sandbox API key, and see [Test in the Sandbox](/sandbox).
+</Note>
+
+The samples on this page use the `anchorer` that [Record a LangChain or LangGraph agent](/adapters/langchain) makes. The first sample makes a `recorder`, and the samples after it use that `recorder`.
+
+## What you write and what the helper writes
+
+You write what the helper cannot know: which event in your framework is a step, a model call, a tool call or a retrieval, what content each record commits to, and what to name it. The content is hashed, and it stays in your log store.
+
+The helper writes the rest:
+
+- The place of each record in the run: `run.seq`, and `run.prev_event_id`, which names the record before it. A missing or reordered record shows.
+- The link from each end to its start.
+- On the first record, the types that you cannot capture.
+- The approval request that waits for an answer in a later run.
+- The closing record.
+
+## Record the steps
+
+Open a run with the case ID, and write its steps in one of three ways. `RunRecorder` holds what every run shares: the anchorer, the case ID and your agent version. `openRun` (`open_run` in Python) writes the first record of a run, `agent.run_opened`.
+
+The case ID follows the rules in [Record a LangChain or LangGraph agent](/adapters/langchain). The agent version is your own label for your agent, 1 to 128 characters with no control characters, and the constructor throws for any other value (`ValueError` in Python).
+
+### Start and end
+
+Write a start, write its end with the ID that the start returned, and write a record that is not an operation with `record`. The four operations are `agent.step`, `agent.model_call`, `agent.tool_call` and `agent.retrieval`. `record` writes `agent.step.occurred`, `agent.decision`, `agent.file`, `agent.error` or `agent.custom`.
+
+Give the root step the run's own ID. The closing record reads how the run ended from the end of that step.
+
+<CodeGroup>
+
+```ts TypeScript
+import { decisionContent, RunRecorder } from "@sanning/anchor";
+
+const recorder = new RunRecorder(anchorer, { caseId: "case-4b19de", agentVersion: "2026.11.0" });
+const run = recorder.openRun({ input: { claim_id: "c-1" } });
+
+// The root step has the root run id. How the run ended, as the closing record observes it, is its end.
+run.start("agent.step", { runId: run.rootRunId });
+
+const call = run.start("agent.tool_call", { run: { name: "lookup_policy" }, content: { claim_id: "c-1" } });
+run.end("agent.tool_call", { runId: call.runId, outcome: "completed", content: { policy: "p-9" } });
+
+run.record("agent.decision", {
+  content: decisionContent({ name: "claim_verdict", value: "declined" }),
+  extra: { decision: { name: "claim_verdict" } },
+});
+
+run.end("agent.step", { runId: run.rootRunId, outcome: "completed", content: { answer: "declined" } });
+
+const { steps, gaps, unbuilt, observed } = await run.close({ outcome: "completed" });
+```
+
+```python Python
+from sanning_anchor import RunRecorder, decision_content
+
+recorder = RunRecorder(anchorer, case_id="case-4b19de", agent_version="2026.11.0")
+run = recorder.open_run(input={"claim_id": "c-1"})
+
+# The root step has the root run id. How the run ended, as the closing record observes it, is its end.
+run.start("agent.step", run_id=run.root_run_id)
+
+call = run.start("agent.tool_call", run={"name": "lookup_policy"}, content={"claim_id": "c-1"})
+run.end("agent.tool_call", call.run_id, "completed", content={"policy": "p-9"})
+
+run.record(
+    "agent.decision",
+    content=decision_content(name="claim_verdict", value="declined"),
+    extra={"decision": {"name": "claim_verdict"}},
+)
+
+run.end("agent.step", run.root_run_id, "completed", content={"answer": "declined"})
+
+result = run.close(outcome="completed")
+```
+
+</CodeGroup>
+
+### Wrap a function
+
+`wrap` runs a function as one operation. It writes the start, runs the function, and writes the end: `completed` with what the function returned, or `failed` with what it threw, which `wrap` throws on. An operation that the function starts, with no parent given, is its child. In Python, `awrap` wraps a coroutine function.
+
+<CodeGroup>
+
+```ts TypeScript
+const run = recorder.openRun({ input: { claim_id: "c-1" } });
+
+const answer = await run.wrap("agent.step", { runId: run.rootRunId }, async () => {
+  // Runs inside the root step, so its parent is the root step.
+  const policy = await run.wrap("agent.tool_call", { run: { name: "lookup_policy" } }, () =>
+    lookupPolicy("c-1"),
+  );
+  return decide(policy);
+});
+
+const { observed } = await run.close();
+```
+
+```python Python
+run = recorder.open_run(input={"claim_id": "c-1"})
+
+
+def answer_claim():
+    # Runs inside the root step, so its parent is the root step.
+    policy = run.wrap("agent.tool_call", lambda: lookup_policy("c-1"), run={"name": "lookup_policy"})
+    return decide(policy)
+
+
+answer = run.wrap("agent.step", answer_claim, run_id=run.root_run_id)
+
+observed = run.close().observed
+```
+
+</CodeGroup>
+
+### Write an end only
+
+When your framework tells you that an operation ended and never that it started, write the end alone. Declare the start's type as not captured when you open the run. Without the declaration, a verifier reads the end as undeclared, and the helper refuses it.
+
+<CodeGroup>
+
+```ts TypeScript
+const run = recorder.openRun({ notCaptured: ["agent.tool_call.started"] });
+
+// The framework reported the end only, so the start is declared not captured on the first record.
+run.endOnly("agent.tool_call", {
+  outcome: "completed",
+  run: { name: "lookup_policy" },
+  content: { policy: "p-9" },
+});
+
+const { steps, unbuilt } = await run.close();
+```
+
+```python Python
+run = recorder.open_run(not_captured=["agent.tool_call.started"])
+
+# The framework reported the end only, so the start is declared not captured on the first record.
+run.end_only(
+    "agent.tool_call",
+    "completed",
+    run={"name": "lookup_policy"},
+    content={"policy": "p-9"},
+)
+
+result = run.close()
+```
+
+</CodeGroup>
+
+A record that the helper cannot write never throws into your code. A call after `close()`, an ID outside the grammar and a record that fails to build are in `run.unbuilt`, and a record that failed to reach Sanning is in `run.gaps`. A record that is not written keeps its position, so the next record shows a gap where it would be. `run.isComplete` (`run.is_complete` in Python) is false while either list has an entry. If your anchorer is built with `failClosed` (`fail_closed` in Python), `wrap` does not run its function when the record of its start is lost.
+
+## Record approvals
+
+An approval is two records in two runs. `requestApproval` (`request_approval`) writes `agent.approval.requested` about an operation of this run, which you name by the ID that its start returned, and says who decides: `human`, `policy` or `model`. When you open the run with a conversation ID, the helper keeps the request in an approval store. The run that answers opens with the same conversation ID and `resume`, which reads the store before the first record, and then calls `resolveApproval` (`resolve_approval`).
+
+<CodeGroup>
+
+```ts TypeScript
+const recorder = new RunRecorder(anchorer, { approvals: store });
+
+// The first run stops for a person.
+const first = recorder.openRun({ conversationId: "thread-7" });
+const step = first.start("agent.step", { runId: first.rootRunId });
+first.requestApproval({ subjectEventId: step.eventId, actor: "human" });
+first.interrupt();
+await first.close();
+
+// The answer arrives later, in this process or another that shares the store.
+const second = recorder.openRun({ conversationId: "thread-7", resume: true });
+second.resolveApproval({ verdict: "approved", actor: "human", reviewer: "alice" });
+const { steps, unbuilt } = await second.close();
+```
+
+```python Python
+recorder = RunRecorder(anchorer, approvals=store)
+
+# The first run stops for a person.
+first = recorder.open_run(conversation_id="thread-7")
+step = first.start("agent.step", run_id=first.root_run_id)
+first.request_approval(subject_event_id=step.event_id, actor="human")
+first.interrupt()
+first.close()
+
+# The answer arrives later, in this process or another that shares the store.
+second = recorder.open_run(conversation_id="thread-7", resume=True)
+second.resolve_approval(verdict="approved", actor="human", reviewer="alice")
+result = second.close()
+```
+
+</CodeGroup>
+
+`interrupt()` is the call for a run that stops on purpose. It ends every open operation `interrupted`, and the closing record observes `interrupted`. The request stays open for the run that answers it.
+
+The answer finds its request by the subject and the decider. With no subject given, it answers the one request that is pending. The helper never guesses: an answer that matches two or more requests, or none, is not written, and it is in `unbuilt`. Once exactly one request matches, the helper takes it out of the store, whatever becomes of the answer's record. A resume that finds nothing pending writes the first record with `agent.approval.requested` listed as not captured.
+
+New input on a conversation can make a framework drop the requests that it waited on. Open that run with `supersedesPending` (`supersedes_pending` in Python): the helper removes the waiting requests from the store with a warning that names each, and they stay unanswered in the trail.
+
+### A store that outlives the process
+
+Without a store of your own, the helper keeps the requests in memory, in the process that wrote them. Pass your own store when the answer can arrive in another process: after a restart, on another host, or from a queue. A memory store in another process holds nothing, so the answer is not written, and a run that closes with a request still in memory warns.
+
+The store has four methods: `put(conversationId, pending)`, `list(conversationId)`, `take(conversationId, requestedEventId)` and `clear(conversationId)`. In TypeScript, each returns its value or a promise of it. In Python, a store is usually synchronous. The helper's `a`-prefixed calls take an async store as well, and the LangChain adapter takes a synchronous store only. This is the contract that each SDK states for the store.
+
+In TypeScript:
+
+> Where pending approvals wait between two invocations of one conversation, keyed by the conversation id, one entry per request, by its `requestedEventId` (agent-events.md section 5.6). Two requests can be about one subject, as when a policy asks and then a human does. Each method can return its value or a promise of it. Pass a store that outlives the process when a resume can arrive in another one.
+>
+> Concurrency. Each method must be atomic on its own. The helper holds no lock across calls, so a `list` and the `take` after it are separate steps. The helper calls `put` once a request is handed to the anchorer. A resume calls `list` once, before its first record, and answers from what it read; it calls `take` once its answer is handed to the anchorer or found unbuildable, and it ignores what `take` returns. `take` returns nothing when the entry is already gone: another resume took it, `clear` removed it, or a later request with the same run id replaced it.
+>
+> Two processes that resume one conversation at once can both read the request before either takes it. Each then writes an `agent.approval.resolved` naming it, so the trail holds two answers to one request; one `take` gets the entry and the other gets nothing, and the helper warns for the one that got nothing. A store cannot prevent this through this interface: run one resume per conversation at a time.
+
+In Python:
+
+> Where pending approvals wait between two invocations of one conversation, keyed by the conversation id, one entry per request, by its `requested_event_id` (agent-events.md section 5.6). Two requests can be about one subject, as when a policy asks and then a human does. Pass a store that outlives the process when a resume can arrive in another one.
+>
+> The helper calls each method on a worker thread and waits at most `approval_timeout_ms` for it. A read past the limit holds nothing; a `put`, `take` or `clear` past it is a warning, and the call keeps running and can still land.
+>
+> Concurrency. Each method must be atomic on its own. The helper holds no lock that another run or process shares, so a `list` and the `take` after it are separate steps. The helper calls `put` once a request is handed to the anchorer. A resume calls `list` once, before its first record, and answers from what it read; it calls `take` once its answer is handed to the anchorer or found unbuildable, and it ignores what `take` returns. `take` returns `None` when the entry is already gone: another resume took it, `clear` removed it, or a later request with the same run id replaced it.
+>
+> Two processes that resume one conversation at once can both read the request before either takes it. Each then writes an `agent.approval.resolved` naming it, so the trail holds two answers to one request; one `take` gets the entry and the other gets `None`, and the helper warns for the one that got `None`. A store cannot prevent this through this interface: run one resume per conversation at a time.
+
+The following store is an example, not part of the SDK. It follows the contract on Redis: one hash for each conversation, one field for each request, and one script each for `take` and `clear`, so that two resumes cannot both receive an entry. A Redis entry has no expiry, so a request that nobody answers stays until a `take` or a `clear` removes it.
+
+<CodeGroup>
+
+```ts TypeScript
+import type { ApprovalStore, PendingApproval } from "@sanning/anchor";
+import type { Redis } from "ioredis";
+
+const TAKE = `local v = redis.call('HGET', KEYS[1], ARGV[1])
+if v then redis.call('HDEL', KEYS[1], ARGV[1]) end
+return v`;
+const CLEAR = `local all = redis.call('HVALS', KEYS[1])
+redis.call('DEL', KEYS[1])
+return all`;
+
+export class RedisApprovalStore implements ApprovalStore {
+  constructor(private readonly redis: Redis) {}
+
+  private key(conversationId: string): string {
+    return `sanning:approvals:${conversationId}`;
+  }
+
+  async put(conversationId: string, pending: PendingApproval): Promise<void> {
+    await this.redis.hset(this.key(conversationId), pending.requestedEventId, JSON.stringify(pending));
+  }
+
+  async list(conversationId: string): Promise<PendingApproval[]> {
+    const all = await this.redis.hvals(this.key(conversationId));
+    return all.map((s) => JSON.parse(s) as PendingApproval);
+  }
+
+  async take(conversationId: string, requestedEventId: string): Promise<PendingApproval | undefined> {
+    const s = (await this.redis.eval(TAKE, 1, this.key(conversationId), requestedEventId)) as string | null;
+    return s === null ? undefined : (JSON.parse(s) as PendingApproval);
+  }
+
+  async clear(conversationId: string): Promise<PendingApproval[]> {
+    const all = (await this.redis.eval(CLEAR, 1, this.key(conversationId))) as string[];
+    return all.map((s) => JSON.parse(s) as PendingApproval);
+  }
+}
+```
+
+```python Python
+import json
+from dataclasses import asdict
+
+from sanning_anchor import PendingApproval
+
+TAKE = """local v = redis.call('HGET', KEYS[1], ARGV[1])
+if v then redis.call('HDEL', KEYS[1], ARGV[1]) end
+return v"""
+CLEAR = """local all = redis.call('HVALS', KEYS[1])
+redis.call('DEL', KEYS[1])
+return all"""
+
+
+class RedisApprovalStore:
+    def __init__(self, redis):  # redis.Redis(decode_responses=True)
+        self._redis = redis
+        self._take = redis.register_script(TAKE)
+        self._clear = redis.register_script(CLEAR)
+
+    @staticmethod
+    def _key(conversation_id):
+        return f"sanning:approvals:{conversation_id}"
+
+    def put(self, conversation_id, pending):
+        self._redis.hset(
+            self._key(conversation_id), pending.requested_event_id, json.dumps(asdict(pending))
+        )
+
+    def list(self, conversation_id):
+        return [PendingApproval(**json.loads(s)) for s in self._redis.hvals(self._key(conversation_id))]
+
+    def take(self, conversation_id, requested_event_id):
+        found = self._take(keys=[self._key(conversation_id)], args=[requested_event_id])
+        return None if found is None else PendingApproval(**json.loads(found))
+
+    def clear(self, conversation_id):
+        found = self._clear(keys=[self._key(conversation_id)])
+        return [PendingApproval(**json.loads(s)) for s in found]
+```
+
+</CodeGroup>
+
+Pass the store as `approvals` to the `RunRecorder`, or as `approvals.pending` (`pending` in Python) to the LangChain adapter.
+
+### How long a store call takes
+
+The helper waits at most 30 seconds for each store call. A call that does not answer slows your agent, and the two SDKs differ in how.
+
+- In TypeScript, a resume reads the store before its first record. A slow `list`, or a slow `clear` for `supersedesPending`, delays that record and every call queued behind it, up to the limit. The helper does not wait for a `put` or a `take` before it writes the next record, and `close()` waits for the store calls that still run. Set the limit with `approvalTimeoutMs` on the `RunRecorder`.
+- In Python, the helper holds the run's lock while it waits for a call, so every other call on that run waits too. Set the limit with `approval_timeout_ms` on the `RunRecorder`. The `a`-prefixed calls wait for the store outside the lock.
+
+A read past the limit holds nothing: the run opens as if no request were pending, and a warning says so. A `put`, `take` or `clear` past the limit is a warning, and the call keeps running and can still land.
+
+### One run in one process
+
+A run keeps its position, the next `run.seq` and the last record, in the memory of the process that opened it. Write every record of one run from that one run object. Running one run across several workers is not supported. Do not share a root run ID between processes, and do not hand a run's work to another process. A resume is a new run, so it can run in any process that reaches the store.
+
+## Close the run
+
+Call `close()` in a `finally`, so that an error in your agent still writes the closing record. A run that never closes shows on its first record that a closing record was promised, and it has none.
+
+The closing record lists the records that the run wrote, and says how the run ended in two places:
+
+- `observed` is what the helper saw. It reads the end of the root step, the operation whose ID is the run's own ID: `completed`, `failed` with the reason `error`, or `interrupted` with the reason `interrupted`. A run with no root step, or whose root end is not among the listed records, is `unknown`.
+- `stated` is what you say. Your statement never replaces `observed`.
+
+<CodeGroup>
+
+```ts TypeScript
+await run.close({ outcome: "failed", reason: "error" });
+```
+
+```python Python
+run.close(outcome="failed", reason="error")
+```
+
+</CodeGroup>
+
+`outcome` is `completed`, `failed`, `interrupted` or `unknown`. `reason` is a code: `error`, `timeout`, `cancelled`, `interrupted` or `policy`. The helper refuses anything else before it writes a record.
+
+An operation with no end when you close gets no end written for it. It is in `open`, and a warning names it. If the root step ended `completed`, the closing record observes `interrupted`. An approval request that still waits for its answer is one of these operations.
+
+`close()` reports gaps and does not throw for them. Pass `strict: true` (`strict=True` in Python), and `close()` throws `IncompleteTrailError` after the closing record is written. A second `close()` writes nothing and returns the result of the first. Every call after `close()` is refused. A `close()` from inside the `onEvent` hook (`on_event` in Python) is refused: call it after the call that wrote the record returns.
+
+## Next
+
+For a framework with an adapter, see [Record your agent with an adapter](/adapters). To build an evidence pack from the records, see [Build an evidence pack](/evidence/build).

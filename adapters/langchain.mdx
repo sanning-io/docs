@@ -314,7 +314,7 @@ The example agent on this page has no model, so you need no key from a model pro
 
     The two records are in different runs, and a LangGraph `thread_id` ties them together. A `thread_id` is 1 to 128 characters of letters, digits, `_`, `.`, `:` and `-`. Use an ID that means nothing outside your systems: the adapter refuses every record of a run whose `thread_id` is an email address, for example.
 
-    The request waits in the process until the run resumes. If the answer can arrive in another process, pass a store that outlives the first process as `approvals.pending` (`pending` in Python). Without `approvals`, the adapter records no approvals, and the first record of each run says so.
+    The request waits in the process until the run resumes. If the answer can arrive in another process, pass a store that outlives the first process as `approvals.pending` (`pending` in Python). The store has four methods, and `take` must be atomic. For its contract and an example on Redis, see [A store that outlives the process](/adapters/build-your-own#a-store-that-outlives-the-process). Without `approvals`, the adapter records no approvals, and the first record of each run says so.
   </Step>
 
   <Step title="Close the run, and check for gaps">
@@ -351,7 +351,7 @@ The example agent on this page has no model, so you need no key from a model pro
         graph.invoke({"messages": []}, config)
         graph.invoke(Command(resume={"approved": True}), config)
     except BaseException:
-        handler.close(raise_on_gaps=False, outcome="failed", reason="error")
+        handler.close(outcome="failed", reason="error")
         raise
     ```
 
@@ -384,7 +384,7 @@ The example agent on this page has no model, so you need no key from a model pro
 
     ```python Python
     # Raises IncompleteTrailError if any record is missing from the trail.
-    handler.close(outcome="completed")
+    handler.close(outcome="completed", raise_on_gaps=True)
 
     # The handler never closes the anchorer. Close it when the process is done.
     anchorer.close()
@@ -394,6 +394,8 @@ The example agent on this page has no model, so you need no key from a model pro
     </CodeGroup>
 
     `outcome` is `completed`, `failed`, `interrupted` or `unknown`. `reason` is a code: `error`, `timeout`, `cancelled`, `interrupted` or `policy`. State the outcome on the first `close()`: a later one does not rewrite the closing records.
+
+In both languages, `close()` reports gaps and does not throw for them, so that it cannot replace your agent's own error. In Python, the last `close()` above passes `raise_on_gaps=True`, which raises `IncompleteTrailError` once the closing records are written.
   </Step>
 
   <Step title="Run it, and see the records">
@@ -668,10 +670,10 @@ The first record of each run lists what the adapter does not capture: for exampl
       graph.invoke({"messages": []}, config)
       graph.invoke(Command(resume={"approved": True}), config)
   except BaseException:
-      handler.close(raise_on_gaps=False, outcome="failed", reason="error")
+      handler.close(outcome="failed", reason="error")
       raise
 
-  handler.close(outcome="completed")
+  handler.close(outcome="completed", raise_on_gaps=True)
   anchorer.close()
   print(f"Recorded case {case_id}.")
   ```
