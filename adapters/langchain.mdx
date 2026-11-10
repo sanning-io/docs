@@ -188,8 +188,8 @@ The example agent on this page has no model, so you need no key from a model pro
     const logStore = new ObjectLogStore(
       new S3ObjectStore({
         bucket: process.env.SANNING_LOG_BUCKET!,
-        region: process.env.AWS_REGION!,
       }),
+      { prefix: "claims-triage" },
     );
 
     const anchorer = createAnchorer({
@@ -219,8 +219,8 @@ The example agent on this page has no model, so you need no key from a model pro
     log_store = ObjectLogStore(
         S3ObjectStore(
             bucket=os.environ["SANNING_LOG_BUCKET"],
-            region=os.environ["AWS_REGION"],
-        )
+        ),
+        prefix="claims-triage",
     )
 
     anchorer = Anchorer(
@@ -237,7 +237,7 @@ The example agent on this page has no model, so you need no key from a model pro
 
     </CodeGroup>
 
-    Replace `claims-triage` with the agent ID, the name that identifies your agent to Sanning, and keep it stable: it is how the agent shows on the **Agents** page. Replace `case-4b19de` with the ID of the case from your own system. A case ID is 1 to 128 characters of letters, digits, `_`, `.`, `:` and `-`.
+    Replace `claims-triage`, in the agent ID and in the `prefix`, with the agent ID, the name that identifies your agent to Sanning, and keep it stable: it is how the agent shows on the **Agents** page, and the name of its folder in the log store. Two agents must never share an agent ID. Replace `case-4b19de` with the ID of the case from your own system. A case ID is 1 to 128 characters of letters, digits, `_`, `.`, `:` and `-`.
 
     The log store keeps the content of each step in your S3 bucket, and Sanning never receives it. For why the anchorer uses `MemoryStore`, see [Create the anchorer](/quickstart#create-the-anchorer), and for why you keep the content, see [Keep your content](/evidence/build#keep-your-content).
 
@@ -525,8 +525,8 @@ The first record of each run lists what the adapter does not capture: for exampl
   const logStore = new ObjectLogStore(
     new S3ObjectStore({
       bucket: process.env.SANNING_LOG_BUCKET!,
-      region: process.env.AWS_REGION!,
     }),
+    { prefix: "claims-triage" },
   );
 
   const anchorer = createAnchorer({
@@ -639,8 +639,8 @@ The first record of each run lists what the adapter does not capture: for exampl
   log_store = ObjectLogStore(
       S3ObjectStore(
           bucket=os.environ["SANNING_LOG_BUCKET"],
-          region=os.environ["AWS_REGION"],
-      )
+      ),
+      prefix="claims-triage",
   )
 
   anchorer = Anchorer(

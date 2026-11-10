@@ -127,7 +127,7 @@ anchorer = Anchorer(
 
 Replace `claims-triage` with the agent ID of your agent. `MemoryStore` keeps the last record of each adapter run in memory.
 
-To build a pack from that folder, give `bundle` the folder as `--logs ./logstore`. A folder is lost with the machine, so use S3 for Live.
+To build a pack from that folder, give `bundle` the folder as `--logs ./logstore`. A folder is lost with the machine, so use S3 for Live. With several agents, give each its own folder, such as `./logstore/claims-triage`, and give `bundle` that folder with `--logs`.
 
 ## Run your agent and read the result
 

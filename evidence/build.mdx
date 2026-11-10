@@ -9,6 +9,30 @@ Start here once your agents have recorded the case through an [adapter](/adapter
   To test, use a Sandbox API key, and see [Test in the Sandbox](/sandbox).
 </Note>
 
+## Set up the evidence builder
+
+Build packs and case files in a separate service, function or job, never in an agent. A job that runs when a case closes is one example. This service is the evidence builder.
+
+The evidence builder holds no agent's seed, so it cannot sign as an agent, and the agents' seeds never leave the agents. It seals every pack with your organization's hand-over key. Each record inside a pack stays signed by its own agent. One key seals everything that your organization hands over, and every owner sees each time that key is enrolled or revoked.
+
+The evidence builder needs the following:
+
+- **The hand-over seed.** Make it as in [Make a seed for the signing key](/quickstart#make-a-seed-for-the-signing-key), on the machine that builds your packs, and keep it with that machine's secrets. It never reaches a browser or Sanning. Set it in `SANNING_SIGNING_SEED`, and set `SANNING_SIGNING_KEY_KIND=organization`.
+- **Its own API key.** Make it as in [Make a Live API key](/quickstart#make-a-live-api-key), with **Hand-over** ticked.
+- **Access to your log store.** On `arn:aws:s3:::BUCKET/*`, `s3:GetObject` to read the content and `s3:PutObject`, because `bundle` writes the content of each declaration to the bucket before it sends the declaration. On `arn:aws:s3:::BUCKET`, `s3:ListBucket`. Replace `BUCKET` with the name of your bucket.
+
+It needs no agent's seed.
+
+### Enroll the hand-over key
+
+The first `bundle --case` enrolls the hand-over key, and every owner gets an email. The key enrolls only when no hand-over key is active. If a different hand-over key is active, `bundle` exits with code 4 and says that an owner must revoke it in the console first.
+
+### Revoke or rotate the hand-over key
+
+An owner or admin revokes the key in the console: open **Settings**, then **Signing keys**. Each enrollment and each revoke writes an audit entry and emails every owner.
+
+To rotate the key, revoke it, make a new seed, and run `bundle --case` again. That run enrolls the new key. Packs that the old key sealed still verify.
+
 ## What an evidence pack holds
 
 An evidence pack (defined in the [Introduction](/#core-ideas)) joins two halves. Sanning holds the signed records and the proofs that stamps cover them. You hold the content that the records hold hashes of, in your log store. Sanning never receives that content, so only you can put the halves together.
@@ -42,7 +66,7 @@ A **Witness** strip at the top of the console's **Records** page shows the block
 
 ## Build the pack
 
-Install the SDK where you run `bundle`. Reading an S3 log store needs the S3 library in TypeScript and the `s3` extra in Python, the same as the [Quickstart](/quickstart#install-the-sdk):
+Install the SDK in the evidence builder. Reading an S3 log store needs the S3 library in TypeScript and the `s3` extra in Python, the same as the [Quickstart](/quickstart#install-the-sdk):
 
 <CodeGroup>
 
@@ -56,13 +80,14 @@ pip install "sanning-anchor[s3]"
 
 </CodeGroup>
 
-Run `bundle` somewhere that can reach your log store, with your signing seed in the environment. The command reads your records from Sanning with your API key, reads the content from your log store, and checks the result the way a reviewer will before it writes anything. If the pack would fail the check, the command writes nothing.
+Run `bundle` in the evidence builder, with the hand-over seed in the environment. The command reads your records from Sanning with the evidence builder's API key, reads the content from your log store, and checks the result the way a reviewer will before it writes anything. If the pack would fail the check, the command writes nothing.
 
 <CodeGroup>
 
 ```bash TypeScript
 export SANNING_API_KEY=API_KEY
-export SANNING_SIGNING_SEED=SEED
+export SANNING_SIGNING_SEED=HANDOVER_SEED
+export SANNING_SIGNING_KEY_KIND=organization
 export AWS_REGION=REGION
 export AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
 export AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
@@ -70,13 +95,14 @@ export AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
 npx @sanning/anchor bundle \
   --agent claims-triage \
   --case case-4b19de \
-  --logs s3://evidence-claims \
+  --logs s3://evidence-claims/claims-triage \
   --out case-4b19de.zip
 ```
 
 ```bash Python
 export SANNING_API_KEY=API_KEY
-export SANNING_SIGNING_SEED=SEED
+export SANNING_SIGNING_SEED=HANDOVER_SEED
+export SANNING_SIGNING_KEY_KIND=organization
 export AWS_REGION=REGION
 export AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
 export AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
@@ -84,7 +110,7 @@ export AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
 sanning-anchor bundle \
   --agent claims-triage \
   --case case-4b19de \
-  --logs s3://evidence-claims \
+  --logs s3://evidence-claims/claims-triage \
   --out case-4b19de.zip
 ```
 
@@ -94,21 +120,17 @@ sanning-anchor bundle \
 
 Replace the following:
 
-- `API_KEY`: the Live API key from the [Quickstart](/quickstart#make-a-live-api-key). It already has the scope `anchor:read` that `bundle` needs.
-- `SEED`: the seed of the agent in `--agent`. With the seed, `bundle` signs a declaration, which is the pack's own statement of which records it holds, so that the reviewer can check the pack against it. Without the seed, the pack carries no declaration.
+- `API_KEY`: the evidence builder's API key, made as in the [Quickstart](/quickstart#make-a-live-api-key) with **Hand-over** ticked. `bundle` also needs the scope `anchor:read`.
+- `HANDOVER_SEED`: the hand-over seed. With it, `bundle` seals the pack, and signs a declaration, which is the pack's own statement of which records it holds, so that the reviewer can check the pack against it.
 - `REGION`: the AWS Region of the bucket, such as `eu-west-1`. Without a Region in `AWS_REGION` or your AWS config, `bundle` exits with code 4 and names `AWS_REGION`.
-- `ACCESS_KEY_ID` and `SECRET_ACCESS_KEY`: credentials that hold the `bundle` permissions in the next paragraph. If you run `bundle` with a role, single sign-on or a profile, skip them.
+- `ACCESS_KEY_ID` and `SECRET_ACCESS_KEY`: credentials that hold the permissions in [Set up the evidence builder](#set-up-the-evidence-builder). If you run `bundle` with a role, single sign-on or a profile, skip them.
 - `claims-triage`: the agent ID of your agent.
 - `case-4b19de`: your case ID.
-- `s3://evidence-claims`: the S3 URL of your log store, written `s3://BUCKET`, or `s3://BUCKET/PREFIX` for a prefix inside it.
+- `s3://evidence-claims/claims-triage`: the S3 URL of the agent's folder in your log store, written `s3://BUCKET/AGENT_ID`, where `BUCKET` is the name of the bucket and `AGENT_ID` is the agent ID of the agent.
 
 `bundle` uses the same settings as the agent: `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_ENDPOINT_URL_S3` for a service other than AWS, and the AWS credential chain that the Quickstart used. The environment that the Quickstart sets for the agent works for `bundle`.
 
-The `bundle` credentials need `s3:GetObject` on `arn:aws:s3:::BUCKET/*`, and `s3:ListBucket` on `arn:aws:s3:::BUCKET`. When a signing seed is set, `bundle` writes the content of the declaration to the bucket before it sends the declaration, so the credentials also need `s3:PutObject` on `arn:aws:s3:::BUCKET/*`. Without a seed, `bundle` writes nothing to the bucket. Replace `BUCKET` with the name of your bucket.
-
-With only these permissions, `bundle` cannot read the bucket's Object Lock setting. It prints that it cannot tell whether Object Lock is enabled, and writes anyway.
-
-An old `SANNING_S3_ENDPOINT`, `SANNING_S3_ACCESS_KEY_ID`, `SANNING_S3_SECRET_ACCESS_KEY` or `SANNING_S3_REGION` is no longer read. If one is set and its `AWS_*` replacement is not, `bundle` exits with code 4 and names the replacement. If both are set, `bundle` prints one line that the old name is ignored.
+With only the permissions in [Set up the evidence builder](#set-up-the-evidence-builder), `bundle` cannot read the bucket's Object Lock setting. It prints that it cannot tell whether Object Lock is enabled, and writes anyway.
 
 A case pack takes no dates. It holds every record of the case that this agent recorded, however long the case ran. The command keeps a record only when its own signed case ID is the one you name, so a record that carries no case ID is not found. This is why every run must record with a case ID.
 
@@ -118,43 +140,47 @@ The command exits with the code that the verifier would give the pack. The codes
 
 When the pack carries a declaration and reads Verified, `bundle` records the declaration as a record of its own, so that a later pack for the same case is visibly later. Each time it writes a pack, `bundle` also sends Sanning a pack report: the agent, the environment, the period, the record count and a hash of `bundle.json`. The pack report never holds the pack, a log or a file name. You find it under **Evidence** in the console.
 
+If Sanning refuses the declaration, `bundle` still writes the pack, and prints `Sanning refused the declaration with HTTP STATUS: CODE (MESSAGE)`, with the status, the code and the message that Sanning gave. Fix what Sanning refused, then run `bundle` again. The new run records a fresh declaration for the case as the later record.
+
 ### When several agents worked on the case
 
-Give `--agent` once for each agent, and put each agent's seed in `SANNING_SIGNING_SEEDS`. The command then builds one pack for each agent, and writes them together as a case file, a zip that holds one pack for each agent.
+Give `--agent` once for each agent, and give `--logs` once for each `--agent`, in the same order, with the folder of that agent: `s3://BUCKET/AGENT_ID`. The evidence builder needs no agent seeds. The one hand-over key seals every pack, and signs one declaration for each pack. The command builds one pack for each agent, and writes them together as a case file, a zip that holds one pack for each agent.
 
 <CodeGroup>
 
 ```bash TypeScript
-export INTAKE_SEED=INTAKE_SEED_VALUE
-export REVIEW_SEED=REVIEW_SEED_VALUE
-export SANNING_SIGNING_SEEDS="intake=$INTAKE_SEED,review=$REVIEW_SEED"
+export SANNING_API_KEY=API_KEY
+export SANNING_SIGNING_SEED=HANDOVER_SEED
+export SANNING_SIGNING_KEY_KIND=organization
 
 npx @sanning/anchor bundle \
   --case case-4b19de \
   --agent intake \
   --agent review \
-  --logs s3://evidence-claims \
+  --logs s3://evidence-claims/intake \
+  --logs s3://evidence-claims/review \
   --out case-4b19de.zip
 ```
 
 ```bash Python
-export INTAKE_SEED=INTAKE_SEED_VALUE
-export REVIEW_SEED=REVIEW_SEED_VALUE
-export SANNING_SIGNING_SEEDS="intake=$INTAKE_SEED,review=$REVIEW_SEED"
+export SANNING_API_KEY=API_KEY
+export SANNING_SIGNING_SEED=HANDOVER_SEED
+export SANNING_SIGNING_KEY_KIND=organization
 
 sanning-anchor bundle \
   --case case-4b19de \
   --agent intake \
   --agent review \
-  --logs s3://evidence-claims \
+  --logs s3://evidence-claims/intake \
+  --logs s3://evidence-claims/review \
   --out case-4b19de.zip
 ```
 
 </CodeGroup>
 
-Replace `INTAKE_SEED_VALUE` and `REVIEW_SEED_VALUE` with the seeds of the `intake` and `review` agents. Each is that agent's own signing seed, the one its anchorer signs with.
+Set the AWS variables as in the previous example. `API_KEY` and `HANDOVER_SEED` are the same as there.
 
-Each pack is signed by its own agent's signing key, and nobody signs the case file as a whole. The zip holds each pack under `packs/AGENT_ID/` (the agent ID of its agent), an unsigned index named `contents.json`, and a `HOW-TO-VERIFY.txt`. Every agent that you name must have a pack, or the command writes nothing. If one agent's records are not stamped yet, the command exits with code 2, and you run it again later.
+The hand-over key seals each pack, and each record inside a pack stays signed by its own agent. Nobody signs the case file as a whole. The zip holds each pack under `packs/AGENT_ID/` (the agent ID of its agent), an unsigned index named `contents.json`, and a `HOW-TO-VERIFY.txt`. Every agent that you name must have a pack, or the command writes nothing. If one agent's records are not stamped yet, the command exits with code 2, and you run it again later. The case file exits with the code of the whole case, which is the worst of its packs.
 
 ## Hand it over
 
