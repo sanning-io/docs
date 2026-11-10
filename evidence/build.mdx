@@ -1,48 +1,38 @@
 ---
 title: "Build an evidence pack"
-description: "One command joins Sanning's records and your own content into a zip that a reviewer can verify without Sanning, an account or access to your systems."
+description: "Create a verifiable evidence pack for what your AI agents did."
 ---
 
-Start here once your agents have recorded the case through an [adapter](/adapters), with its case ID on every record.
+This guide shows you how to generate evidence packs for your AI agents.
 
-<Note>
-  To test, use a Sandbox API key, and see [Test in the Sandbox](/sandbox).
-</Note>
+An evidence pack combines your agents' raw logs with proofs that Sanning holds to produce independently verifiable evidence of what your AI agent did.
 
 ## What an evidence pack holds
-
-An evidence pack (defined in the [Introduction](/#core-ideas)) joins two halves. Sanning holds the signed records and the proofs that stamps cover them. You hold the content that the records hold hashes of, in your log store. Sanning never receives that content, so only you can put the halves together.
 
 The pack is one zip file:
 
 - `bundle.json`: the signed records, and for each record the proof that a stamp on the public record covers it.
 - `logs/`: your content, one file for each record.
 
-A reviewer needs the pack and the public record. They do not need Sanning, an account or access to your systems.
+<Note>
+  To test, use a Sandbox API key, and see [Test in the Sandbox](/sandbox).
+</Note>
 
-<img src="/images/diagrams/case-life.png" alt="The life of one case. Two agents work on one case over time. Every record in their three runs carries the case ID, and each run ends with a closing record. At the end of each interval, Sanning seals the new records into a stamp on the public record. You build one evidence pack for the case, from the records and your own content. The reviewer checks the pack on their own machine, checks the stamps on the public record, and reads the verdict." className="block dark:hidden" />
-<img src="/images/diagrams/case-life-dark.png" alt="The life of one case. Two agents work on one case over time. Every record in their three runs carries the case ID, and each run ends with a closing record. At the end of each interval, Sanning seals the new records into a stamp on the public record. You build one evidence pack for the case, from the records and your own content. The reviewer checks the pack on their own machine, checks the stamps on the public record, and reads the verdict." className="hidden dark:block" />
+## How to build an evidence pack
 
-The diagram shows one case, from the first record to the verdict.
+Build evidence in a separate service, so your agents only record.
 
-## Keep your content
+The evidence builder needs the following:
 
-The log store holds the content that your records hold hashes of. Sanning holds hashes only, so if the store is lost, the pack cannot carry the content, and no one can rebuild it. A reviewer can still check the signatures and the stamps without the content, but not what the records said.
+- **The organization's hand-over key.** Follow the guide in [Name your agent and generate its seed](/quickstart#name-your-agent-and-generate-its-seed), store the seed securely in your secrets as `SANNING_SIGNING_SEED`, and also set `SANNING_SIGNING_KEY_KIND=organization` alongside it.
+- **Its own API key.** Follow the guide in [Make a Live API key](/quickstart#make-a-live-api-key), with **Hand-over** ticked, and store it securely as `SANNING_API_KEY`.
+- **Its own AWS keys or role**, with the evidence builder's permissions in [The exact AWS permissions](/quickstart#the-exact-aws-permissions).
 
-Set up the log store before your agents record, because the adapter writes each step's content to the store as it records. The steps and the permissions are in [Set up your log store](/quickstart#set-up-your-log-store).
+If the hand-over seed leaks, an owner or admin revokes the hand-over key in the console, under **Settings**, then **Signing keys**. Then make another seed with the same command, put it in `SANNING_SIGNING_SEED`, and run `bundle` again. Sanning never enrolls a revoked key again. Packs sealed before the revoke still verify.
 
-## Wait for the stamp
+### Install and configure the SDK
 
-A pack needs the stamp proofs. Sanning seals the records of each 10-minute interval, and the proofs are ready about a minute later. The public record can take longer to confirm a stamp, sometimes hours.
-
-A **Witness** strip at the top of the console's **Records** page shows the block time of the latest stamp, which is the time the public record confirmed it. The page does not mark a single record as stamped, so the test is `bundle`, the command that builds the pack. It exits with code 2 in both of these cases, and you run it again later:
-
-- Records are not stamped yet. `bundle` writes nothing and says how many records are waiting for a stamp. Your records are not missing.
-- The stamp exists and the public record has not confirmed it. `bundle` writes the pack, the pack reads Incomplete, and the verifier says that the stamp names no public record.
-
-## Build the pack
-
-Install the SDK where you run `bundle`. Reading an S3 log store needs the S3 library in TypeScript and the `s3` extra in Python, the same as the [Quickstart](/quickstart#install-the-sdk):
+You build evidence packs with the anchor SDK. The hand-over key needs version 0.23.0 or later of the SDK.
 
 <CodeGroup>
 
@@ -56,108 +46,77 @@ pip install "sanning-anchor[s3]"
 
 </CodeGroup>
 
-Run `bundle` somewhere that can reach your log store, with your signing seed in the environment. The command reads your records from Sanning with your API key, reads the content from your log store, and checks the result the way a reviewer will before it writes anything. If the pack would fail the check, the command writes nothing.
+Make sure the evidence builder's secrets hold the hand-over seed and the API key from above, and the keys for your log store. Sanning enrolls the hand-over key on the first `bundle` run whose pack reads Verified.
+
+<CodeGroup>
+```bash .env
+SANNING_API_KEY=API_KEY
+SANNING_SIGNING_SEED=HANDOVER_SEED
+SANNING_SIGNING_KEY_KIND=organization
+AWS_REGION=REGION
+AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
+```
+</CodeGroup>
+
+### Build the evidence pack
+
+Run the `bundle` command in the evidence builder, passing in the agent ID in `--agent` and the case you want an evidence pack for in `--case`. Give the location of your agent's logs in `--logs`, and where you want the pack written in `--out`.
 
 <CodeGroup>
 
 ```bash TypeScript
-export SANNING_API_KEY=API_KEY
-export SANNING_SIGNING_SEED=SEED
-export AWS_REGION=REGION
-export AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
-export AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
-
 npx @sanning/anchor bundle \
-  --agent claims-triage \
-  --case case-4b19de \
-  --logs s3://evidence-claims \
-  --out case-4b19de.zip
+  --agent AGENT_ID \
+  --case CASE_ID \
+  --logs s3://BUCKET/AGENT_ID \
+  --out CASE_ID.zip
 ```
 
 ```bash Python
-export SANNING_API_KEY=API_KEY
-export SANNING_SIGNING_SEED=SEED
-export AWS_REGION=REGION
-export AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
-export AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
-
 sanning-anchor bundle \
-  --agent claims-triage \
-  --case case-4b19de \
-  --logs s3://evidence-claims \
-  --out case-4b19de.zip
+  --agent AGENT_ID \
+  --case CASE_ID \
+  --logs s3://BUCKET/AGENT_ID \
+  --out CASE_ID.zip
 ```
 
 </CodeGroup>
+
+For cases with multiple agents, you must pass in the agent ID and log location of each agent to `--agent` and `--logs`, in the same order.
+
+<CodeGroup>
+
+```bash TypeScript
+npx @sanning/anchor bundle \
+  --case CASE_ID \
+  --agent AGENT_ID_1 \
+  --agent AGENT_ID_2 \
+  --logs s3://BUCKET/AGENT_ID_1 \
+  --logs s3://BUCKET/AGENT_ID_2 \
+  --out CASE_ID.zip
+```
+
+```bash Python
+sanning-anchor bundle \
+  --case CASE_ID \
+  --agent AGENT_ID_1 \
+  --agent AGENT_ID_2 \
+  --logs s3://BUCKET/AGENT_ID_1 \
+  --logs s3://BUCKET/AGENT_ID_2 \
+  --out CASE_ID.zip
+```
+
+</CodeGroup>
+
+## Wait for the stamp
+
+Sanning stamps records every 10 minutes. Until a record is stamped, `bundle` refuses to build an evidence pack that contains it. Once it's stamped evidence will show incomplete until the stamp is confirmed on the public record. If this happens run `bundle` again to write a new pack in place of the old one.
 
 {/* OUTPUT FROM REAL RUN: what bundle prints after it writes the pack for a case (the agent, the case, the record count, the path of the zip) */}
 
-Replace the following:
+## Hand over the evidence pack to be verified
 
-- `API_KEY`: the Live API key from the [Quickstart](/quickstart#make-a-live-api-key). It already has the scope `anchor:read` that `bundle` needs.
-- `SEED`: the seed of the agent in `--agent`. With the seed, `bundle` signs a declaration, which is the pack's own statement of which records it holds, so that the reviewer can check the pack against it. Without the seed, the pack carries no declaration.
-- `REGION`: the AWS Region of the bucket, such as `eu-west-1`. Without a Region in `AWS_REGION` or your AWS config, `bundle` exits with code 4 and names `AWS_REGION`.
-- `ACCESS_KEY_ID` and `SECRET_ACCESS_KEY`: credentials that hold the `bundle` permissions in the next paragraph. If you run `bundle` with a role, single sign-on or a profile, skip them.
-- `claims-triage`: the agent ID of your agent.
-- `case-4b19de`: your case ID.
-- `s3://evidence-claims`: the S3 URL of your log store, written `s3://BUCKET`, or `s3://BUCKET/PREFIX` for a prefix inside it.
+Once you have created your pack you can hand it over to be verified either using the public [verify page](https://verify.sanning.io) or our CLI.
 
-`bundle` uses the same settings as the agent: `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_ENDPOINT_URL_S3` for a service other than AWS, and the AWS credential chain that the Quickstart used. The environment that the Quickstart sets for the agent works for `bundle`.
-
-The `bundle` credentials need `s3:GetObject` on `arn:aws:s3:::BUCKET/*`, and `s3:ListBucket` on `arn:aws:s3:::BUCKET`. When a signing seed is set, `bundle` writes the content of the declaration to the bucket before it sends the declaration, so the credentials also need `s3:PutObject` on `arn:aws:s3:::BUCKET/*`. Without a seed, `bundle` writes nothing to the bucket. Replace `BUCKET` with the name of your bucket.
-
-With only these permissions, `bundle` cannot read the bucket's Object Lock setting. It prints that it cannot tell whether Object Lock is enabled, and writes anyway.
-
-An old `SANNING_S3_ENDPOINT`, `SANNING_S3_ACCESS_KEY_ID`, `SANNING_S3_SECRET_ACCESS_KEY` or `SANNING_S3_REGION` is no longer read. If one is set and its `AWS_*` replacement is not, `bundle` exits with code 4 and names the replacement. If both are set, `bundle` prints one line that the old name is ignored.
-
-A case pack takes no dates. It holds every record of the case that this agent recorded, however long the case ran. The command keeps a record only when its own signed case ID is the one you name, so a record that carries no case ID is not found. This is why every run must record with a case ID.
-
-The command exits with the code that the verifier would give the pack. The codes are in [Command line](/reference/cli#exit-codes).
-
-### What bundle sends to Sanning
-
-When the pack carries a declaration and reads Verified, `bundle` records the declaration as a record of its own, so that a later pack for the same case is visibly later. Each time it writes a pack, `bundle` also sends Sanning a pack report: the agent, the environment, the period, the record count and a hash of `bundle.json`. The pack report never holds the pack, a log or a file name. You find it under **Evidence** in the console.
-
-### When several agents worked on the case
-
-Give `--agent` once for each agent, and put each agent's seed in `SANNING_SIGNING_SEEDS`. The command then builds one pack for each agent, and writes them together as a case file, a zip that holds one pack for each agent.
-
-<CodeGroup>
-
-```bash TypeScript
-export INTAKE_SEED=INTAKE_SEED_VALUE
-export REVIEW_SEED=REVIEW_SEED_VALUE
-export SANNING_SIGNING_SEEDS="intake=$INTAKE_SEED,review=$REVIEW_SEED"
-
-npx @sanning/anchor bundle \
-  --case case-4b19de \
-  --agent intake \
-  --agent review \
-  --logs s3://evidence-claims \
-  --out case-4b19de.zip
-```
-
-```bash Python
-export INTAKE_SEED=INTAKE_SEED_VALUE
-export REVIEW_SEED=REVIEW_SEED_VALUE
-export SANNING_SIGNING_SEEDS="intake=$INTAKE_SEED,review=$REVIEW_SEED"
-
-sanning-anchor bundle \
-  --case case-4b19de \
-  --agent intake \
-  --agent review \
-  --logs s3://evidence-claims \
-  --out case-4b19de.zip
-```
-
-</CodeGroup>
-
-Replace `INTAKE_SEED_VALUE` and `REVIEW_SEED_VALUE` with the seeds of the `intake` and `review` agents. Each is that agent's own signing seed, the one its anchorer signs with.
-
-Each pack is signed by its own agent's signing key, and nobody signs the case file as a whole. The zip holds each pack under `packs/AGENT_ID/` (the agent ID of its agent), an unsigned index named `contents.json`, and a `HOW-TO-VERIFY.txt`. Every agent that you name must have a pack, or the command writes nothing. If one agent's records are not stamped yet, the command exits with code 2, and you run it again later.
-
-## Hand it over
-
-The pack holds the content of every record that it finds in your log store. Check what you are giving away before you send it: the reviewer can read all of it.
-
-Send the zip file. The reviewer follows [Verify an evidence pack](/evidence/verify), and needs no account.
+See the next guide on how to [Verify an evidence pack](/evidence/verify).

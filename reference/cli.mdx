@@ -38,22 +38,24 @@ No flag turns exit code 3 into 0.
 
 ```bash
 npx @sanning/anchor bundle \
-  --agent claims-triage \
-  --case case-4b19de \
-  --logs s3://evidence-claims \
-  --out case-4b19de.zip
+  --agent AGENT_ID \
+  --case CASE_ID \
+  --logs s3://BUCKET/AGENT_ID \
+  --out CASE_ID.zip
 ```
 
 Without `--case`, `bundle` builds a pack for one agent over a period:
 
 ```bash
 npx @sanning/anchor bundle \
-  --agent claims-triage \
+  --agent AGENT_ID \
   --from 2026-11-01 \
   --to 2026-11-04 \
-  --logs s3://evidence-claims \
-  --out claims-triage-2026-11-04.zip
+  --logs s3://BUCKET/AGENT_ID \
+  --out pack-2026-11-04.zip
 ```
+
+Replace `AGENT_ID` with the agent ID of your agent, and `BUCKET` with the name of your log store bucket.
 
 | Flag | Meaning |
 |---|---|
@@ -64,6 +66,7 @@ npx @sanning/anchor bundle \
 | `--logs` | Required. The root of your log store: a local folder that holds `content/` and `records/`, or `s3://BUCKET` or `s3://BUCKET/PREFIX`, where `BUCKET` is the name of the bucket and `PREFIX` is a prefix inside it. For a case file, give it once for every agent, or once for each `--agent` in the same order. |
 | `--out` | Required. Where to write the zip. A `.zip` ending is added if it is missing. |
 | `--base-url` | Optional. The address of the Sanning API to read from. The default is `https://api.sanning.io`, or the value of `SANNING_BASE_URL`. |
+| `--handoffs-only` | Optional. With `--case`, pack only the case's hand-off records (`agent.handoff.sent` and `agent.handoff.received`) and claim each one in the declaration. Step records are left out and counted. Use it to hand another organization only what is theirs to read. Needs `--case` and `SANNING_SIGNING_SEED`. Takes no value. |
 | `--allow-unstamped` | Optional. Build the pack even when records in the period are recorded and not stamped yet. Takes no value. |
 | `--report-file` | Optional. For a case file only. A file to put under `report/` in the case file, such as a cover note. You can give it more than once. No record holds a hash of it. |
 
@@ -73,10 +76,10 @@ The command needs `--logs`, because it reads the agent ID from the signed record
 
 | Variable | Meaning |
 |---|---|
-| `SANNING_API_KEY` | Your API key. There is no flag for it, so that it stays out of your shell history. It needs the scope `anchor:read`. |
-| `SANNING_SIGNING_SEED` | The seed of the agent in `--agent`, as 64 lowercase hex characters. With it, `bundle` signs a declaration, which is the pack's statement of which records it holds, and signs the pack with the agent's key. Without it, `bundle` signs the pack with a one-time key that it discards, and builds no declaration. |
-| `SANNING_SIGNING_SEEDS` | For a case file: one seed for each agent, written `intake=SEED,review=SEED`. `SANNING_SIGNING_SEED` is refused beside it. |
-| `SANNING_SIGNING_KEY_KIND` | Whose key the seed is: `agent` (the default) or `organization`. With `organization`, the pack's issuer is your organization, and not the agent. |
+| `SANNING_API_KEY` | Your API key. There is no flag for it, so that it stays out of your shell history. It needs the scope `anchor:read`. With `SANNING_SIGNING_KEY_KIND=organization`, make the key with the console's **Hand-over** choice, which gives `handover:enroll`, `anchor:read` and `anchor:write`. An agent's API key never has `handover:enroll`. |
+| `SANNING_SIGNING_SEED` | A seed, as 64 lowercase hex characters: the seed of the agent in `--agent`, or, with `SANNING_SIGNING_KEY_KIND=organization`, the hand-over seed. With it, `bundle` signs a declaration, which is the pack's statement of which records it holds, and seals the pack with that key. Without it, `bundle` signs the pack with a one-time key that it discards, and builds no declaration. |
+| `SANNING_SIGNING_SEEDS` | For a case file: one seed for each agent, written `intake=SEED,review=SEED`. `SANNING_SIGNING_SEED` is refused beside it, and `SANNING_SIGNING_SEEDS` is refused with `SANNING_SIGNING_KEY_KIND=organization`. |
+| `SANNING_SIGNING_KEY_KIND` | Whose key the seed is: `agent` (the default) or `organization`. With `organization`, the seed is your organization's hand-over key, and the pack's issuer is your organization, not the agent. The first `bundle` run whose pack reads Verified enrolls the hand-over key, only when no hand-over key is active. If a different one is active, `bundle` exits with code 4 and says that an owner or admin must revoke it in the console first. Sanning never accepts a revoked hand-over key again: after a revoke, make another seed and set `SANNING_SIGNING_SEED`. See [Build an evidence pack](/evidence/build#how-to-build-an-evidence-pack). |
 | `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_ENDPOINT_URL_S3` | Read when `--logs` is an `s3://` URL, as when the agent records, along with the AWS credential chain (roles, single sign-on, profiles). There is no default Region: when none resolves, `bundle` exits with code 4 and names `AWS_REGION`. `AWS_ENDPOINT_URL_S3` is for a service other than AWS. TypeScript also needs `@aws-sdk/client-s3`. Python needs the `s3` extra. The old `SANNING_S3_*` names are not read: with one set and its replacement not, `bundle` exits with code 4 and names the replacement. |
 | `SANNING_GATEWAY_URL` | A gateway to the public record. When it is set, `bundle` asks it for the block height and time of each stamp, and writes them to `witness-cache.json` beside `bundle.json`. A missing or partial cache never blocks a pack. |
 | `SANNING_BASE_URL` | The address of the Sanning API to read from, in place of the default. |
@@ -85,13 +88,13 @@ The command needs `--logs`, because it reads the agent ID from the signed record
 
 - `--agent` is checked twice. The server filters by the agent that Sanning bound to each record when it arrived, and the command also reads the agent ID from the signed record in your log store, and refuses if a record names a different agent. A misspelled agent ID stops with `the control plane does not recognize this agent`, and the command writes no pack.
 - It refuses a period that mixes Sandbox and Live records for one agent, because a pack holds one mode.
-- With several `--agent`, it builds one pack for each agent and writes them together as a case file, under `packs/AGENT_ID/` (the agent ID of its agent), beside an unsigned `contents.json` and a `HOW-TO-VERIFY.txt`. Every agent must have a pack, or the command writes nothing.
+- With several `--agent`, it builds one pack for each agent and writes them together as a case file, under `packs/AGENT_ID/` (the agent ID of its agent), beside an unsigned `contents.json` and a `HOW-TO-VERIFY.txt`. Every agent must have a pack, or the command writes nothing. With `SANNING_SIGNING_KEY_KIND=organization`, the one hand-over key seals every pack and signs one declaration for each pack. Each record stays signed by its own agent.
 - If `--to` is today, the period ends at the end of the last sealed interval, so that every record in the pack has a stamp.
 - The period is matched against the time that Sanning received each record, which can be later than the time on your machine. A record made close to 00:00 UTC can fall on the neighboring day. Compare the pack's record count with what your agent recorded, and build the neighboring day too when they differ.
 
 ### bundle exit codes
 
-`bundle` exits with the code that `verify` would give the pack it wrote.
+`bundle` exits with the code that `verify` would give the pack it wrote. For a case file, it exits with the code that `case` would give the whole file, which is the worst of its packs.
 
 | Exit | Meaning |
 |---|---|
@@ -99,13 +102,17 @@ The command needs `--logs`, because it reads the agent ID from the signed record
 | 1 | Nothing was written, because the pack would read Failed. |
 | 2 | The pack was written and reads Incomplete, for example because a stamp is not on the public record yet. Or nothing was written because records are not stamped yet, or Sanning could not be reached. Run `bundle` again later. |
 | 3 | The pack was written and reads Verified with Sandbox records. |
-| 4 | Nothing was written, because the command could not run: a bad flag, an input it cannot read, no records that match, a case that Sanning did not read whole, or an output it cannot write. |
+| 4 | Nothing was written, because the command could not run: a bad flag, a hand-over key that cannot enroll because a different one is active, a revoked hand-over key, an API key without the Hand-over choice, an input it cannot read, no records that match, a case that Sanning did not read whole, or an output it cannot write. |
 
 ### Pack reporting
 
 After `bundle` writes a pack, it tells Sanning that it did, with the same API key. This notice is the pack report. It holds the agent ID, the environment, the period, the record count, the SHA-256 of `bundle.json`, the SDK name and version, and the time the pack was built. It never holds the pack, a log, a record ID or a file name. You find it under **Evidence** in the console. Every run builds a new `bundle.json`, so every run sends a pack report.
 
 If the pack report fails, `bundle` prints one line with the pack's digest and still exits with the pack's code.
+
+### Refused declaration
+
+If Sanning refuses the declaration, `bundle` still writes the pack, and prints `Sanning refused the declaration with HTTP STATUS: CODE (MESSAGE)`, with the status, the code and the message that Sanning gave. Fix what Sanning refused, then run `bundle` again. The new run records a fresh declaration for the case as the later record.
 
 ## verify
 
@@ -166,7 +173,7 @@ After these lines comes a blank line and the detail for each record.
 `case` reads one or more packs, or a case file, as one case. It prints one verdict, and it names every exception, which is a pack or a record that the command could not read or check. Each argument is a pack folder, a folder that holds several packs, or a case file named `NAME.zip`.
 
 ```bash
-npx @sanning/proof case case-4b19de.zip
+npx @sanning/proof case CASE_ID.zip
 npx @sanning/proof case intake-pack/ review-pack/
 ```
 

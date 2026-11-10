@@ -51,15 +51,17 @@ You enter the Sandbox from your Live organization. Confirm your email address fi
 
    </CodeGroup>
 
-5. Export the seed and the Sandbox API key:
+5. Export the agent ID, the seed and the Sandbox API key:
 
    ```bash
+   export SANNING_AGENT_ID=AGENT_ID
    export SANNING_SIGNING_SEED=SEED
    export SANNING_API_KEY=API_KEY
    ```
 
    Replace the following:
 
+   - `AGENT_ID`: the agent ID that you chose. To choose one, see [Name your agent and generate its seed](/quickstart#name-your-agent-and-generate-its-seed).
    - `SEED`: the 64 hex characters that you made in step 4.
    - `API_KEY`: the Sandbox API key from step 3. It starts with `sanning_test_`.
 
@@ -97,7 +99,7 @@ import {
 
 const anchorer = createAnchorer({
   signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED!),
-  subject: { type: "agent", agent_id: "claims-triage" },
+  subject: { type: "agent", agent_id: process.env.SANNING_AGENT_ID! },
   apiKey: process.env.SANNING_API_KEY!,
   logStore: new FsLogStore("./logstore"),
   store: new MemoryStore(),
@@ -116,7 +118,7 @@ from sanning_anchor import (
 
 anchorer = Anchorer(
     signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
-    subject={"type": "agent", "agent_id": "claims-triage"},
+    subject={"type": "agent", "agent_id": os.environ["SANNING_AGENT_ID"]},
     api_key=os.environ["SANNING_API_KEY"],
     log_store=FsLogStore("./logstore"),
     store=MemoryStore(),
@@ -125,9 +127,9 @@ anchorer = Anchorer(
 
 </CodeGroup>
 
-Replace `claims-triage` with the agent ID of your agent. `MemoryStore` keeps the last record of each adapter run in memory.
+`MemoryStore` keeps the last record of each adapter run in memory.
 
-To build a pack from that folder, give `bundle` the folder as `--logs ./logstore`. A folder is lost with the machine, so use S3 for Live.
+To build a pack from that folder, give `bundle` the folder as `--logs ./logstore`. A folder is lost with the machine, so use S3 for Live. With several agents, give each its own folder, named after its agent ID, and give `bundle` that folder with `--logs`.
 
 ## Run your agent and read the result
 

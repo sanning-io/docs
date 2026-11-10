@@ -40,7 +40,7 @@ Give the root step the run's own ID. The closing record reads how the run ended 
 ```ts TypeScript
 import { decisionContent, RunRecorder } from "@sanning/anchor";
 
-const recorder = new RunRecorder(anchorer, { caseId: "case-4b19de", agentVersion: "2026.11.0" });
+const recorder = new RunRecorder(anchorer, { caseId: "CASE_ID", agentVersion: "2026.11.0" });
 const run = recorder.openRun({ input: { claim_id: "c-1" } });
 
 // The root step has the root run id. How the run ended, as the closing record observes it, is its end.
@@ -62,7 +62,7 @@ const { steps, gaps, unbuilt, observed } = await run.close({ outcome: "completed
 ```python Python
 from sanning_anchor import RunRecorder, decision_content
 
-recorder = RunRecorder(anchorer, case_id="case-4b19de", agent_version="2026.11.0")
+recorder = RunRecorder(anchorer, case_id="CASE_ID", agent_version="2026.11.0")
 run = recorder.open_run(input={"claim_id": "c-1"})
 
 # The root step has the root run id. How the run ended, as the closing record observes it, is its end.

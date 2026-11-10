@@ -16,12 +16,12 @@ Unzip the pack, and run the verifier on `bundle.json`. `--logs` points at the fo
 <CodeGroup>
 
 ```bash Node.js
-unzip case-4b19de.zip -d pack
+unzip CASE_ID.zip -d pack
 npx @sanning/proof verify pack/bundle.json --logs pack/logs/
 ```
 
 ```bash Python
-unzip case-4b19de.zip -d pack
+unzip CASE_ID.zip -d pack
 pip install sanning-proof
 sanning-proof verify pack/bundle.json --logs pack/logs/
 ```
@@ -42,7 +42,7 @@ This command asks the gateway for each stamp, and compares what it returns with 
 A case file is a zip that holds one pack for each agent. Read the packs together with `case`, which takes the zip file and prints one verdict for the case.
 
 ```bash
-npx @sanning/proof case case-4b19de.zip
+npx @sanning/proof case CASE_ID.zip
 ```
 
 The flags are in [Command line](/reference/cli).

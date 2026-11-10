@@ -36,6 +36,7 @@ The brand is defined once, in [`sanning-io/sanning-design-system`](https://githu
 - Use sentence case for headings.
 - Bold for UI elements: Click **Settings**.
 - Code formatting for file names, commands, paths, and code references.
+- Guides say what to do. They don't describe what happens when a step is skipped. When an error message is unclear, fix the message in the SDK.
 
 ## Content boundaries
 

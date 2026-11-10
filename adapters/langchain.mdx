@@ -1,16 +1,16 @@
 ---
 title: "Record a LangChain or LangGraph agent"
 sidebarTitle: "LangChain and LangGraph"
-description: "Add the adapter as a callback, name your decisions and approvals, and close each run, in TypeScript or Python."
+description: "Create an Agent under evidence with LangChain or LangGraph."
 ---
 
-By the end, each run of the example agent is in the console as records for one case, with its steps, its decision and its approval. Sanning stamps them on the public record at the end of the interval.
+This guide will show you have to create an agent under evidence with LangChain/Langraph and Sanning. By the end, each run of the example agent is in the console as records for one case, with its steps, its decision and its approval.
+
+Please make sure you've completed the [Quickstart](/quickstart) first.
 
 <Note>
   To test, use a Sandbox API key, and see [Test in the Sandbox](/sandbox).
 </Note>
-
-Before you start, you need a Live API key, a seed for your agent's signing key, and an S3 bucket for your log store. The environment variables step links to how to make each one. A Live API key made as the [Quickstart](/quickstart) describes has every scope this guide needs: `agent:enroll` and `anchor:write` for the adapter, and `anchor:read` for `bundle` later.
 
 The example agent on this page has no model, so you need no key from a model provider. It has three nodes: one asks for a tool call, one runs the tool, and one pauses for a person to approve. To use your own agent, keep the Sanning parts and replace the graph.
 
@@ -29,30 +29,6 @@ The example agent on this page has no model, so you need no key from a model pro
 
     </CodeGroup>
 
-    In TypeScript, the adapter is its own package and takes `@langchain/core` as a peer dependency. `@aws-sdk/client-s3` is the AWS S3 library, which the Sanning SDK uses to reach your bucket but does not install for you. In Python, the adapter ships inside `sanning-anchor`: the `langchain` extra pulls in LangChain, and the `s3` extra pulls in the AWS S3 library.
-  </Step>
-
-  <Step title="Set the environment variables">
-    Export the following variables in the terminal where you run the example. Put them in the secret store that your service already uses for production, and never commit them to your code.
-
-    ```bash
-    export SANNING_API_KEY=API_KEY
-    export SANNING_SIGNING_SEED=SEED
-    export SANNING_LOG_BUCKET=BUCKET
-    export AWS_REGION=REGION
-    export AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
-    export AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
-    ```
-
-    Replace the following:
-
-    - `API_KEY`: your Live API key. To make one, see [Make a Live API key](/quickstart#make-a-live-api-key).
-    - `SEED`: the 64 hex characters of the seed for your agent's signing key. To make one, see [Make a seed for the signing key](/quickstart#make-a-seed-for-the-signing-key).
-    - `BUCKET`: the name of your log store bucket. The SDK creates it on the agent's first record. To learn what a log store is, see [Set up your log store](/quickstart#set-up-your-log-store).
-    - `REGION`: the AWS Region of the bucket, such as `eu-west-1`. The SDK creates the bucket in this Region.
-    - `ACCESS_KEY_ID` and `SECRET_ACCESS_KEY`: the access key ID and the secret access key of your storage keys. For the permissions they need, see [The exact AWS permissions](/quickstart#the-exact-aws-permissions).
-
-    If the agent runs on AWS with a role, skip the two AWS keys. For a store such as Cloudflare R2 or MinIO, see [Other S3-compatible stores](/quickstart#other-s3-compatible-stores).
   </Step>
 
   <Step title="Start with an agent">
@@ -167,81 +143,31 @@ The example agent on this page has no model, so you need no key from a model pro
   </Step>
 
   <Step title="Add the adapter, with a case ID">
-    Make an anchorer, which signs your records and sends them to Sanning, and make the handler that you pass to LangChain as a callback.
+    Use the anchorer from [Create the anchorer](/quickstart#create-the-anchorer), and make the handler that you pass to LangChain as a callback.
 
     The case ID is the matter that the work is for. Give it to the handler, and every record of the run carries it, so that you can build one evidence pack for the whole case later.
 
-    The ID reaches Sanning as plain text, and nobody can change or withdraw it later. Use an ID that means nothing outside your systems: no names, no paths, no personal data. To find a case by customer, keep that link in your own systems.
+    Sanning keeps the case ID for good, so use one that means nothing outside your systems. For the reason, see the [Introduction](/#core-ideas).
 
     <CodeGroup>
 
     ```ts TypeScript
-    import {
-      createAnchorer,
-      LocalEd25519Signer,
-      MemoryStore,
-      ObjectLogStore,
-    } from "@sanning/anchor";
-    import { S3ObjectStore } from "@sanning/anchor/s3";
     import { anchorCallbacks } from "@sanning/anchor-langchain";
 
-    const logStore = new ObjectLogStore(
-      new S3ObjectStore({
-        bucket: process.env.SANNING_LOG_BUCKET!,
-        region: process.env.AWS_REGION!,
-      }),
-    );
-
-    const anchorer = createAnchorer({
-      signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED!),
-      subject: { type: "agent", agent_id: "claims-triage" },
-      apiKey: process.env.SANNING_API_KEY!,
-      logStore,
-      store: new MemoryStore(),
-    });
-
-    const caseId = "case-4b19de";
+    const caseId = "CASE_ID";
     const evidence = anchorCallbacks(anchorer, { caseId });
     ```
 
     ```python Python
-    import os
+    from sanning_anchor import AnchorCallbackHandler
 
-    from sanning_anchor import (
-        Anchorer,
-        AnchorCallbackHandler,
-        LocalEd25519Signer,
-        MemoryStore,
-        ObjectLogStore,
-    )
-    from sanning_anchor.s3 import S3ObjectStore
-
-    log_store = ObjectLogStore(
-        S3ObjectStore(
-            bucket=os.environ["SANNING_LOG_BUCKET"],
-            region=os.environ["AWS_REGION"],
-        )
-    )
-
-    anchorer = Anchorer(
-        signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
-        subject={"type": "agent", "agent_id": "claims-triage"},
-        api_key=os.environ["SANNING_API_KEY"],
-        log_store=log_store,
-        store=MemoryStore(),
-    )
-
-    case_id = "case-4b19de"
+    case_id = "CASE_ID"
     handler = AnchorCallbackHandler(anchorer, case_id=case_id)
     ```
 
     </CodeGroup>
 
-    Replace `claims-triage` with the agent ID, the name that identifies your agent to Sanning, and keep it stable: it is how the agent shows on the **Agents** page. Replace `case-4b19de` with the ID of the case from your own system. A case ID is 1 to 128 characters of letters, digits, `_`, `.`, `:` and `-`.
-
-    The log store keeps the content of each step in your S3 bucket, and Sanning never receives it. For why the anchorer uses `MemoryStore`, see [Create the anchorer](/quickstart#create-the-anchorer), and for why you keep the content, see [Keep your content](/evidence/build#keep-your-content).
-
-    The mode (Sandbox or Live) comes from the start of your API key, so you set nothing else.
+    Replace `CASE_ID` with the ID of the case from your own system. A case ID is 1 to 128 characters of letters, digits, `_`, `.`, `:` and `-`.
   </Step>
 
   <Step title="Record decisions from a named tool">
@@ -270,7 +196,7 @@ The example agent on this page has no model, so you need no key from a model pro
 
     </CodeGroup>
 
-    Pass the tool object. The handler refuses a tool that does not exist, a tool named twice, and a name that is not a valid label (1 to 128 characters, with no control characters), when you construct it. A call that ends with an error writes no decision.
+    Pass the tool object. A call that ends with an error writes no decision.
   </Step>
 
   <Step title="Record approvals">
@@ -312,9 +238,9 @@ The example agent on this page has no model, so you need no key from a model pro
 
     `actor` is `human`, `policy` or `model`. `verdict` returns `approved`, `rejected` or `edited`, and it must raise an error for a value that is not an answer. Only a LangGraph resume command answers a pending approval.
 
-    The two records are in different runs, and a LangGraph `thread_id` ties them together. A `thread_id` is 1 to 128 characters of letters, digits, `_`, `.`, `:` and `-`. Use an ID that means nothing outside your systems: the adapter refuses every record of a run whose `thread_id` is an email address, for example.
+    The two records are in different runs, and a LangGraph `thread_id` ties them together. A `thread_id` is 1 to 128 characters of letters, digits, `_`, `.`, `:` and `-`. Use an ID that means nothing outside your systems.
 
-    The request waits in the process until the run resumes. If the answer can arrive in another process, pass a store that outlives the first process as `approvals.pending` (`pending` in Python). The store has four methods, and `take` must be atomic. For its contract and an example on Redis, see [A store that outlives the process](/adapters/build-your-own#a-store-that-outlives-the-process). Without `approvals`, the adapter records no approvals, and the first record of each run says so.
+    The request waits in the process until the run resumes. If the answer can arrive in another process, pass a store that outlives the first process as `approvals.pending` (`pending` in Python). The store has four methods, and `take` must be atomic. For its contract and an example on Redis, see [A store that outlives the process](/adapters/build-your-own#a-store-that-outlives-the-process).
   </Step>
 
   <Step title="Close the run, and check for gaps">
@@ -399,7 +325,7 @@ In both languages, `close()` reports gaps and does not throw for them, so that i
   </Step>
 
   <Step title="Run it, and see the records">
-    Put the pieces in one file: `agent.mts` for TypeScript or `agent.py` for Python. The [whole file](#the-whole-file) is at the end of this page. Run it in the terminal where you exported the environment variables.
+    Put the pieces in one file: `agent.mts` for TypeScript or `agent.py` for Python. The [whole file](#the-whole-file) is at the end of this page. Run it where the Quickstart's environment variables are set.
 
     <CodeGroup>
 
@@ -413,7 +339,7 @@ In both languages, `close()` reports gaps and does not throw for them, so that i
 
     </CodeGroup>
 
-    {/* OUTPUT FROM REAL RUN: the last line the script prints, "Recorded case case-4b19de.", and nothing else when the trail is complete */}
+    {/* OUTPUT FROM REAL RUN: the last line the script prints, "Recorded case CASE_ID.", and nothing else when the trail is complete */}
 
     Open the [console](https://console.sanning.io) and go to **Records**. Each row is a record from your run: the run starts, the steps and the tool call run, the decision is stated, and the approval is requested and then resolved. The run ends with a closing record.
 
@@ -421,30 +347,22 @@ In both languages, `close()` reports gaps and does not throw for them, so that i
   </Step>
 </Steps>
 
-## If a step must not run unrecorded
+## Stop the agent when a record is lost
 
-By default, a lost record does not stop the agent. If a step must not run unless its record is kept, build the anchorer with `failClosed`. The handler then waits for each step's records and stops the agent when one is lost, before the next step runs. A tool whose start record is lost does not run.
+By default, a lost record does not stop the agent. If a step must not run unless its record is kept, add `failClosed` (`fail_closed` in Python) to the anchorer from the Quickstart. The handler then waits for each step's records and stops the agent when one is lost, before the next step runs. A tool whose start record is lost does not run.
 
 <CodeGroup>
 
 ```ts TypeScript
 const anchorer = createAnchorer({
-  signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED!),
-  subject: { type: "agent", agent_id: "claims-triage" },
-  apiKey: process.env.SANNING_API_KEY!,
-  logStore,
-  store: new MemoryStore(),
+  // ...the settings from the Quickstart
   failClosed: true,
 });
 ```
 
 ```python Python
 anchorer = Anchorer(
-    signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
-    subject={"type": "agent", "agent_id": "claims-triage"},
-    api_key=os.environ["SANNING_API_KEY"],
-    log_store=log_store,
-    store=MemoryStore(),
+    # ...the settings from the Quickstart
     fail_closed=True,
 )
 ```
@@ -522,22 +440,24 @@ The first record of each run lists what the adapter does not capture: for exampl
     .addEdge("review", END)
     .compile({ checkpointer: new MemorySaver() });
 
+  const agentId = process.env.SANNING_AGENT_ID!;
+
   const logStore = new ObjectLogStore(
     new S3ObjectStore({
       bucket: process.env.SANNING_LOG_BUCKET!,
-      region: process.env.AWS_REGION!,
     }),
+    { prefix: agentId },
   );
 
   const anchorer = createAnchorer({
     signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED!),
-    subject: { type: "agent", agent_id: "claims-triage" },
+    subject: { type: "agent", agent_id: agentId },
     apiKey: process.env.SANNING_API_KEY!,
     logStore,
     store: new MemoryStore(),
   });
 
-  const caseId = "case-4b19de";
+  const caseId = "CASE_ID";
   const evidence = anchorCallbacks(anchorer, {
     caseId,
     decisions: [{ tool: recordConclusion, name: "claim_verdict" }],
@@ -636,22 +556,24 @@ The first record of each run lists what the adapter does not capture: for exampl
       .compile(checkpointer=MemorySaver())
   )
 
+  agent_id = os.environ["SANNING_AGENT_ID"]
+
   log_store = ObjectLogStore(
       S3ObjectStore(
           bucket=os.environ["SANNING_LOG_BUCKET"],
-          region=os.environ["AWS_REGION"],
-      )
+      ),
+      prefix=agent_id,
   )
 
   anchorer = Anchorer(
       signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
-      subject={"type": "agent", "agent_id": "claims-triage"},
+      subject={"type": "agent", "agent_id": agent_id},
       api_key=os.environ["SANNING_API_KEY"],
       log_store=log_store,
       store=MemoryStore(),
   )
 
-  case_id = "case-4b19de"
+  case_id = "CASE_ID"
   handler = AnchorCallbackHandler(
       anchorer,
       case_id=case_id,
