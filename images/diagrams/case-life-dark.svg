@@ -10,7 +10,7 @@
 <rect x="0" y="0" width="760" height="330" fill="#0E1118"/>
 <rect x="10" y="10" width="510" height="150" fill="none" stroke="#262B36" stroke-width="1"/>
 <text class="zone" x="20" y="26" text-anchor="start">YOUR AGENTS, ONE CASE</text>
-<text class="acc" x="24" y="46" text-anchor="start">case-4b19de is on every record</text>
+<text class="acc" x="24" y="46" text-anchor="start">CASE_ID is on every record</text>
 <text class="lbl" x="24" y="84" text-anchor="start">Intake agent</text>
 <text class="lbl" x="24" y="134" text-anchor="start">Review agent</text>
 <text class="sub" x="130" y="69" text-anchor="start">run 1</text>

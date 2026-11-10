@@ -204,7 +204,7 @@ The example agent on this page has no model, so you need no key from a model pro
       store: new MemoryStore(),
     });
 
-    const caseId = "case-4b19de";
+    const caseId = "CASE_ID";
     const evidence = anchorCallbacks(anchorer, { caseId });
     ```
 
@@ -237,13 +237,13 @@ The example agent on this page has no model, so you need no key from a model pro
         store=MemoryStore(),
     )
 
-    case_id = "case-4b19de"
+    case_id = "CASE_ID"
     handler = AnchorCallbackHandler(anchorer, case_id=case_id)
     ```
 
     </CodeGroup>
 
-    Both samples read the agent ID from `SANNING_AGENT_ID`. Replace `case-4b19de` with the ID of the case from your own system. A case ID is 1 to 128 characters of letters, digits, `_`, `.`, `:` and `-`.
+    Both samples read the agent ID from `SANNING_AGENT_ID`. Replace `CASE_ID` with the ID of the case from your own system. A case ID is 1 to 128 characters of letters, digits, `_`, `.`, `:` and `-`.
 
     The log store keeps the content of each step in your S3 bucket, and Sanning never receives it. For why the anchorer uses `MemoryStore`, see [Create the anchorer](/quickstart#create-the-anchorer), and for why you keep the content, see [Keep your content](/evidence/build#keep-your-content).
 
@@ -419,7 +419,7 @@ In both languages, `close()` reports gaps and does not throw for them, so that i
 
     </CodeGroup>
 
-    {/* OUTPUT FROM REAL RUN: the last line the script prints, "Recorded case case-4b19de.", and nothing else when the trail is complete */}
+    {/* OUTPUT FROM REAL RUN: the last line the script prints, "Recorded case CASE_ID.", and nothing else when the trail is complete */}
 
     Open the [console](https://console.sanning.io) and go to **Records**. Each row is a record from your run: the run starts, the steps and the tool call run, the decision is stated, and the approval is requested and then resolved. The run ends with a closing record.
 
@@ -545,7 +545,7 @@ The first record of each run lists what the adapter does not capture: for exampl
     store: new MemoryStore(),
   });
 
-  const caseId = "case-4b19de";
+  const caseId = "CASE_ID";
   const evidence = anchorCallbacks(anchorer, {
     caseId,
     decisions: [{ tool: recordConclusion, name: "claim_verdict" }],
@@ -661,7 +661,7 @@ The first record of each run lists what the adapter does not capture: for exampl
       store=MemoryStore(),
   )
 
-  case_id = "case-4b19de"
+  case_id = "CASE_ID"
   handler = AnchorCallbackHandler(
       anchorer,
       case_id=case_id,

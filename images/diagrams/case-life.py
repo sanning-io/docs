@@ -31,7 +31,7 @@ def build(dark=False):
     d = D(760, 330, ARIA, dark)
 
     d.zone(10, 10, 510, 150, "Your agents, one case")
-    d.text(24, 46, "case-4b19de is on every record", 'acc')
+    d.text(24, 46, "CASE_ID is on every record", 'acc')
     d.text(24, 84, "Intake agent", 'lbl')
     d.text(24, 134, "Review agent", 'lbl')
     run(d, 130, 290, 84, "run 1", [146, 170, 194, 218, 242], 268)
