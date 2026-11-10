@@ -233,9 +233,7 @@ anchorer = Anchorer(
 
 </CodeGroup>
 
-Both samples read the Region of the bucket from `AWS_REGION`. Replace `claims-triage`, in the `agent_id` and in the `prefix`, with the agent ID of your agent, and keep it stable: it is how the agent shows on the **Agents** page, and the name of its folder in the log store. Two agents must never share an agent ID.
-
-`MemoryStore` keeps the last record of each chain in memory. Each adapter run has its own chain of records, so the SDK's warning about a durable chain store does not apply, and the `store` line turns that warning off.
+Your code reads the `SANNING_` settings. The AWS library inside the SDK reads the `AWS_` settings, as every AWS tool does, so the samples need no Region or storage keys. The `store` line suits an adapter: each run starts its own chain of records, so nothing has to be kept after the agent stops.
 
 ## Record your agent
 
