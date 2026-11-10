@@ -34,9 +34,11 @@ The service that builds your evidence packs needs its own API key. Make it the s
 
 For more information, see [Build an evidence pack](/evidence/build#set-up-the-evidence-builder).
 
-## Make a seed for the signing key
+## Name your agent and make its seed
 
-Your agents sign every record with their own signing key, an Ed25519 key made from a 32-byte seed. Make the seed once for each agent, with one of these commands. 
+Each agent needs an agent ID and a seed. The agent ID is its name in Sanning, such as `claims-triage`. It shows on the **Agents** page and names the agent's folder in the log store. Keep it the same for the life of the agent. The seed makes the agent's signing key.
+
+The signing key is an Ed25519 key made from a 32-byte seed. Make the seed once for each agent, with one of these commands.
 
 <CodeGroup>
 
@@ -56,21 +58,23 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 Two agents never share a seed or an agent ID. The same command makes the seed of the hand-over key, which seals your evidence packs and stays with the evidence builder. For that key, see [Build an evidence pack](/evidence/build#set-up-the-evidence-builder). 
 
-Sanning enrolls the signing key on your agent's first record via a cryptopgrahic handshake.
+Sanning enrolls the signing key on your agent's first record via a cryptographic handshake.
 
 To change the key later, rotate it: Sanning accepts a new key only when the old key signs the change. If a seed leaks, an owner or admin revokes the key in the console and re-keys the agent.
 
-## Store both as environment variables
+## Store them as environment variables
 
-Put the seed and the API key of each agent in the secret store that your service already uses. The SDK and adapters read them from `SANNING_SIGNING_SEED` and `SANNING_API_KEY`.
+Put these values in the secret store that your service already uses. Each agent has its own agent ID and seed. The code in [Create the anchorer](#create-the-anchorer) reads them from these environment variables.
 
 ```bash
+SANNING_AGENT_ID=AGENT_ID
 SANNING_SIGNING_SEED=SEED
 SANNING_API_KEY=API_KEY
 ```
 
 Replace the following:
 
+- `AGENT_ID`: the agent ID that you chose.
 - `SEED`: the 64 hex characters that you made.
 - `API_KEY`: the Live API key that you copied.
 
@@ -78,7 +82,7 @@ Never commit either value to your code.
 
 ## Install the SDK
 
-Install the SDK, this handles signing key enrollment, signing records and sending to Sanning and raw logs to a compatible S3 Object Storge.
+Install the SDK, this handles signing key enrollment, signing records and sending to Sanning and raw logs to a compatible S3 Object Storage.
 
 <CodeGroup>
 
@@ -180,16 +184,18 @@ import {
 } from "@sanning/anchor";
 import { S3ObjectStore } from "@sanning/anchor/s3";
 
+const agentId = process.env.SANNING_AGENT_ID!;
+
 const logStore = new ObjectLogStore(
   new S3ObjectStore({
     bucket: process.env.SANNING_LOG_BUCKET!,
   }),
-  { prefix: "claims-triage" },
+  { prefix: agentId },
 );
 
 const anchorer = createAnchorer({
   signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED!),
-  subject: { type: "agent", agent_id: "claims-triage" },
+  subject: { type: "agent", agent_id: agentId },
   apiKey: process.env.SANNING_API_KEY!,
   logStore,
   store: new MemoryStore(),
@@ -207,16 +213,18 @@ from sanning_anchor import (
 )
 from sanning_anchor.s3 import S3ObjectStore
 
+agent_id = os.environ["SANNING_AGENT_ID"]
+
 log_store = ObjectLogStore(
     S3ObjectStore(
         bucket=os.environ["SANNING_LOG_BUCKET"],
     ),
-    prefix="claims-triage",
+    prefix=agent_id,
 )
 
 anchorer = Anchorer(
     signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
-    subject={"type": "agent", "agent_id": "claims-triage"},
+    subject={"type": "agent", "agent_id": agent_id},
     api_key=os.environ["SANNING_API_KEY"],
     log_store=log_store,
     store=MemoryStore(),

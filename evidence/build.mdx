@@ -17,7 +17,7 @@ The evidence builder holds no agent's seed, so it cannot sign as an agent, and t
 
 The evidence builder needs the following:
 
-- **The hand-over seed.** Make it as in [Make a seed for the signing key](/quickstart#make-a-seed-for-the-signing-key), on the machine that builds your packs, and keep it with that machine's secrets. It never reaches a browser or Sanning. Set it in `SANNING_SIGNING_SEED`, and set `SANNING_SIGNING_KEY_KIND=organization`.
+- **The hand-over seed.** Make it as in [Name your agent and make its seed](/quickstart#name-your-agent-and-make-its-seed), on the machine that builds your packs, and keep it with that machine's secrets. It never reaches a browser or Sanning. Set it in `SANNING_SIGNING_SEED`, and set `SANNING_SIGNING_KEY_KIND=organization`.
 - **Its own API key.** Make it as in [Make a Live API key](/quickstart#make-a-live-api-key), with **Hand-over** ticked.
 - **Access to your log store.** On `arn:aws:s3:::BUCKET/*`, `s3:GetObject` to read the content and `s3:PutObject`, because `bundle` writes the content of each declaration to the bucket before it sends the declaration. On `arn:aws:s3:::BUCKET`, `s3:ListBucket`. Replace `BUCKET` with the name of your bucket.
 

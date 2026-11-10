@@ -36,6 +36,7 @@ The example agent on this page has no model, so you need no key from a model pro
     Export the following variables in the terminal where you run the example. Put them in the secret store that your service already uses for production, and never commit them to your code.
 
     ```bash
+    export SANNING_AGENT_ID=AGENT_ID
     export SANNING_API_KEY=API_KEY
     export SANNING_SIGNING_SEED=SEED
     export SANNING_LOG_BUCKET=BUCKET
@@ -46,8 +47,9 @@ The example agent on this page has no model, so you need no key from a model pro
 
     Replace the following:
 
+    - `AGENT_ID`: the agent ID that you chose. To choose one, see [Name your agent and make its seed](/quickstart#name-your-agent-and-make-its-seed).
     - `API_KEY`: your Live API key. To make one, see [Make a Live API key](/quickstart#make-a-live-api-key).
-    - `SEED`: the 64 hex characters of the seed for your agent's signing key. To make one, see [Make a seed for the signing key](/quickstart#make-a-seed-for-the-signing-key).
+    - `SEED`: the 64 hex characters of the seed for your agent's signing key. To make one, see [Name your agent and make its seed](/quickstart#name-your-agent-and-make-its-seed).
     - `BUCKET`: the name of your log store bucket. The SDK creates it on the agent's first record. To learn what a log store is, see [Set up your log store](/quickstart#set-up-your-log-store).
     - `REGION`: the AWS Region of the bucket, such as `eu-west-1`. The SDK creates the bucket in this Region.
     - `ACCESS_KEY_ID` and `SECRET_ACCESS_KEY`: the access key ID and the secret access key of your storage keys. For the permissions they need, see [The exact AWS permissions](/quickstart#the-exact-aws-permissions).
@@ -185,16 +187,18 @@ The example agent on this page has no model, so you need no key from a model pro
     import { S3ObjectStore } from "@sanning/anchor/s3";
     import { anchorCallbacks } from "@sanning/anchor-langchain";
 
+    const agentId = process.env.SANNING_AGENT_ID!;
+
     const logStore = new ObjectLogStore(
       new S3ObjectStore({
         bucket: process.env.SANNING_LOG_BUCKET!,
       }),
-      { prefix: "claims-triage" },
+      { prefix: agentId },
     );
 
     const anchorer = createAnchorer({
       signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED!),
-      subject: { type: "agent", agent_id: "claims-triage" },
+      subject: { type: "agent", agent_id: agentId },
       apiKey: process.env.SANNING_API_KEY!,
       logStore,
       store: new MemoryStore(),
@@ -216,16 +220,18 @@ The example agent on this page has no model, so you need no key from a model pro
     )
     from sanning_anchor.s3 import S3ObjectStore
 
+    agent_id = os.environ["SANNING_AGENT_ID"]
+
     log_store = ObjectLogStore(
         S3ObjectStore(
             bucket=os.environ["SANNING_LOG_BUCKET"],
         ),
-        prefix="claims-triage",
+        prefix=agent_id,
     )
 
     anchorer = Anchorer(
         signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
-        subject={"type": "agent", "agent_id": "claims-triage"},
+        subject={"type": "agent", "agent_id": agent_id},
         api_key=os.environ["SANNING_API_KEY"],
         log_store=log_store,
         store=MemoryStore(),
@@ -237,7 +243,7 @@ The example agent on this page has no model, so you need no key from a model pro
 
     </CodeGroup>
 
-    Replace `claims-triage`, in the agent ID and in the `prefix`, with the agent ID, the name that identifies your agent to Sanning, and keep it stable: it is how the agent shows on the **Agents** page, and the name of its folder in the log store. Two agents must never share an agent ID. Replace `case-4b19de` with the ID of the case from your own system. A case ID is 1 to 128 characters of letters, digits, `_`, `.`, `:` and `-`.
+    Both samples read the agent ID from `SANNING_AGENT_ID`. Replace `case-4b19de` with the ID of the case from your own system. A case ID is 1 to 128 characters of letters, digits, `_`, `.`, `:` and `-`.
 
     The log store keeps the content of each step in your S3 bucket, and Sanning never receives it. For why the anchorer uses `MemoryStore`, see [Create the anchorer](/quickstart#create-the-anchorer), and for why you keep the content, see [Keep your content](/evidence/build#keep-your-content).
 
@@ -430,7 +436,7 @@ By default, a lost record does not stop the agent. If a step must not run unless
 ```ts TypeScript
 const anchorer = createAnchorer({
   signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED!),
-  subject: { type: "agent", agent_id: "claims-triage" },
+  subject: { type: "agent", agent_id: agentId },
   apiKey: process.env.SANNING_API_KEY!,
   logStore,
   store: new MemoryStore(),
@@ -441,7 +447,7 @@ const anchorer = createAnchorer({
 ```python Python
 anchorer = Anchorer(
     signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
-    subject={"type": "agent", "agent_id": "claims-triage"},
+    subject={"type": "agent", "agent_id": agent_id},
     api_key=os.environ["SANNING_API_KEY"],
     log_store=log_store,
     store=MemoryStore(),
@@ -522,16 +528,18 @@ The first record of each run lists what the adapter does not capture: for exampl
     .addEdge("review", END)
     .compile({ checkpointer: new MemorySaver() });
 
+  const agentId = process.env.SANNING_AGENT_ID!;
+
   const logStore = new ObjectLogStore(
     new S3ObjectStore({
       bucket: process.env.SANNING_LOG_BUCKET!,
     }),
-    { prefix: "claims-triage" },
+    { prefix: agentId },
   );
 
   const anchorer = createAnchorer({
     signer: LocalEd25519Signer.fromSeedHex(process.env.SANNING_SIGNING_SEED!),
-    subject: { type: "agent", agent_id: "claims-triage" },
+    subject: { type: "agent", agent_id: agentId },
     apiKey: process.env.SANNING_API_KEY!,
     logStore,
     store: new MemoryStore(),
@@ -636,16 +644,18 @@ The first record of each run lists what the adapter does not capture: for exampl
       .compile(checkpointer=MemorySaver())
   )
 
+  agent_id = os.environ["SANNING_AGENT_ID"]
+
   log_store = ObjectLogStore(
       S3ObjectStore(
           bucket=os.environ["SANNING_LOG_BUCKET"],
       ),
-      prefix="claims-triage",
+      prefix=agent_id,
   )
 
   anchorer = Anchorer(
       signer=LocalEd25519Signer.from_seed_hex(os.environ["SANNING_SIGNING_SEED"]),
-      subject={"type": "agent", "agent_id": "claims-triage"},
+      subject={"type": "agent", "agent_id": agent_id},
       api_key=os.environ["SANNING_API_KEY"],
       log_store=log_store,
       store=MemoryStore(),
