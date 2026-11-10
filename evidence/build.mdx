@@ -17,7 +17,7 @@ The evidence builder holds no agent's seed, so it cannot sign as an agent, and t
 
 The evidence builder needs the following:
 
-- **The hand-over seed.** Make it as in [Name your agent and make its seed](/quickstart#name-your-agent-and-make-its-seed), on the machine that builds your packs, and keep it with that machine's secrets. It never reaches a browser or Sanning. Set it in `SANNING_SIGNING_SEED`, and set `SANNING_SIGNING_KEY_KIND=organization`.
+- **The hand-over seed.** Make it as in [Name your agent and generate its seed](/quickstart#name-your-agent-and-generate-its-seed), on the machine that builds your packs, and keep it with that machine's secrets. It never reaches a browser or Sanning. Set it in `SANNING_SIGNING_SEED`, and set `SANNING_SIGNING_KEY_KIND=organization`.
 - **Its own API key.** Make it as in [Make a Live API key](/quickstart#make-a-live-api-key), with **Hand-over** ticked.
 - **Access to your log store.** On `arn:aws:s3:::BUCKET/*`, `s3:GetObject` to read the content and `s3:PutObject`, because `bundle` writes the content of each declaration to the bucket before it sends the declaration. On `arn:aws:s3:::BUCKET`, `s3:ListBucket`. Replace `BUCKET` with the name of your bucket.
 
@@ -93,9 +93,9 @@ export AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
 export AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
 
 npx @sanning/anchor bundle \
-  --agent claims-triage \
+  --agent AGENT_ID \
   --case case-4b19de \
-  --logs s3://evidence-claims/claims-triage \
+  --logs s3://BUCKET/AGENT_ID \
   --out case-4b19de.zip
 ```
 
@@ -108,9 +108,9 @@ export AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
 export AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
 
 sanning-anchor bundle \
-  --agent claims-triage \
+  --agent AGENT_ID \
   --case case-4b19de \
-  --logs s3://evidence-claims/claims-triage \
+  --logs s3://BUCKET/AGENT_ID \
   --out case-4b19de.zip
 ```
 
@@ -124,9 +124,9 @@ Replace the following:
 - `HANDOVER_SEED`: the hand-over seed. With it, `bundle` seals the pack, and signs a declaration, which is the pack's own statement of which records it holds, so that the reviewer can check the pack against it.
 - `REGION`: the AWS Region of the bucket, such as `eu-west-1`. Without a Region in `AWS_REGION` or your AWS config, `bundle` exits with code 4 and names `AWS_REGION`.
 - `ACCESS_KEY_ID` and `SECRET_ACCESS_KEY`: credentials that hold the permissions in [Set up the evidence builder](#set-up-the-evidence-builder). If you run `bundle` with a role, single sign-on or a profile, skip them.
-- `claims-triage`: the agent ID of your agent.
+- `AGENT_ID`: the agent ID of your agent.
 - `case-4b19de`: your case ID.
-- `s3://evidence-claims/claims-triage`: the S3 URL of the agent's folder in your log store, written `s3://BUCKET/AGENT_ID`, where `BUCKET` is the name of the bucket and `AGENT_ID` is the agent ID of the agent.
+- `BUCKET`: the name of your log store bucket.
 
 `bundle` uses the same settings as the agent: `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_ENDPOINT_URL_S3` for a service other than AWS, and the AWS credential chain that the Quickstart used. The environment that the Quickstart sets for the agent works for `bundle`.
 
@@ -155,10 +155,10 @@ export SANNING_SIGNING_KEY_KIND=organization
 
 npx @sanning/anchor bundle \
   --case case-4b19de \
-  --agent intake \
-  --agent review \
-  --logs s3://evidence-claims/intake \
-  --logs s3://evidence-claims/review \
+  --agent AGENT_ID_1 \
+  --agent AGENT_ID_2 \
+  --logs s3://BUCKET/AGENT_ID_1 \
+  --logs s3://BUCKET/AGENT_ID_2 \
   --out case-4b19de.zip
 ```
 
@@ -169,16 +169,16 @@ export SANNING_SIGNING_KEY_KIND=organization
 
 sanning-anchor bundle \
   --case case-4b19de \
-  --agent intake \
-  --agent review \
-  --logs s3://evidence-claims/intake \
-  --logs s3://evidence-claims/review \
+  --agent AGENT_ID_1 \
+  --agent AGENT_ID_2 \
+  --logs s3://BUCKET/AGENT_ID_1 \
+  --logs s3://BUCKET/AGENT_ID_2 \
   --out case-4b19de.zip
 ```
 
 </CodeGroup>
 
-Set the AWS variables as in the previous example. `API_KEY` and `HANDOVER_SEED` are the same as there.
+Set the AWS variables as in the previous example. `API_KEY` and `HANDOVER_SEED` are the same as there. Replace `AGENT_ID_1` and `AGENT_ID_2` with the agent IDs of your agents, in the same order in `--agent` and `--logs`, and `BUCKET` as before.
 
 The hand-over key seals each pack, and each record inside a pack stays signed by its own agent. Nobody signs the case file as a whole. The zip holds each pack under `packs/AGENT_ID/` (the agent ID of its agent), an unsigned index named `contents.json`, and a `HOW-TO-VERIFY.txt`. Every agent that you name must have a pack, or the command writes nothing. If one agent's records are not stamped yet, the command exits with code 2, and you run it again later. The case file exits with the code of the whole case, which is the worst of its packs.
 

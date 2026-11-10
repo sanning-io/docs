@@ -38,9 +38,9 @@ No flag turns exit code 3 into 0.
 
 ```bash
 npx @sanning/anchor bundle \
-  --agent claims-triage \
+  --agent AGENT_ID \
   --case case-4b19de \
-  --logs s3://evidence-claims \
+  --logs s3://BUCKET/AGENT_ID \
   --out case-4b19de.zip
 ```
 
@@ -48,12 +48,14 @@ Without `--case`, `bundle` builds a pack for one agent over a period:
 
 ```bash
 npx @sanning/anchor bundle \
-  --agent claims-triage \
+  --agent AGENT_ID \
   --from 2026-11-01 \
   --to 2026-11-04 \
-  --logs s3://evidence-claims \
-  --out claims-triage-2026-11-04.zip
+  --logs s3://BUCKET/AGENT_ID \
+  --out pack-2026-11-04.zip
 ```
+
+Replace `AGENT_ID` with the agent ID of your agent, and `BUCKET` with the name of your log store bucket.
 
 | Flag | Meaning |
 |---|---|

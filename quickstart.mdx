@@ -4,11 +4,11 @@ sidebarTitle: "Quickstart"
 description: "How to set up your AI Agents to record and generate verifiable evidence in production."
 ---
 
-This guide shows you how to set up your agents for production. We'll be creating a Sanning API, individual signing keys, and IDs, for your agents and a log store for your raw data.
+This guide shows you how to set up your agents for production. We'll be creating a Sanning API key, individual signing keys, and IDs, for your agents and a log store for your raw data.
 
 ## Pre-requisites
 
-- Node.js 2.2 or later, or
+- Node.js 22 or later, or
 - Python 3.11 or later
 
 <Note>
@@ -36,11 +36,11 @@ For more information, see [Build an evidence pack](/evidence/build#set-up-the-ev
 
 ## Name your agent and generate its seed
 
-Each agent needs an agent ID and a seed. 
+Each agent needs an agent ID and a seed.
 
-The agent ID is its name in Sanning, such as `claims-triage`, which never changes and shows in the **Agents** page and names the agent's folder in the log store.
+The agent ID is its name in Sanning, such as `claims-triage`, which never changes and shows on the **Agents** page and names the agent's folder in the log store.
 
-The seed makes the agent's Ed25519 signing key. You can cenerate your agents seed using the commands below.
+The seed makes the agent's Ed25519 signing key. You can generate your agent's seed using the commands below.
 
 <CodeGroup>
 
@@ -82,7 +82,7 @@ Replace the following:
 - `SEED`: the 64 hex characters that you made.
 - `API_KEY`: the Live API key that you copied.
 
-Never commit either value to your code.
+Never commit the seed or the API key to your code.
 
 ## Install the SDK
 
@@ -100,7 +100,7 @@ pip install "sanning-anchor[s3]"
 
 </CodeGroup>
 
-Please ensure you install `@aws-sdk/client-s3` seperately for TypeScript, it is include in the Python package. We'll walk through how to install or create adapters for agent frameworks later.
+Please ensure you install `@aws-sdk/client-s3` separately for TypeScript, it is included in the Python package. We'll walk through how to install or create adapters for agent frameworks later.
 
 ## Set up your log store
 
