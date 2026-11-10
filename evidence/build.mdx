@@ -1,11 +1,11 @@
 ---
 title: "Build an evidence pack"
-description: "Create an verifiable evidence pack for what your AI Agents did."
+description: "Create a verifiable evidence pack for what your AI agents did."
 ---
 
-This guide shows you how to generate evidence packs for your AI Agents.
+This guide shows you how to generate evidence packs for your AI agents.
 
-An evidence pack combines your agents raw logs with proofs that Sanning holds to produce indenepdently verifiable evidence of what your AI Agent did.
+An evidence pack combines your agents' raw logs with proofs that Sanning holds to produce independently verifiable evidence of what your AI agent did.
 
 ## What an evidence pack holds
 
@@ -22,17 +22,17 @@ Below we'll show you how to create one.
 
 ## How to build an evidence pack
 
-We recommend creating a seprate service to generate evidence, ensuring we isolate recording agents work from generating evidence about what they did.
+We recommend creating a separate service to generate evidence, ensuring we isolate recording agents' work from generating evidence about what they did.
 
-The evidence builder should have the following:
+The evidence builder needs the following:
 
-- **It's own handover key.** Follow the guide in [Name your agent and generate its seed](/quickstart#name-your-agent-and-generate-its-seed), store the seed secure it securely in secrets as `SANNING_SIGNING_SEED` and also set `SANNING_SIGNING_KEY_KIND=organization` alongside it.
+- **The organization's hand-over key.** Follow the guide in [Name your agent and generate its seed](/quickstart#name-your-agent-and-generate-its-seed), store the seed securely in your secrets as `SANNING_SIGNING_SEED`, and also set `SANNING_SIGNING_KEY_KIND=organization` alongside it.
 - **Its own API key.** Follow the guide in [Make a Live API key](/quickstart#make-a-live-api-key), with **Hand-over** ticked and store it securely as `SANNING_API_KEY`.
 - **Access to your log store.** On `arn:aws:s3:::BUCKET/*`, `s3:GetObject` to read the content and `s3:PutObject`, because `bundle` writes the content of each declaration to the bucket before it sends the declaration. On `arn:aws:s3:::BUCKET`, `s3:ListBucket`. Replace `BUCKET` with the name of your bucket.
 
 ### Install & configure the SDK
 
-Evidence packs are generated using anchor SDK
+Evidence packs are generated using the anchor SDK.
 
 <CodeGroup>
 
@@ -46,7 +46,7 @@ pip install "sanning-anchor[s3]"
 
 </CodeGroup>
 
-Ensure your SDK your secrets are configured with the handover key and API Key created above, as well as access to your log store. Your handover key will be enrolled on it's 1st run.
+Make sure the evidence builder's secrets hold the hand-over seed and the API key from above, and the keys for your log store. Sanning enrolls the hand-over key on the first `bundle --case`.
 
 <CodeGroup>
 ```bash .env
@@ -62,7 +62,7 @@ AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
 
 ### Build the evidence pack
 
-Run the `bundle` command in the evidence builder passing in the ID of agent in `--agent` and the case you want an evidence pack created for into `--case`. The prefix location of your agents logs in `--logs` and where you want the pack output in `--out`.
+Run the `bundle` command in the evidence builder, passing in the agent ID in `--agent` and the case you want an evidence pack for in `--case`. Give the location of your agent's logs in `--logs`, and where you want the pack written in `--out`.
 
 <CodeGroup>
 
@@ -84,15 +84,11 @@ sanning-anchor bundle \
 
 </CodeGroup>
 
-For cases with multiple agents you must pass in the name and log location of each agent to `--agentz and `--logs`. Auto-generating these commands in as on the Sanning roadmap.
+For cases with multiple agents, you must pass in the agent ID and log location of each agent to `--agent` and `--logs`.
 
 <CodeGroup>
 
 ```bash TypeScript
-export SANNING_API_KEY=API_KEY
-export SANNING_SIGNING_SEED=HANDOVER_SEED
-export SANNING_SIGNING_KEY_KIND=organization
-
 npx @sanning/anchor bundle \
   --case case-4b19de \
   --agent AGENT_ID_1 \
@@ -103,10 +99,6 @@ npx @sanning/anchor bundle \
 ```
 
 ```bash Python
-export SANNING_API_KEY=API_KEY
-export SANNING_SIGNING_SEED=HANDOVER_SEED
-export SANNING_SIGNING_KEY_KIND=organization
-
 sanning-anchor bundle \
   --case case-4b19de \
   --agent AGENT_ID_1 \
@@ -120,14 +112,14 @@ sanning-anchor bundle \
 
 ## Waiting for the stamp
 
-Packs can only be created on the records inside them have been stamped. 
+Packs can only be created once the records inside them have been stamped.
 
-This process can take up to 15 mins from the time the record is intially recorded. During this time, you cannot create packs and the `bundle` command will return an error message showing you this. If the stamp has completed but the it hasn't finalised on the public record the pack will be created but it will read incomplete when verified.
+Sanning stamps records every 10 minutes, so a new record can take up to about 10 minutes to be stamped. During this time, you cannot create packs and the `bundle` command will return an error message showing you this. If the stamp has completed but it hasn't finalised on the public record the pack will be created but it will read incomplete when verified. Run `bundle` again later. It writes a new pack in place of the old one.
 
 {/* OUTPUT FROM REAL RUN: what bundle prints after it writes the pack for a case (the agent, the case, the record count, the path of the zip) */}
 
 ## Hand it over
 
-Once you have created your pack you can hand it over to be verified either using the public [verify page](httsp://verify.sanning.io) or our CLI.
+Once you have created your pack you can hand it over to be verified either using the public [verify page](https://verify.sanning.io) or our CLI.
 
-Please see the next guide on how to [Verify an evidence pack](/evidence/verify).
+See the next guide on how to [Verify an evidence pack](/evidence/verify).
