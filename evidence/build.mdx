@@ -22,15 +22,17 @@ Below we'll show you how to create one.
 
 ## How to build an evidence pack
 
-We recommend creating a separate service to generate evidence, ensuring we isolate recording agents' work from generating evidence about what they did.
+Build evidence in a separate service, so your agents only record.
 
 The evidence builder needs the following:
 
 - **The organization's hand-over key.** Follow the guide in [Name your agent and generate its seed](/quickstart#name-your-agent-and-generate-its-seed), store the seed securely in your secrets as `SANNING_SIGNING_SEED`, and also set `SANNING_SIGNING_KEY_KIND=organization` alongside it.
-- **Its own API key.** Follow the guide in [Make a Live API key](/quickstart#make-a-live-api-key), with **Hand-over** ticked and store it securely as `SANNING_API_KEY`.
+- **Its own API key.** Follow the guide in [Make a Live API key](/quickstart#make-a-live-api-key), with **Hand-over** ticked, and store it securely as `SANNING_API_KEY`.
 - **Its own AWS keys or role**, with the evidence builder's permissions in [The exact AWS permissions](/quickstart#the-exact-aws-permissions).
 
-### Install & configure the SDK
+If the hand-over seed leaks, an owner revokes the hand-over key in the console. The next `bundle --case` enrolls a new key. Packs sealed before the revoke still verify.
+
+### Install and configure the SDK
 
 Evidence packs are generated using the anchor SDK.
 
@@ -56,7 +58,6 @@ SANNING_SIGNING_KEY_KIND=organization
 AWS_REGION=REGION
 AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
-
 ```
 </CodeGroup>
 
@@ -69,43 +70,43 @@ Run the `bundle` command in the evidence builder, passing in the agent ID in `--
 ```bash TypeScript
 npx @sanning/anchor bundle \
   --agent AGENT_ID \
-  --case case-4b19de \
+  --case CASE_ID \
   --logs s3://BUCKET/AGENT_ID \
-  --out case-4b19de.zip
+  --out CASE_ID.zip
 ```
 
 ```bash Python
 sanning-anchor bundle \
   --agent AGENT_ID \
-  --case case-4b19de \
+  --case CASE_ID \
   --logs s3://BUCKET/AGENT_ID \
-  --out case-4b19de.zip
+  --out CASE_ID.zip
 ```
 
 </CodeGroup>
 
-For cases with multiple agents, you must pass in the agent ID and log location of each agent to `--agent` and `--logs`.
+For cases with multiple agents, you must pass in the agent ID and log location of each agent to `--agent` and `--logs`, in the same order.
 
 <CodeGroup>
 
 ```bash TypeScript
 npx @sanning/anchor bundle \
-  --case case-4b19de \
+  --case CASE_ID \
   --agent AGENT_ID_1 \
   --agent AGENT_ID_2 \
   --logs s3://BUCKET/AGENT_ID_1 \
   --logs s3://BUCKET/AGENT_ID_2 \
-  --out case-4b19de.zip
+  --out CASE_ID.zip
 ```
 
 ```bash Python
 sanning-anchor bundle \
-  --case case-4b19de \
+  --case CASE_ID \
   --agent AGENT_ID_1 \
   --agent AGENT_ID_2 \
   --logs s3://BUCKET/AGENT_ID_1 \
   --logs s3://BUCKET/AGENT_ID_2 \
-  --out case-4b19de.zip
+  --out CASE_ID.zip
 ```
 
 </CodeGroup>
@@ -114,7 +115,7 @@ sanning-anchor bundle \
 
 Packs can only be created once the records inside them have been stamped.
 
-Sanning stamps records every 10 minutes, so a new record can take up to about 10 minutes to be stamped. During this time, you cannot create packs and the `bundle` command will return an error message showing you this. If the stamp has completed but it hasn't finalised on the public record the pack will be created but it will read incomplete when verified. Run `bundle` again later. It writes a new pack in place of the old one.
+Sanning stamps records every 10 minutes, so a new record can take up to about 10 minutes to be stamped. During this time, you cannot create packs and the `bundle` command will return an error message showing you this. If the records are stamped but a stamp isn't on the public record yet, `bundle` still writes the pack, and it reads Incomplete when verified. Run `bundle` again later. It writes a new pack in place of the old one.
 
 {/* OUTPUT FROM REAL RUN: what bundle prints after it writes the pack for a case (the agent, the case, the record count, the path of the zip) */}
 

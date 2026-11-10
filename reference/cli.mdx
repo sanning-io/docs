@@ -39,9 +39,9 @@ No flag turns exit code 3 into 0.
 ```bash
 npx @sanning/anchor bundle \
   --agent AGENT_ID \
-  --case case-4b19de \
+  --case CASE_ID \
   --logs s3://BUCKET/AGENT_ID \
-  --out case-4b19de.zip
+  --out CASE_ID.zip
 ```
 
 Without `--case`, `bundle` builds a pack for one agent over a period:
@@ -172,7 +172,7 @@ After these lines comes a blank line and the detail for each record.
 `case` reads one or more packs, or a case file, as one case. It prints one verdict, and it names every exception, which is a pack or a record that the command could not read or check. Each argument is a pack folder, a folder that holds several packs, or a case file named `NAME.zip`.
 
 ```bash
-npx @sanning/proof case case-4b19de.zip
+npx @sanning/proof case CASE_ID.zip
 npx @sanning/proof case intake-pack/ review-pack/
 ```
 
