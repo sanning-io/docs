@@ -111,7 +111,7 @@ sanning-anchor bundle \
 
 ## Wait for the stamp
 
-Sanning stamps records every 10 minutes. Until a record is stamped, `bundle` refuses to build a pack that holds it. Then Sanning puts the stamp on the public record. Until it's there, `bundle` writes the pack, but the pack reads Incomplete. Run `bundle` again later. It writes a new pack in place of the old one.
+Sanning stamps records every 10 minutes. Until a record is stamped, `bundle` refuses to build an evidence pack that contains it. Once it's stamped evidence will show incomplete until the stamp is confirmed on the public record. If this happens run `bundle` again to write a new pack in place of the old one.
 
 {/* OUTPUT FROM REAL RUN: what bundle prints after it writes the pack for a case (the agent, the case, the record count, the path of the zip) */}
 
