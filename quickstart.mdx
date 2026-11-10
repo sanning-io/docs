@@ -1,12 +1,15 @@
 ---
-title: "Set up your agent to record evidence"
+title: "Set up your agents to record evidence"
 sidebarTitle: "Quickstart"
-description: "A Live API key, a seed for its signing key, the SDK, a log store and an anchorer: what your agent needs before it records for production."
+description: "How to set up your AI Agents to record and generate verifiable evidence in production."
 ---
 
-Every step here is for Live, the mode that records real evidence. You need Node.js 22 or later, or Python 3.11 or later.
+This guide shows you how to set up your agents for production. We'll be creating a Sanning API, individual signing keys, and IDs, for your agents and a log store for your raw data.
 
-With several agents, each agent has its own seed, agent ID and folder, and all your agents use one log store. Repeat the steps that name a seed or an agent ID for each agent.
+## Pre-requisites
+
+- Node.js 2.2 or later, or
+- Python 3.11 or later
 
 <Note>
   To test, use a Sandbox API key, and see [Test in the Sandbox](/sandbox).
@@ -27,11 +30,13 @@ An API key proves to Sanning which organization your agent records for. It never
 
 A Live API key starts with `sanning_prod_`.
 
-The service that builds your evidence packs, the evidence builder, needs its own API key. Make it the same way, and tick **Hand-over**, the scope `handover:enroll`. An agent's API key never has this scope. For what the evidence builder is, see [Build an evidence pack](/evidence/build#set-up-the-evidence-builder).
+The service that builds your evidence packs needs its own API key. Make it the same way, and tick **Hand-over**, the scope `handover:enroll`. An agent's API key never has this scope. 
+
+For more information, see [Build an evidence pack](/evidence/build#set-up-the-evidence-builder).
 
 ## Make a seed for the signing key
 
-Your agent signs every record with its signing key, an Ed25519 key made from a 32-byte seed. Make the seed once for each agent, with one of these commands. You keep it, and Sanning never receives it.
+Your agents sign every record with their own signing key, an Ed25519 key made from a 32-byte seed. Make the seed once for each agent, with one of these commands. 
 
 <CodeGroup>
 
@@ -49,17 +54,19 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 </CodeGroup>
 
-Two agents never share a seed or an agent ID. The same command makes the seed of the hand-over key, which seals your evidence packs and stays with the evidence builder. For that key, see [Build an evidence pack](/evidence/build#set-up-the-evidence-builder). Sanning enrolls the signing key on your agent's first record, so you enroll nothing by hand.
+Two agents never share a seed or an agent ID. The same command makes the seed of the hand-over key, which seals your evidence packs and stays with the evidence builder. For that key, see [Build an evidence pack](/evidence/build#set-up-the-evidence-builder). 
+
+Sanning enrolls the signing key on your agent's first record via a cryptopgrahic handshake.
 
 To change the key later, rotate it: Sanning accepts a new key only when the old key signs the change. If a seed leaks, an owner or admin revokes the key in the console and re-keys the agent.
 
 ## Store both as environment variables
 
-Put the seed and the API key of each agent in the secret store that your service already uses. The adapter guides read them from `SANNING_SIGNING_SEED` and `SANNING_API_KEY`. To follow along from a terminal, export both:
+Put the seed and the API key of each agent in the secret store that your service already uses. The SDK and adapters read them from `SANNING_SIGNING_SEED` and `SANNING_API_KEY`.
 
 ```bash
-export SANNING_SIGNING_SEED=SEED
-export SANNING_API_KEY=API_KEY
+SANNING_SIGNING_SEED=SEED
+SANNING_API_KEY=API_KEY
 ```
 
 Replace the following:
@@ -71,7 +78,7 @@ Never commit either value to your code.
 
 ## Install the SDK
 
-Install the SDK, the package that signs records and sends them to Sanning, with S3 support for your log store:
+Install the SDK, this handles signing key enrollment, signing records and sending to Sanning and raw logs to a compatible S3 Object Storge.
 
 <CodeGroup>
 
@@ -85,31 +92,33 @@ pip install "sanning-anchor[s3]"
 
 </CodeGroup>
 
-In TypeScript, `@aws-sdk/client-s3` is the AWS S3 library, which the SDK uses to reach your bucket and does not install for you. Each adapter guide shows how to install its adapter: a separate package in TypeScript, part of `sanning-anchor` in Python.
+Please ensure you install `@aws-sdk/client-s3` seperately for TypeScript, it is include in the Python package. We'll walk through how to install or create adapters for agent frameworks later.
 
 ## Set up your log store
 
-A log store is your own S3 bucket for the content of each record. Sanning gets only hashes, so the content stays with you, and you need it to build an evidence pack. In Live, the SDK does not record without a log store.
+Your log store is your own S3 bucket for the raw content of each record.
+
+Sanning gets only hashes, so this raw content stays with you. When we Build an Evidence Pack later we'll read from this bucket. In production, the SDK will throw an error if your log store is not configured to ensure records are not lost.
 
 Use one bucket for all your agents. Each agent writes to its own folder in it, named after its agent ID, so that each agent's content stays apart.
 
 1. Choose a bucket name, and put it and its Region in environment variables:
 
    ```bash
-   export SANNING_LOG_BUCKET=BUCKET
-   export AWS_REGION=REGION
+    SANNING_LOG_BUCKET=BUCKET
+    AWS_REGION=REGION
    ```
 
    Replace the following:
 
    - `BUCKET`: the name you choose for your bucket.
-   - `REGION`: the AWS Region for the bucket, such as `eu-west-1`. The SDK creates the bucket in this Region. It has no default Region: with no `AWS_REGION`, no `region` in code and no Region in your AWS config, the first record fails before any request, and the error names `AWS_REGION`.
+   - `REGION`: the AWS Region for the bucket, such as `eu-west-1`, the SDK will throw an error without one.
 
 2. If the agent runs on AWS with a role, skip this step. Otherwise, set the storage keys as environment variables:
 
    ```bash
-   export AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
-   export AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
+   AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
+   AWS_SECRET_ACCESS_KEY=SECRET_ACCESS_KEY
    ```
 
    Replace the following:
@@ -117,11 +126,11 @@ Use one bucket for all your agents. Each agent writes to its own folder in it, n
    - `ACCESS_KEY_ID`: the access key ID of your storage keys.
    - `SECRET_ACCESS_KEY`: the secret access key of your storage keys.
 
-   The keys must be able to create, write to and read from the bucket. For the list, see [The exact AWS permissions](#the-exact-aws-permissions). Both SDKs look for keys the way AWS tools do: environment variables, then the shared config file, then an instance or task role.
+   The keys must be able to create, write to and read from the bucket. See the full list of required permissions [here](#the-exact-aws-permissions). Both SDKs look for keys the way AWS tools do: environment variables, then the shared config file, then an instance or task role.
 
-Without keys, the first record fails with a `RetentionError`, and nothing is sent to Sanning. The message ends with `Could not load credentials from any providers` in TypeScript and `NoCredentialsError: Unable to locate credentials` in Python. A direct `anchor` call throws the error. The LangChain adapter logs `step not anchored` for each step instead, and the agent keeps running with gaps in its trail.
-
-On the agent's first record, the SDK creates the bucket with versioning and Object Lock in governance mode for 365 days. For that time, only a user who holds the AWS permission `s3:BypassGovernanceRetention` can delete or overwrite a stored version. If the bucket exists already, the SDK uses it and does not change it. It does not add Object Lock to a bucket that has none, so make a new bucket in that case.
+   If no bucket exists, the SDK creates it with versioning and Object Lock in governance mode for 365 days. For that time, only a user who holds the AWS permission `s3:BypassGovernanceRetention` can delete or overwrite a stored version. 
+   
+   If the bucket exists already, the SDK uses it and does not change it. It does not add Object Lock to a bucket that has none, so make a new bucket in that case.
 
 <AccordionGroup>
   <Accordion title="The exact AWS permissions">
