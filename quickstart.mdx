@@ -97,7 +97,7 @@ A log store is your own S3 bucket for the content of each record. Sanning gets o
    Replace the following:
 
    - `BUCKET`: the name you choose for your bucket.
-   - `REGION`: the AWS Region for the bucket, such as `us-east-1`. The SDK can create the bucket only in `us-east-1`. For another Region, create the bucket before the agent's first record, as in [A bucket in another Region](#a-bucket-in-another-region).
+   - `REGION`: the AWS Region for the bucket, such as `eu-west-1`. The SDK creates the bucket in this Region. It has no default Region: with no `AWS_REGION`, no `region` in code and no Region in your AWS config, the first record fails before any request, and the error names `AWS_REGION`.
 
 2. If the agent runs on AWS with a role, skip this step. Otherwise, set the storage keys as environment variables:
 
@@ -118,26 +118,6 @@ Without keys, the first record fails with a `RetentionError`, and nothing is sen
 On the agent's first record, the SDK creates the bucket with versioning and Object Lock in governance mode for 365 days. For that time, only a user who holds the AWS permission `s3:BypassGovernanceRetention` can delete or overwrite a stored version. If the bucket exists already, the SDK uses it and does not change it.
 
 <AccordionGroup>
-  <Accordion title="A bucket in another Region">
-    With the AWS CLI, the first command creates the bucket with Object Lock, which also turns on versioning. The second sets the default retention:
-
-    ```bash
-    aws s3api create-bucket --bucket BUCKET --region REGION \
-      --create-bucket-configuration LocationConstraint=REGION \
-      --object-lock-enabled-for-bucket
-    aws s3api put-object-lock-configuration --bucket BUCKET \
-      --object-lock-configuration '{
-        "ObjectLockEnabled": "Enabled",
-        "Rule": {"DefaultRetention": {"Mode": "GOVERNANCE", "Days": 365}}
-      }'
-    ```
-
-    Replace the following:
-
-    - `BUCKET`: the name of your bucket.
-    - `REGION`: the AWS Region of the bucket, such as `eu-west-1`.
-  </Accordion>
-
   <Accordion title="The exact AWS permissions">
     Replace `BUCKET` with the name of your bucket.
 

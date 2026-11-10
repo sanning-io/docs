@@ -49,7 +49,7 @@ The example agent on this page has no model, so you need no key from a model pro
     - `API_KEY`: your Live API key. To make one, see [Make a Live API key](/quickstart#make-a-live-api-key).
     - `SEED`: the 64 hex characters of the seed for your agent's signing key. To make one, see [Make a seed for the signing key](/quickstart#make-a-seed-for-the-signing-key).
     - `BUCKET`: the name of your log store bucket. The SDK creates it on the agent's first record. To learn what a log store is, see [Set up your log store](/quickstart#set-up-your-log-store).
-    - `REGION`: the AWS Region of the bucket, such as `us-east-1`. The SDK can create the bucket only in `us-east-1`: for another Region, see [A bucket in another Region](/quickstart#a-bucket-in-another-region).
+    - `REGION`: the AWS Region of the bucket, such as `eu-west-1`. The SDK creates the bucket in this Region.
     - `ACCESS_KEY_ID` and `SECRET_ACCESS_KEY`: the access key ID and the secret access key of your storage keys. For the permissions they need, see [The exact AWS permissions](/quickstart#the-exact-aws-permissions).
 
     If the agent runs on AWS with a role, skip the two AWS keys. For a store such as Cloudflare R2 or MinIO, see [Other S3-compatible stores](/quickstart#other-s3-compatible-stores).
