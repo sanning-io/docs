@@ -25,7 +25,7 @@ Your agents act for you. Later, someone asks you to prove what they did: an audi
 | Idea | What it is |
 |---|---|
 | Record | One step of your agent, signed with the agent's signing key. A record holds hashes of your content, never the content. |
-| Signing key | A key that you make from a seed that only you keep. Each agent's signing key signs its records and is the agent's identity. Your organization's hand-over key seals the packs that you hand over. See [Build an evidence pack](/evidence/build#set-up-the-evidence-builder). |
+| Signing key | A key that you make from a seed that only you keep. Each agent's signing key signs its records and is the agent's identity. Your organization's hand-over key seals the packs that you hand over. See [Build an evidence pack](/evidence/build#how-to-build-an-evidence-pack). |
 | Run | One execution of an agent, from its first record to its closing record. The adapter, the code that records your agent's steps, opens the run, and it closes the run when you call `close()`. |
 | Case | The matter the work is for, such as a claim or a loan. Your agents put its ID on every record, across runs and agents. |
 | Stamp | One seal over the records of an interval, a period of 10 minutes. Sanning publishes each stamp to the public record. |
