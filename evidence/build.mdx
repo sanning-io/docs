@@ -22,17 +22,19 @@ The pack is one zip file:
 
 Build evidence in a separate service, so your agents only record.
 
+### Set up the evidence key
+
 The evidence builder needs the following:
 
-- **The organization's hand-over key.** Follow the guide in [Name your agent and generate its seed](/quickstart#name-your-agent-and-generate-its-seed), store the seed securely in your secrets as `SANNING_SIGNING_SEED`, and also set `SANNING_SIGNING_KEY_KIND=organization` alongside it.
-- **Its own API key.** Follow the guide in [Make a Live API key](/quickstart#make-a-live-api-key), with **Hand-over** ticked, and store it securely as `SANNING_API_KEY`.
+- **The organization's evidence key.** Follow the guide in [Name your agent and generate its seed](/quickstart#name-your-agent-and-generate-its-seed), store the seed securely in your secrets as `SANNING_SIGNING_SEED`, and also set `SANNING_SIGNING_KEY_KIND=organization` alongside it.
+- **Its own API key.** Follow the guide in [Make a Live API key](/quickstart#make-a-live-api-key), choose **Build evidence**, and store it securely as `SANNING_API_KEY`.
 - **Its own AWS keys or role**, with the evidence builder's permissions in [The exact AWS permissions](/quickstart#the-exact-aws-permissions).
 
-If the hand-over seed leaks, an owner or admin revokes the hand-over key in the console, under **Settings**, then **Signing keys**. Then make another seed with the same command, put it in `SANNING_SIGNING_SEED`, and run `bundle` again. Sanning never enrolls a revoked key again. Packs sealed before the revoke still verify.
+If the evidence seed leaks, an owner or admin revokes the evidence key in the console, under **Settings**, then **Signing keys**. Then make another seed with the same command, put it in `SANNING_SIGNING_SEED`, and run `bundle` again. Sanning never enrolls a revoked key again. Packs sealed before the revoke still verify.
 
 ### Install and configure the SDK
 
-You build evidence packs with the anchor SDK. The hand-over key needs version 0.23.0 or later of the SDK.
+You build evidence packs with the anchor SDK. The evidence key needs version 0.23.0 or later of the SDK.
 
 <CodeGroup>
 
@@ -46,12 +48,12 @@ pip install "sanning-anchor[s3]"
 
 </CodeGroup>
 
-Make sure the evidence builder's secrets hold the hand-over seed and the API key from above, and the keys for your log store. Sanning enrolls the hand-over key on the first `bundle` run whose pack reads Verified.
+Make sure the evidence builder's secrets hold the evidence seed and the API key from above, and the keys for your log store. Sanning enrolls the evidence key on the first `bundle` run whose pack reads Verified.
 
 <CodeGroup>
 ```bash .env
 SANNING_API_KEY=API_KEY
-SANNING_SIGNING_SEED=HANDOVER_SEED
+SANNING_SIGNING_SEED=EVIDENCE_SEED
 SANNING_SIGNING_KEY_KIND=organization
 AWS_REGION=REGION
 AWS_ACCESS_KEY_ID=ACCESS_KEY_ID
